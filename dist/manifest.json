@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Tab Snooze",
+  "name": "Snooooze",
   "version": "0.3",
 
   "description": "Snooze tabs for later.",
@@ -8,11 +8,11 @@
 
   "action": {
     "default_icon": "assets/icons/browserAction.png",
-    "default_popup": "popup/popup.html"
+    "default_popup": "popup/index.html"
   },
 
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "assets/background.js"
   },
 
   "options_page": "options/index.html",
@@ -22,7 +22,8 @@
     "alarms",
     "storage",
     "notifications",
-    "downloads"
+    "downloads",
+    "tabs"
   ],
 
   "commands": {

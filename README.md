@@ -1,17 +1,33 @@
-Tab Snooze
-===========
+# Snooooze
 
-> This project is now deprecated, and no longer maintained.
->
-> Tab Snooze was a quick weekend hack as well as a class project. While it received substantial attention
-> upon launch, I was unable to keep up maintenance. In the meantime, other projects, such as (the confusingly named)
-> [Tab Snooze](http://www.tabsnooze.com/) extension by Eyal Wiener have gained popularity. Please consider such alternate options for now.
->
-> If you are, however, interested in taking up this project, please post an issue to this repository indicating your interest.
-> Thank you for your support — it's been a fun ride.
+**Snooooze** allows you to "snooze" tabs and windows for later. They close immediately and reopen automatically at the scheduled time.
 
-Snooze tabs for later.
+## Key Features
 
-<img src="screenshot.png" width="300">
+- **Snooze Tabs & Windows**: Snooze individual tabs or entire windows. Windows are restored as distinct windows (unless configured otherwise).
+- **Flexible Scheduling**: Choose from presets like "Later Today", "Tomorrow Morning", "This Weekend", or pick a specific date and time.
+- **Smart Restoration**:
+  - **Global Control**: Configure whether tabs restore in the current window or a new window via Settings.
+- **Timezone Aware**: Intelligent handling of timezones for start/end of day calculations.
+- **Privacy Focused**: Everything runs locally. No data is sent to the cloud.
 
-[Download v0.2 Alpha](https://github.com/athyuttamre/tab-snooze/releases/tag/v0.2-alpha). Note that you have to side load it on `chrome://extensions` as explained [here](http://www.maketecheasier.com/manually-install-extensions-google-chrome/).
+## Installation & Development
+
+1.  Clone existing repository.
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+3.  Run development server:
+    ```bash
+    npm run dev
+    ```
+4.  Load extension in Chrome:
+    - Go to `chrome://extensions/`
+    - Enable "Developer mode"
+    - Click "Load unpacked"
+    - Select the `dist` directory.
+
+## License
+
+MIT

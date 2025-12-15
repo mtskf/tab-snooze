@@ -1,5 +1,5 @@
 /**
- * Tab Snooze
+ * Snooooze
  *
  * background.js (Manifest V3 Service Worker)
  * Athyuttam Reddy Eleti
@@ -46,17 +46,14 @@ async function handleMessage(request, sendResponse) {
                 sendResponse({ success: true });
                 break;
             case "snooze":
-                await snooze(request.tab, request.popTime);
+                await snooze(request.tab, request.popTime, request.openInNewWindow);
                 sendResponse({ success: true });
                 break;
             case "removeSnoozedTab":
                 await removeSnoozedTabWrapper(request.tab);
                 sendResponse({ success: true });
                 break;
-            case "updateBadgeText":
-                await updateBadgeText();
-                sendResponse({ success: true });
-                break;
+
             default:
                 console.warn("Unknown message action:", request.action);
                 sendResponse({ error: "Unknown action" });
@@ -91,12 +88,12 @@ async function initStorage() {
     }
 
     await chrome.action.setBadgeBackgroundColor({ color: "#FED23B" });
-    await updateBadgeText();
+    await chrome.action.setBadgeBackgroundColor({ color: "#FED23B" });
 }
 
 // Logic Functions
 
-async function snooze(tab, popTime) {
+async function snooze(tab, popTime, openInNewWindow) {
     // Note: tab is passed from popup, might not be full Tab object but has necessary props
     // popTime comes as string or timestamp from message usually
 
@@ -111,7 +108,7 @@ async function snooze(tab, popTime) {
     }
 
     // Add to storage
-    await addSnoozedTab(tab, popTimeObj);
+    await addSnoozedTab(tab, popTimeObj, openInNewWindow);
 }
 
 async function popCheck() {
@@ -129,7 +126,6 @@ async function popCheck() {
     }
 
     const snoozedTabs = await getSnoozedTabs();
-    const settings = await getSettings();
 
     if (!snoozedTabs) return;
 
@@ -154,39 +150,29 @@ async function popCheck() {
 
     if (tabsToPop.length > 0) {
         showNotification(tabsToPop, async (id) => {
-            // Notification shown.
-            // In V3, we can't easily pass a callback that stays alive effectively for "onClosed" in the same way
-            // if the SW dies. But we can set up the listeners globally.
-            // The global listeners below handle interactions.
-
-            // We need to store state about "pending action for these tabs"?
-            // Actually, the listeners just need to know what to do.
-            // The original logic kept 'tabs' in closure.
-            // In V3, we might need to store "tabs currently popping" in storage
-            // or we just trust the global listeners if we keep the SW alive (which we can't guarantee).
-
-            // BETTER APPROACH for V3:
-            // Store the 'popping tabs' in storage temporarily?
-            // Or just pass data in the notification ID? (ID limit?)
-            // Or keep them in snoozedTabs but mark them "popped"?
-            // Original code removes them from snoozedTabs AFTER 'Open Now' is clicked or re-snoozes?
-            // Wait, original: `popTabs` removes them. But `popCheck` triggers notification.
-            // If user closes notification, they are re-snoozed.
-            // If user clicks "Open", they are popped (and removed).
-
-            // So they are technically STILL in `snoozedTabs` until action is taken?
-            // No, original `popCheck` collected them, but didn't remove them yet.
-            // Ah, `popTabs` removes them.
-            // So if SW dies, next `popCheck` will find them again!
-            // That's actually redundant but safe. If notification is still open, we check notifications.getAll.
-
-            // So we don't need to do anything complex. Just show notification.
-            // But we need the 'tabs' data for the click handler.
-            // We can store pending tabs in a separate storage key `pendingTabs`.
-
             await chrome.storage.local.set({ pendingTabs: { tabs: tabsToPop, times: timesToRemove, notificationId: id } });
         });
     }
+}
+
+function showNotification(tabs, callback) {
+    var tabCount = tabs.length;
+    var message = "" + tabCount + ((tabCount > 1) ? " tabs are back" : " tab is back");
+
+    chrome.notifications.create("", {
+        type: "basic",
+        priority: 1,
+        title: "Snooooze",
+        message: message,
+        iconUrl: "assets/icons/browserAction.png", // path relative to root
+        buttons: [{
+            title: "Open Now"
+        }, {
+            title: "Postpone all but 50"
+        }]
+    }, function(id) {
+        callback(id);
+    });
 }
 
 // Global Notification Listeners
@@ -199,9 +185,6 @@ chrome.notifications.onClosed.addListener(async (nid, byUser) => {
         for (const tab of tabs) {
              const popTime = new Date();
              popTime.setHours(popTime.getHours() + 1);
-             // We need to 'move' it. It's currently still in the old slot in storage?
-             // Yes, we haven't removed it yet.
-             // So we should update it.
              await changeSnoozeTime(tab, popTime);
         }
         await chrome.storage.local.remove("pendingTabs");
@@ -213,26 +196,35 @@ chrome.notifications.onButtonClicked.addListener(async (nid, buttonIndex) => {
     if (data.pendingTabs && data.pendingTabs.notificationId === nid) {
         const tabs = data.pendingTabs.tabs;
         const times = data.pendingTabs.times;
-        const settings = await getSettings(); // ensure we have settings
 
         if (buttonIndex === 0) {
             // Open Now
-            let w = null;
-            if (settings["open-new-tab"] == "true") {
-                const currentWindow = await chrome.windows.getCurrent();
-                await popTabs(tabs, times, currentWindow);
+            var settings = data.settings || {}; // Retrieve settings
+            var openInNewTab = settings["open-new-tab"] === "true" || settings["open-new-tab"] === true; // Normalize boolean
+
+            // If "open-new-tab" is TRUE, it implies opening in the current window (as new tabs).
+            // If FALSE, it implies opening in a NEW window.
+            // (Based on user request: "Open in New Tab" setting determines restore method).
+
+            if (openInNewTab) {
+                 const currentWindow = await chrome.windows.getCurrent();
+                 await createTabsInWindow(tabs, currentWindow);
             } else {
                  const newWindow = await chrome.windows.create({});
-                 await popTabs(tabs, times, newWindow);
+                 await createTabsInWindow(tabs, newWindow);
             }
-        } else if (buttonIndex === 1) {
-            // Postpone all but 50 (Logic from original?)
-            // Original logic: postpone.
-             console.log("Postponing...");
-             // logic similar to onClosed but maybe different math?
-             // Original: "Snoozed for later!" add 1 hour.
-             // Actually original button 1 was "Postpone".
 
+            // Cleanup storage
+            const snoozedTabs = await getSnoozedTabs();
+            for (var i = 0; i < times.length; i++) {
+                delete snoozedTabs[times[i]];
+            }
+            snoozedTabs["tabCount"] = Math.max(0, snoozedTabs["tabCount"] - tabs.length);
+            await setSnoozedTabs(snoozedTabs);
+
+        } else if (buttonIndex === 1) {
+            // Postpone
+             console.log("Postponing...");
              for (const tab of tabs) {
                  const popTime = new Date();
                  popTime.setHours(popTime.getHours() + 1);
@@ -245,46 +237,10 @@ chrome.notifications.onButtonClicked.addListener(async (nid, buttonIndex) => {
     }
 });
 
-
-function showNotification(tabs, callback) {
-    var tabCount = tabs.length;
-    var message = "" + tabCount + ((tabCount > 1) ? " tabs are back" : " tab is back");
-
-    chrome.notifications.create("", {
-        type: "basic",
-        priority: 1,
-        title: "Tab Snooze",
-        message: message,
-        iconUrl: "assets/icons/browserAction.png", // path relative to root
-        buttons: [{
-            title: "Open Now"
-        }, {
-            title: "Postpone all but 50" // Original text was weird "Postpone all but 50". Keeping it?
-            // Original code: if(nid == id && buttonIndex == 1) ... limit logic ...
-            // I'll stick to simple postpone for now or replicate limit logic if important.
-            // The string is "Postpone all but 50".
-        }]
-    }, function(id) {
-        callback(id);
-    });
-}
-
-async function popTabs(tabs, times, w) {
-    // Create tabs
+async function createTabsInWindow(tabs, w) {
     for (var i = 0; i < tabs.length; i++) {
         await createTab(tabs[i], w);
     }
-
-    // Update storage
-    const snoozedTabs = await getSnoozedTabs();
-
-    for (var i = 0; i < times.length; i++) {
-        delete snoozedTabs[times[i]];
-    }
-
-    snoozedTabs["tabCount"] = Math.max(0, snoozedTabs["tabCount"] - tabs.length);
-
-    await setSnoozedTabs(snoozedTabs);
 }
 
 async function createTab(tab, w) {
@@ -297,25 +253,36 @@ async function createTab(tab, w) {
     } catch(e) { console.error(e); }
 }
 
-async function addSnoozedTab(tab, popTime) {
-    const snoozedTabs = await getSnoozedTabs();
-    const fullTime = popTime.getTime();
+// Mutex for storage operations
+let storageLock = Promise.resolve();
 
-    if (!snoozedTabs[fullTime]) {
-        snoozedTabs[fullTime] = [];
-    }
+async function addSnoozedTab(tab, popTime, openInNewWindow) {
+    // Wrap the logic in the lock
+    storageLock = storageLock.then(async () => {
+        const snoozedTabs = await getSnoozedTabs();
+        const fullTime = popTime.getTime();
 
-    snoozedTabs[fullTime].push({
-        url: tab.url,
-        title: tab.title,
-        favicon: tab.favIconUrl || tab.favicon, // handle both raw Tab and object
-        creationTime: (new Date()).getTime(), // use simple timestamp
-        popTime: popTime.getTime() // store as timestamp
+        if (!snoozedTabs[fullTime]) {
+            snoozedTabs[fullTime] = [];
+        }
+
+        snoozedTabs[fullTime].push({
+            url: tab.url,
+            title: tab.title,
+            favicon: tab.favIconUrl || tab.favicon,
+            creationTime: (new Date()).getTime(),
+            popTime: popTime.getTime(),
+            openInNewWindow: !!openInNewWindow
+        });
+
+        snoozedTabs["tabCount"] = (snoozedTabs["tabCount"] || 0) + 1;
+
+        await setSnoozedTabs(snoozedTabs);
+    }).catch(err => {
+        console.error("Error in storage lock:", err);
     });
 
-    snoozedTabs["tabCount"] = (snoozedTabs["tabCount"] || 0) + 1;
-
-    await setSnoozedTabs(snoozedTabs);
+    return storageLock;
 }
 
 async function removeSnoozedTabWrapper(tab) {
@@ -372,23 +339,10 @@ async function changeSnoozeTime(tab, newTime) {
     await setSnoozedTabs(snoozedTabs);
 
     // Add to new
-    await addSnoozedTab(tab, newTime);
+    await addSnoozedTab(tab, newTime, tab.openInNewWindow); // Preserve flag if changing time
 }
 
-async function updateBadgeText() {
-    const settings = await getSettings();
-    if (settings["badge"] == "false") {
-        await chrome.action.setBadgeText({ text: "" });
-        return;
-    }
 
-    const snoozedTabs = await getSnoozedTabs();
-    if (!snoozedTabs) return;
-
-    var snoozedCount = snoozedTabs["tabCount"];
-    var countString = (snoozedCount > 0) ? snoozedCount.toString() : "";
-    await chrome.action.setBadgeText({ text: countString });
-}
 
 // Storage Wrappers
 async function getSnoozedTabs() {
