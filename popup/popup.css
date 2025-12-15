@@ -70,89 +70,19 @@ button:focus {
 
     display: block;
     margin: 6px auto;
-
-    background-repeat: no-repeat;
-    background-position: center center;
-    background-size: 100%;
 }
 
-/**
- * Snooze Buttons Custom
- */
-
-#ten-seconds .button-image {
-    background-image: url("/assets/icons/grey/ten-seconds.png");
+#snooze-buttons button .button-image svg {
+    width: 28px;
+    height: 28px;
+    margin: 6px;
+    stroke: #9FA6A8;
+    transition: stroke 0.1s ease-in-out;
 }
 
-#ten-seconds:active .button-image {
-    background-image: url("/assets/icons/white/ten-seconds.png");
+#snooze-buttons button:active:not(#pick-date) .button-image svg {
+    stroke: white;
 }
-
-#later-today .button-image {
-    background-image: url("/assets/icons/grey/later-today.png");
-    background-size: 75% !important;
-}
-
-#later-today:active .button-image {
-    background-image: url("/assets/icons/white/later-today.png");
-}
-
-#this-evening .button-image, #tomorrow-evening .button-image {
-    background-image: url("/assets/icons/grey/this-evening.png");
-}
-
-#this-evening:active .button-image, #tomorrow-evening:active .button-image {
-    background-image: url("/assets/icons/white/this-evening.png");
-}
-
-#tomorrow .button-image {
-    background-image: url("/assets/icons/grey/tomorrow.png");
-}
-
-#tomorrow:active .button-image {
-    background-image: url("/assets/icons/white/tomorrow.png");
-}
-
-#this-weekend .button-image {
-    background-image: url("/assets/icons/grey/this-weekend.png");
-}
-
-#this-weekend:active .button-image {
-    background-image: url("/assets/icons/white/this-weekend.png");
-}
-
-#next-week .button-image {
-    background-image: url("/assets/icons/grey/next-week.png");
-}
-
-#next-week:active .button-image {
-    background-image: url("/assets/icons/white/next-week.png");
-}
-
-#in-a-month .button-image {
-    background-image: url("/assets/icons/grey/in-a-month.png");
-    background-size: 80% !important;
-}
-
-#in-a-month:active .button-image {
-    background-image: url("/assets/icons/white/in-a-month.png");
-}
-
-#someday .button-image {
-    background-image: url("/assets/icons/grey/someday.png");
-}
-
-#someday:active .button-image {
-    background-image: url("/assets/icons/white/someday.png");
-}
-
-#pick-date .button-image {
-    background-image: url("/assets/icons/grey/pick-date.png");
-}
-
-/*#pick-date:active .button-image {
-    background-image: url("/assets/icons/white/pick-date.png");
-}*/
 
 /**
  * Calendar
@@ -162,7 +92,7 @@ button:focus {
     display: none;
     padding: 5px;
 
-    box-shadow: inset  0  8px 8px -11px #696868, 
+    box-shadow: inset  0  8px 8px -11px #696868,
                 inset  0 -8px 8px -11px #696868;
 }
 
@@ -217,7 +147,7 @@ button:focus {
 }
 
 .ui-datepicker td a.ui-priority-secondary {
-    background-color: #F5F5F5;  
+    background-color: #F5F5F5;
 }
 
 .ui-datepicker td a.ui-state-active {
