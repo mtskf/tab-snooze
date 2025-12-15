@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - **Restoration Logic**: "Open in New Tab" setting now globally determines if tabs open in the current window or a new window, simplifying behavior.
 - **Window Snoozing**: Reverted window grouping in the UI. Snoozed windows now appear as individual tabs in the list but can still be snoozed as a batch.
-- **UI Refresh**: Major UI updates using Shadcn/ui components for a cleaner look.
+- **UI Refresh**: Updated the entire application to the "Neo Carbon" dark theme for a modern, professional aesthetic.
 - **Renaming**: Renamed "Snoozed Tabs" section to "Snoozed".
 
 ### Removed
