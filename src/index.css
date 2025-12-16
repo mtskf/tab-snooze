@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Neo Carbon Theme */
+    /* Background: #0B0E14 -> 220 30% 6% */
+    /* Background: Darker -> 220 50% 2% */
+    --background: 220 50% 2%;
+    /* TextPrimary: #E5E7EB -> 210 16% 93.5% */
+    --foreground: 210 16% 93.5%;
+
+    /* Surface: #111827 -> 221 39% 11% */
+    --card: 221 39% 11%;
+    --card-foreground: 210 16% 93.5%;
+
+    /* Popover: #030407 -> 225 40% 2% */
+    --popover: 225 40% 2%;
+    --popover-foreground: 210 16% 93.5%;
+
+    /* AccentPrimary: #4F46E5 -> 243 75% 59% */
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+
+    /* SurfaceHover: #1F2937 -> 215 28% 17% */
+    --secondary: 215 28% 17%;
+    /* TextPrimary */
+    --secondary-foreground: 210 16% 93.5%;
+
+    /* SurfaceHover for muted backgrounds */
+    --muted: 215 28% 17%;
+    /* TextSecondary: #9CA3AF -> 218 11% 65% */
+    --muted-foreground: 218 11% 65%;
+
+    --accent: 215 28% 17%;
+    --accent-foreground: 210 16% 93.5%;
+
+    /* Destructive: Keep standard logic or adjust. using previous dark-redish */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Border: #2A2F3A -> 221 16% 20% */
+    --border: 221 16% 20%;
+    --input: 221 16% 20%;
+
+    /* Ring: AccentPrimary */
+    --ring: 243 75% 59%;
+
+    --radius: 0.5rem;
+  }
+
+  /* No separate .dark block needed if we want this enforced everywhere,
+     but keeping it mapped to :root effectively makes it the default.
+     If the app adds .dark class, it should ideally refer to same vars
+     or we just let :root handle it. */
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html, body {
+    @apply bg-background text-foreground;
+  }
+}

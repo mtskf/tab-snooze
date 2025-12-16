@@ -1,0 +1,371 @@
+/* Neo Carbon Landing Page Theme */
+:root {
+  --background: 240 10% 3.9%; /* #09090b - dark zinc */
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 47 95% 58%; /* #FED23B - snooooze yellow */
+  --primary-foreground: 240 5.9% 10%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%; /* zinc-400 */
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Typography */
+h1, h2, h3 {
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+h1 {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(to bottom right, #ffffff, #a1a1aa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+h2 {
+  font-size: 2.25rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+h3 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+p {
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
+/* Components */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem; /* rounded-md */
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.btn-primary:hover {
+  background-color: hsl(47 95% 50%); /* slightly darker/more saturated */
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border: 1px solid hsl(var(--border));
+}
+
+.btn-secondary:hover {
+  background-color: hsl(240 3.7% 20%);
+}
+
+/* Hero Section */
+.hero {
+  padding: 8rem 0 6rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero-logo {
+  height: auto;
+  width: 500px;
+  max-width: 100%;
+  margin-bottom: 2rem;
+  /* Add explicit dimensions to avoid layout shift */
+}
+
+.hero-tagline {
+  font-size: 1.5rem;
+  max-width: 600px;
+  margin: 0 auto 2.5rem;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Hero Responsiveness */
+@media (max-width: 768px) {
+  .hero {
+    padding: 5rem 1rem; /* Reduced padding */
+  }
+
+  /* Target h1 specifically within hero if generic h1 is too big globally, or just target global h1 in media query */
+  /* Since h1 is global, let's target it generally or locally.
+     Usually beneficial to reduce h1 everywhere on mobile. */
+}
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2.5rem; /* Down from 3.5rem */
+  }
+
+  .hero-tagline {
+    font-size: 1.125rem; /* Down from 1.5rem */
+  }
+
+  .hero-logo {
+    width: 360px; /* Smaller logo */
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 2rem; /* Further reduced title */
+  }
+
+  .hero-tagline {
+    font-size: 1rem;
+  }
+
+  .hero-actions .btn {
+    width: 100%; /* Full width buttons */
+  }
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap; /* Allow wrapping on very small screens */
+  justify-content: center;
+}
+
+/* How to Use Section */
+.how-to-use {
+  padding: 4rem 0;
+  background-color: hsl(var(--background));
+  /* No borders needed if it matches surrounding */
+}
+
+.how-to-use-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 4rem;
+}
+
+@media (max-width: 768px) {
+  .how-to-use-grid {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+
+
+  .steps-list {
+    text-align: left;
+  }
+
+  .hero-image-wrapper {
+    margin: 0 auto;
+  }
+}
+
+.hero-image-wrapper {
+  /* Removed top margin since it's in a grid now */
+  margin: 0;
+  /* Using width constraint to match desired size, but responsive */
+  width: 100%;
+  max-width: 320px;
+  /* Centering in its column if the column is wider */
+  margin-left: auto;
+  margin-right: auto;
+
+  position: relative;
+  border-radius: 0.75rem;
+  box-shadow: 0 0 0 1px hsl(var(--border)),
+              0 20px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  line-height: 0;
+}
+
+.hero-image {
+  width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+}
+
+.text-col h2 {
+  text-align: left;
+  margin-bottom: 2rem;
+}
+
+.steps-list {
+  list-style: none;
+  padding: 0;
+  counter-reset: step-counter;
+}
+
+.steps-list li {
+  position: relative;
+  padding-left: 3rem;
+  margin-bottom: 2rem;
+}
+
+.steps-list li::before {
+  counter-increment: step-counter;
+  content: counter(step-counter);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2rem;
+  height: 2rem;
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--primary));
+  border-radius: 50%; /* Circle */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.steps-list strong {
+  display: block;
+  font-size: 1.1rem;
+  color: hsl(var(--foreground));
+  margin-bottom: 0.25rem;
+}
+
+.steps-list p {
+  font-size: 0.95rem;
+  margin-bottom: 0;
+}
+
+kbd {
+  background-color: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.3rem;
+  font-family: monospace;
+  font-size: 0.8em;
+  color: hsl(var(--foreground));
+}
+
+/* Features Section */
+.features {
+  padding: 4rem 0;
+  background-color: hsl(240 5% 5%); /* Darker background */
+  border-top: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.feature-card {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  transition: border-color 0.2s;
+}
+
+.feature-card:hover {
+  border-color: hsl(var(--ring));
+}
+
+.feature-icon {
+  color: hsl(var(--primary));
+  margin-bottom: 1rem;
+  /* Use SVG dimensions directly */
+  width: 24px;
+  height: 24px;
+}
+
+/* Footer */
+footer {
+  padding: 4rem 0;
+  text-align: center;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem; /* Reduced from 0.875rem */
+}
+
+footer p {
+  font-size: 0.7rem; /* Even smaller for copyright */
+  opacity: 0.8;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.footer-link {
+  color: hsl(var(--muted-foreground));
+  text-decoration: none;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.footer-link:hover {
+  color: hsl(var(--foreground));
+}
+
+/* Utilities */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  margin-bottom: 1rem;
+}
