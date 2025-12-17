@@ -310,7 +310,6 @@ export default function Options() {
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
                                             <label className="text-sm font-medium">Keyboard Shortcuts</label>
-                                            <p className="text-xs text-muted-foreground">Customize hotkey for each snooze option (1 letter, no modifiers).</p>
                                         </div>
                                     </div>
 
@@ -318,7 +317,7 @@ export default function Options() {
                                         <span className="text-xs text-muted-foreground font-medium">Global shortcut</span>
                                     </div>
 
-                                    <div className="pt-3 pb-3 mb-4 flex items-center justify-between border-b border-border/50">
+                                    <div className="pb-3 mb-4 flex items-center justify-between border-b border-border/50">
                                         <div className="flex items-center gap-3">
                                             <div className="flex items-center gap-3 text-muted-foreground">
                                                 <Keyboard className="h-4 w-4 text-primary" />
