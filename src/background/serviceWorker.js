@@ -87,7 +87,6 @@ async function initStorage() {
             "weekend-begin": 6,
             "later-today": 3,
             "someday": 3,
-            "open-new-tab": "true",
             "badge": "true"
         };
         await setSettings(settings);
@@ -154,7 +153,6 @@ async function popCheck() {
 
 async function restoreTabs(tabs, timesToRemove) {
     var settings = await getSettings(); // Retrieve latest settings
-    var openInNewTab = settings["open-new-tab"] === "true" || settings["open-new-tab"] === true;
 
     // Group by groupId
     const groups = {};
@@ -171,7 +169,7 @@ async function restoreTabs(tabs, timesToRemove) {
         }
     });
 
-    // Restore Groups (Always in new window per plan)
+    // Restore Groups (Always in new window)
     for (const groupId in groups) {
         const groupTabs = groups[groupId];
         if (groupTabs.length > 0) {
@@ -180,14 +178,16 @@ async function restoreTabs(tabs, timesToRemove) {
         }
     }
 
-    // Restore Ungrouped Tabs (Follow setting)
+    // Restore Ungrouped Tabs (Always in last focused window)
     if (ungrouped.length > 0) {
-        if (openInNewTab) {
-                const currentWindow = await chrome.windows.getCurrent();
-                await createTabsInWindow(ungrouped, currentWindow);
-        } else {
-                const newWindow = await chrome.windows.create({});
-                await createTabsInWindow(ungrouped, newWindow);
+        try {
+            // Use getLastFocused for Service Worker compatibility
+            const currentWindow = await chrome.windows.getLastFocused();
+            await createTabsInWindow(ungrouped, currentWindow);
+        } catch (e) {
+            // Fallback if no window is focused/available
+            const newWindow = await chrome.windows.create({});
+            await createTabsInWindow(ungrouped, newWindow);
         }
     }
 

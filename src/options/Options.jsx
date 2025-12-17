@@ -285,16 +285,7 @@ export default function Options() {
                                 </div>
 
 
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <label className="text-sm font-medium">Open in New Tab</label>
-                                    <p className="text-xs text-muted-foreground">Open snoozed tabs in a new tab instead of window.</p>
-                                </div>
-                                <Switch
-                                    checked={settings['open-new-tab'] === 'true'}
-                                    onCheckedChange={(c) => updateSetting('open-new-tab', c ? 'true' : 'false')}
-                                />
-                            </div>
+
                         </CardContent>
                     </Card>
 
