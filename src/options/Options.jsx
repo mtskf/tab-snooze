@@ -340,6 +340,7 @@ export default function Options() {
                                                     variant="outline"
                                                     onClick={() => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })}
                                                 >
+                                                    <Settings className="mr-2 h-4 w-4" />
                                                     Configure
                                                 </Button>
                                             </div>
