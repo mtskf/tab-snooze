@@ -259,7 +259,7 @@ export default function Options() {
                             <CardTitle>Settings</CardTitle>
 
                         </CardHeader>
-                        <CardContent className="space-y-6">
+                        <CardContent className="space-y-10">
                             <div className="space-y-4">
                                 <div className="space-y-4">
                                 <div className="flex items-center justify-between">
@@ -306,7 +306,7 @@ export default function Options() {
                                     </div>
                                 </div>
                                 </div>
-                                <div className="space-y-4 pt-4">
+                                <div className="space-y-4 pt-6">
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
                                             <label className="text-sm font-medium">Keyboard Shortcuts</label>
