@@ -66,7 +66,7 @@ export default function ShortcutEditor({ shortcuts, onUpdate }) {
                 const iconColor = ACTION_COLORS[action.id] || 'text-muted-foreground';
                 return (
                     <div key={action.id} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2 text-muted-foreground">
+                        <div className="flex items-center gap-3 text-muted-foreground">
                             <Icon className={`h-4 w-4 ${iconColor}`} />
                             <span>{action.label}</span>
                         </div>

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getSettings } from '@/utils/timeUtils';
-import { Trash2, ExternalLink, AppWindow, Download, Upload, Check, ChevronsUpDown, Inbox, Settings, Github, Coffee, RotateCcw, Globe, Search, X } from 'lucide-react';
+import { Trash2, ExternalLink, AppWindow, Download, Upload, Check, ChevronsUpDown, Inbox, Settings, Github, Coffee, RotateCcw, Globe, Search, X, Keyboard } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import SnoozedList from './SnoozedList';
 import { DEFAULT_SHORTCUTS } from '@/utils/constants';
@@ -312,6 +312,33 @@ export default function Options() {
                                             <label className="text-sm font-medium">Keyboard Shortcuts</label>
                                             <p className="text-xs text-muted-foreground">Customize hotkey for each snooze option (1 letter, no modifiers).</p>
                                         </div>
+                                    </div>
+
+                                    <div className="pt-3 pb-3 mb-4 flex items-center justify-between border-b border-border/50">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-3 text-muted-foreground">
+                                                <Keyboard className="h-4 w-4 text-primary" />
+                                                <div className="space-y-0.5">
+                                                    <div className="text-sm font-medium text-foreground">Activate Extension</div>
+                                                    <div className="text-xs text-muted-foreground">Global shortcut to open Snooze popup</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="bg-background text-muted-foreground text-[10px] font-mono font-medium px-1.5 py-1 rounded border border-border/50">Cmd/Ctrl + .</span>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-7 text-xs"
+                                                onClick={() => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })}
+                                            >
+                                                Configure
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between mb-2 mt-4">
+                                        <span className="text-xs text-muted-foreground font-medium">Snooze Actions</span>
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -326,6 +353,7 @@ export default function Options() {
                                             Reset default
                                         </Button>
                                     </div>
+
                                     <ShortcutEditor
                                         shortcuts={{ ...DEFAULT_SHORTCUTS, ...settings.shortcuts }}
                                         onUpdate={(newShortcuts) => updateSetting('shortcuts', newShortcuts)}
