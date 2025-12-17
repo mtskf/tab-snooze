@@ -56,7 +56,7 @@ Master the keyboard to manage your tabs at the speed of thought.
 
 | Action | Shortcut |
 | :--- | :--- |
-| **Open Snooze Popup** | `Cmd` + `.` (Mac) / `Ctrl` + `.` (Win) |
+| **Open Snooze Popup** | `Cmd` + `.` (Default) - *Customizable in Chrome Extensions* |
 | **Later Today** | `L` |
 | **This Evening** | `E` |
 | **Tomorrow** | `T` |
@@ -67,7 +67,7 @@ Master the keyboard to manage your tabs at the speed of thought.
 | **Pick Date** | `P` |
 | **Snooze Window** | Hold `Shift` + any shortcut |
 
-> **Tip**: Customize shortcuts in Settings → Keyboard Shortcuts
+> **Tip**: Customize snooze shortcuts in **Snooze Settings**, and the global popup shortcut in **Chrome Extension Shortcuts**.
 
 <br>
 
