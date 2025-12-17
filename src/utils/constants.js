@@ -1,11 +1,12 @@
 export const DEFAULT_SHORTCUTS = {
-    'later-today': ['1', 'L'],
-    'this-evening': ['2', 'E'],
-    'tomorrow': ['3', 'T'],
-    'this-weekend': ['4', 'S'],
-    'next-monday': ['5', 'N'],
-    'in-a-week': ['6', 'W'],
-    'in-a-month': ['7', 'M']
+    'later-today': ['L'],
+    'this-evening': ['E'],
+    'tomorrow': ['T'],
+    'this-weekend': ['S'],
+    'next-monday': ['N'],
+    'in-a-week': ['W'],
+    'in-a-month': ['M'],
+    'pick-date': ['P']
 };
 
 export const SNOOZE_ACTIONS = [
@@ -15,5 +16,6 @@ export const SNOOZE_ACTIONS = [
     { id: 'this-weekend', label: 'This weekend' },
     { id: 'next-monday', label: 'Next Monday' },
     { id: 'in-a-week', label: 'In a week' },
-    { id: 'in-a-month', label: 'In a month' }
+    { id: 'in-a-month', label: 'In a month' },
+    { id: 'pick-date', label: 'Pick Date' }
 ];

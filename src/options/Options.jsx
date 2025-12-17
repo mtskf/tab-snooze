@@ -310,7 +310,7 @@ export default function Options() {
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
                                             <label className="text-sm font-medium">Keyboard Shortcuts</label>
-                                            <p className="text-xs text-muted-foreground">Customize hotkeys for each snooze option (Max 2 keys, no modifiers).</p>
+                                            <p className="text-xs text-muted-foreground">Customize hotkey for each snooze option (1 letter, no modifiers).</p>
                                         </div>
                                         <Button
                                             variant="ghost"
@@ -327,7 +327,7 @@ export default function Options() {
                                         </Button>
                                     </div>
                                     <ShortcutEditor
-                                        shortcuts={settings.shortcuts || DEFAULT_SHORTCUTS}
+                                        shortcuts={{ ...DEFAULT_SHORTCUTS, ...settings.shortcuts }}
                                         onUpdate={(newShortcuts) => updateSetting('shortcuts', newShortcuts)}
                                     />
                                 </div>

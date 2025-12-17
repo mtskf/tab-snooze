@@ -27,6 +27,7 @@ export default function Popup() {
     const [scope, setScope] = useState('selected'); // 'selected' | 'window'
     const [tabCount, setTabCount] = useState(0);
     const [snoozedCount, setSnoozedCount] = useState(0);
+    const [pickDateShortcut, setPickDateShortcut] = useState('P');
 
     useEffect(() => {
         // Update tab count based on scope
@@ -55,6 +56,10 @@ export default function Popup() {
                 ...item,
                 shortcuts: finalShortcuts[item.id] || []
             })));
+
+            // Set pick-date shortcut (empty string if not set)
+            const pdShortcut = finalShortcuts['pick-date']?.[0] || '';
+            setPickDateShortcut(pdShortcut);
         });
 
         return () => {
@@ -88,8 +93,8 @@ export default function Popup() {
                  window.close();
             }
 
-            // Calendar triggers
-            if (key === 'P' || key === '8') {
+            // Calendar triggers (only if shortcut is set)
+            if (pickDateShortcut && key === pickDateShortcut.toUpperCase()) {
                  setIsCalendarOpen(true);
                  return;
             }
@@ -279,10 +284,7 @@ export default function Popup() {
                     </div>
                     <div className="flex gap-1">
                         <span className="bg-secondary text-muted-foreground text-xs font-mono font-medium w-5 h-5 flex items-center justify-center rounded border border-border/50">
-                            8
-                        </span>
-                        <span className="bg-secondary text-muted-foreground text-xs font-mono font-medium w-5 h-5 flex items-center justify-center rounded border border-border/50">
-                            P
+                            {pickDateShortcut}
                         </span>
                     </div>
                 </button>
@@ -292,6 +294,14 @@ export default function Popup() {
                     <div
                         className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
                         onClick={() => setIsCalendarOpen(false)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsCalendarOpen(false);
+                            }
+                        }}
+                        tabIndex={-1}
                     >
                         <div
                             className="bg-popover rounded-lg border border-border shadow-lg"
