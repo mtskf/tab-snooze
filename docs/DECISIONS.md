@@ -48,3 +48,8 @@ Documents significant architectural decisions made during development.
 - **Context**: Originally each snooze option had two shortcuts (number + letter), making the UI cluttered and hard to remember.
 - **Decision**: Simplified to single-letter shortcuts only (L, E, T, S, N, W, M, P for Pick Date).
 - **Consequences**: Cleaner UI with one shortcut badge per option. Users can still customize shortcuts in Settings. The "Pick Date" option is now also configurable.
+
+## ADR-010: Options Page Component Split
+- **Context**: `Options.jsx` was becoming monolithic, mixing layout code for distinct sections (Time, Shortcuts, Global Actions) with state management.
+- **Decision**: Extracted logical sections into separate components: `TimeSettings`, `GlobalShortcutSettings`, and `SnoozeActionSettings`.
+- **Consequences**: `Options.jsx` is now a cleaner orchestrator. Logic for each section is encapsulated, making maintenance and future updates (like adding more settings) much easier.
