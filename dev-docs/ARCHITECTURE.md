@@ -19,7 +19,8 @@ Snooooze/
 │   ├── lib/                 # shadcn utilities (cn)
 │   └── index.css            # Global styles (Neo Carbon theme)
 ├── dist/                    # Built extension
-├── docs/                    # Documentation
+├── docs/                    # GitHub Pages (Website)
+├── dev-docs/                # Developer Documentation
 └── public/assets/           # Icons, manifest.json
 ```
 
