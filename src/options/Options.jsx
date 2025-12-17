@@ -11,11 +11,14 @@ import { Trash2, ExternalLink, AppWindow, Download, Upload, Check, ChevronsUpDow
 import { cn } from "@/lib/utils";
 import SnoozedList from './SnoozedList';
 import { DEFAULT_SHORTCUTS } from '@/utils/constants';
-import ShortcutEditor from './ShortcutEditor';
+import TimeSettings from './TimeSettings';
+import GlobalShortcutSettings from './GlobalShortcutSettings';
+import SnoozeActionSettings from './SnoozeActionSettings';
 export default function Options() {
     const [snoozedTabs, setSnoozedTabs] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
     const [settings, setSettings] = useState({});
+    const [extensionShortcut, setExtensionShortcut] = useState(null);
     const [activeTab, setActiveTab] = useState(() => {
         // Check URL hash for initial tab
         const hash = window.location.hash.slice(1);
@@ -34,6 +37,13 @@ export default function Options() {
 
         chrome.storage.local.get(["snoozedTabs"], (res) => {
             if (res.snoozedTabs) setSnoozedTabs(res.snoozedTabs);
+        });
+
+        chrome.commands.getAll((commands) => {
+            const actionCommand = commands.find(c => c.name === '_execute_action');
+            if (actionCommand) {
+                setExtensionShortcut(actionCommand.shortcut);
+            }
         });
 
         // Listen for changes
@@ -260,106 +270,20 @@ export default function Options() {
 
                         </CardHeader>
                         <CardContent className="space-y-10">
-                            <div className="space-y-4">
-                                <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <label className="text-sm font-medium">Start Day (Morning)</label>
-                                        <p className="text-xs text-muted-foreground">When "Tomorrow" or morning snoozes trigger.</p>
-                                    </div>
-                                    <div className="w-[120px]">
-                                    <Select
-                                        value={settings['start-day'] || '9:00 AM'}
-                                        onValueChange={(value) => updateSetting('start-day', value)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {['5:00 AM', '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM'].map((time) => (
-                                                <SelectItem key={time} value={time}>{time}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    </div>
-                                </div>
+                                <TimeSettings settings={settings} updateSetting={updateSetting} />
 
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <label className="text-sm font-medium">End Day (Evening)</label>
-                                        <p className="text-xs text-muted-foreground">When "This Evening" snoozes trigger.</p>
-                                    </div>
-                                    <div className="w-[120px]">
-                                    <Select
-                                        value={settings['end-day'] || '6:00 PM'}
-                                        onValueChange={(value) => updateSetting('end-day', value)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {['4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM', '11:00 PM'].map((time) => (
-                                                <SelectItem key={time} value={time}>{time}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    </div>
-                                </div>
-                                </div>
-                                <div className="space-y-4 pt-6">
+                                <div className="space-y-8 pt-6">
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
                                             <label className="text-sm font-medium">Keyboard Shortcuts</label>
-                                            <p className="text-xs text-muted-foreground">Customize hotkey for each snooze option (1 letter, no modifiers).</p>
                                         </div>
                                     </div>
 
-                                    <div className="pt-3 pb-3 mb-4 flex items-center justify-between border-b border-border/50">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex items-center gap-3 text-muted-foreground">
-                                                <Keyboard className="h-4 w-4 text-primary" />
-                                                <div className="space-y-0.5">
-                                                    <div className="text-sm font-medium text-foreground">Activate Extension</div>
-                                                    <div className="text-xs text-muted-foreground">Global shortcut to open Snooze popup</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <span className="bg-background text-muted-foreground text-[10px] font-mono font-medium px-1.5 py-1 rounded border border-border/50">Cmd/Ctrl + .</span>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-7 text-xs"
-                                                onClick={() => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })}
-                                            >
-                                                Configure
-                                            </Button>
-                                        </div>
-                                    </div>
+                                    <GlobalShortcutSettings extensionShortcut={extensionShortcut} />
 
-                                    <div className="flex items-center justify-between mb-2 mt-4">
-                                        <span className="text-xs text-muted-foreground font-medium">Snooze Actions</span>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                                            onClick={() => {
-                                                if (confirm("Reset all shortcuts to default?")) {
-                                                    updateSetting('shortcuts', DEFAULT_SHORTCUTS);
-                                                }
-                                            }}
-                                        >
-                                            <RotateCcw className="mr-1.5 h-3 w-3" />
-                                            Reset default
-                                        </Button>
-                                    </div>
-
-                                    <ShortcutEditor
-                                        shortcuts={{ ...DEFAULT_SHORTCUTS, ...settings.shortcuts }}
-                                        onUpdate={(newShortcuts) => updateSetting('shortcuts', newShortcuts)}
-                                    />
+                                    <SnoozeActionSettings settings={settings} updateSetting={updateSetting} />
                                 </div>
-                            </div>
+
 
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
