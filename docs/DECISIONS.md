@@ -15,9 +15,9 @@ Documents significant architectural decisions made during development.
 - **Consequences**: Behavior is predictable and user-configurable globally, rather than context-dependent.
 
 ## ADR-003: Timezone Handling
-- **Context**: Browsers run on system time. Users may want to snooze based on a specific timezone (e.g., working remotely).
-- **Decision**: We calculate target times by "shifting" the `Date` object based on the delta between the system time and the target timezone time.
-- **Consequences**: We avoid heavy timezone libraries. `9:00 AM` in the target setting triggers when the wall-clock time in that zone is 9:00 AM, regardless of the user's actual system clock (relative calculation).
+- **Context**: Browsers run on system time, but accurate timezone handling can be complex.
+- **Decision**: We use the browser's built-in `Intl.DateTimeFormat().resolvedOptions().timeZone` to detect the system timezone automatically.
+- **Consequences**: The manual timezone selector is removed from the UI, simplifying the user experience. Snooze times are calculated based on the precise system timezone (IANA ID), ensuring accuracy without user configuration.
 
 ## ADR-004: Export/Import Format
 - **Context**: Users may want to backup/restore snoozed tabs or transfer data between computers.

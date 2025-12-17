@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { getSettings } from '@/utils/timeUtils';
 import { Trash2, ExternalLink, AppWindow, Download, Upload, Check, ChevronsUpDown, Inbox, Settings, Github, Coffee, RotateCcw, Globe } from 'lucide-react';
 import { cn } from "@/lib/utils";
-import { TimezoneSelect } from '@/components/TimezoneSelect';
 import SnoozedList from './SnoozedList';
 import { DEFAULT_SHORTCUTS } from '@/utils/constants';
 import ShortcutEditor from './ShortcutEditor';
@@ -258,13 +257,6 @@ export default function Options() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="space-y-2 sm:col-span-4">
-                                    <label className="text-[10px] font-medium">Timezone</label>
-                                    <TimezoneSelect
-                                        value={settings['timezone']}
-                                        onValueChange={(value) => updateSetting('timezone', value)}
-                                    />
-                                    </div>
                                 </div>
                                 </div>
                                 <div className="space-y-2 sm:col-span-12 pt-4">
