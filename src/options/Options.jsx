@@ -16,6 +16,7 @@ export default function Options() {
     const [snoozedTabs, setSnoozedTabs] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
     const [settings, setSettings] = useState({});
+    const [extensionShortcut, setExtensionShortcut] = useState(null);
     const [activeTab, setActiveTab] = useState(() => {
         // Check URL hash for initial tab
         const hash = window.location.hash.slice(1);
@@ -34,6 +35,13 @@ export default function Options() {
 
         chrome.storage.local.get(["snoozedTabs"], (res) => {
             if (res.snoozedTabs) setSnoozedTabs(res.snoozedTabs);
+        });
+
+        chrome.commands.getAll((commands) => {
+            const actionCommand = commands.find(c => c.name === '_execute_action');
+            if (actionCommand) {
+                setExtensionShortcut(actionCommand.shortcut);
+            }
         });
 
         // Listen for changes
@@ -306,56 +314,62 @@ export default function Options() {
                                     </div>
                                 </div>
                                 </div>
-                                <div className="space-y-4 pt-6">
+                                <div className="space-y-8 pt-6">
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
                                             <label className="text-sm font-medium">Keyboard Shortcuts</label>
                                         </div>
                                     </div>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between mb-2 mt-4">
+                                            <span className="text-xs text-muted-foreground font-medium">Global shortcut</span>
+                                        </div>
 
-                                    <div className="flex items-center justify-between mb-2 mt-4">
-                                        <span className="text-xs text-muted-foreground font-medium">Global shortcut</span>
-                                    </div>
-
-                                    <div className="pb-3 mb-4 flex items-center justify-between border-b border-border/50">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex items-center gap-3 text-muted-foreground">
-                                                <Keyboard className="h-4 w-4 text-primary" />
-                                                <span>Activate Extension</span>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-3 text-muted-foreground">
+                                                    <Keyboard className="h-4 w-4 text-primary" />
+                                                    <span>Activate Extension</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="bg-background text-muted-foreground text-[12px] font-mono font-medium px-1.5 py-1 rounded border border-border/50">
+                                                {extensionShortcut || 'Not set'}
+                                            </span>
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })}
+                                                >
+                                                    Configure
+                                                </Button>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            <span className="bg-background text-muted-foreground text-[10px] font-mono font-medium px-1.5 py-1 rounded border border-border/50">Cmd/Ctrl + .</span>
+                                    </div>
+
+                                    <div className="space-y-3">
+
+                                        <div className="flex items-center justify-between mb-2 mt-4">
+                                            <span className="text-xs text-muted-foreground font-medium">Snooze Actions</span>
                                             <Button
-                                                variant="outline"
-                                                onClick={() => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })}
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                                onClick={() => {
+                                                    if (confirm("Reset all shortcuts to default?")) {
+                                                        updateSetting('shortcuts', DEFAULT_SHORTCUTS);
+                                                    }
+                                                }}
                                             >
-                                                Configure
+                                                <RotateCcw className="mr-1.5 h-3 w-3" />
+                                                Reset default
                                             </Button>
                                         </div>
-                                    </div>
 
-                                    <div className="flex items-center justify-between mb-2 mt-4">
-                                        <span className="text-xs text-muted-foreground font-medium">Snooze Actions</span>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                                            onClick={() => {
-                                                if (confirm("Reset all shortcuts to default?")) {
-                                                    updateSetting('shortcuts', DEFAULT_SHORTCUTS);
-                                                }
-                                            }}
-                                        >
-                                            <RotateCcw className="mr-1.5 h-3 w-3" />
-                                            Reset default
-                                        </Button>
+                                        <ShortcutEditor
+                                            shortcuts={{ ...DEFAULT_SHORTCUTS, ...settings.shortcuts }}
+                                            onUpdate={(newShortcuts) => updateSetting('shortcuts', newShortcuts)}
+                                        />
                                     </div>
-
-                                    <ShortcutEditor
-                                        shortcuts={{ ...DEFAULT_SHORTCUTS, ...settings.shortcuts }}
-                                        onUpdate={(newShortcuts) => updateSetting('shortcuts', newShortcuts)}
-                                    />
                                 </div>
                             </div>
 
