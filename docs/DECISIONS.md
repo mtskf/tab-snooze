@@ -28,3 +28,18 @@ Documents significant architectural decisions made during development.
 - **Context**: Users need a quick way to toggle between snoozing selected tabs vs. entire window.
 - **Decision**: Use `e.shiftKey` directly in keyboard handler rather than relying on React state for immediate scope detection.
 - **Consequences**: Shift+L correctly snoozes all window tabs while L alone snoozes only selected. Visual state updates when Shift is held for user feedback.
+
+## ADR-006: Options Page Search
+- **Context**: Users with many snoozed tabs found it difficult to locate specific items.
+- **Decision**: Implemented a client-side search filter in `Options.jsx` that matches against both Title and URL.
+- **Consequences**: `SnoozedList` remains a presentational component. The search supports space/comma-separated "AND" logic (e.g., "google work" finds tabs matching both terms).
+
+## ADR-007: Calendar Modal Overlay
+- **Context**: The standard `Popover` for calendar selection felt too subtle and sometimes closed unexpectedly.
+- **Decision**: Replaced the `Popover` with a full-screen semi-transparent (`bg-black/30`) modal overlay.
+- **Consequences**: Provides stronger focus on the "Pick Date" action. The calendar is centered, and clicking the overlay reliably dismisses it.
+
+## ADR-008: Custom Calendar Dropdown
+- **Context**: `react-day-picker` v8's default dropdowns are native unstyled elements, while Shadcn UI typically uses its own `Select` component (which is complex to integrate cleanly into v8 due to focus management).
+- **Decision**: Implemented a custom `Dropdown` component that layers an invisible native `<select>` over a purely visual label + chevron.
+- **Consequences**: Achieves the visual fidelity of Shadcn's design system while leveraging the robust, accessible native navigation logic of `react-day-picker`.

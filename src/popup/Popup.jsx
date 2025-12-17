@@ -269,34 +269,46 @@ export default function Popup() {
                     )})}
 
                 {/* Pick Date */}
-                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                    <PopoverTrigger asChild>
-                         <button
-                            className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors group text-left"
+                <button
+                    onClick={() => setIsCalendarOpen(true)}
+                    className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors group text-left"
+                >
+                    <div className="flex items-center gap-3">
+                        <CalendarDays className={cn("h-5 w-5 text-indigo-400")} />
+                        <span className="font-medium">Pick Date</span>
+                    </div>
+                    <div className="flex gap-1">
+                        <span className="bg-secondary text-muted-foreground text-xs font-mono font-medium w-5 h-5 flex items-center justify-center rounded border border-border/50">
+                            8
+                        </span>
+                        <span className="bg-secondary text-muted-foreground text-xs font-mono font-medium w-5 h-5 flex items-center justify-center rounded border border-border/50">
+                            P
+                        </span>
+                    </div>
+                </button>
+
+                {/* Calendar Modal Overlay */}
+                {isCalendarOpen && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+                        onClick={() => setIsCalendarOpen(false)}
+                    >
+                        <div
+                            className="bg-popover rounded-lg border border-border shadow-lg"
+                            onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="flex items-center gap-3">
-                                <CalendarDays className={cn("h-5 w-5 text-indigo-400")} />
-                                <span className="font-medium">Pick Date</span>
-                            </div>
-                            <div className="flex gap-1">
-                                <span className="bg-secondary text-muted-foreground text-xs font-mono font-medium w-5 h-5 flex items-center justify-center rounded border border-border/50">
-                                    8
-                                </span>
-                                <span className="bg-secondary text-muted-foreground text-xs font-mono font-medium w-5 h-5 flex items-center justify-center rounded border border-border/50">
-                                    P
-                                </span>
-                            </div>
-                        </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
-                         <Calendar
-                            mode="single"
-                            selected={date}
-                            onSelect={handleDateSelect}
-                            initialFocus
-                        />
-                    </PopoverContent>
-                </Popover>
+                            <Calendar
+                                mode="single"
+                                selected={date}
+                                onSelect={handleDateSelect}
+                                initialFocus
+                                captionLayout="dropdown-buttons"
+                                fromYear={new Date().getFullYear()}
+                                toYear={new Date().getFullYear() + 5}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
             </div>
 

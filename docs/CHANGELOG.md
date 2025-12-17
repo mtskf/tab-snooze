@@ -59,3 +59,10 @@ All notable changes to this project will be documented in this file.
 - **Notifications**: Removed notification-based restoration logic.
 - **OneTab Support**: Export/Import now uses JSON format to preserve timestamps.
 - **Debug UI**: Removed "Check Now" button.
+### Added
+- **Snoozed Search**: Added real-time search filtering for snoozed tabs with space/comma-delimited multi-keyword support.
+
+### Changed
+- **Calendar UI**: Replaced Popover with a custom modal overlay for better visibility and focus management.
+- **Calendar Logic**: Implemented `captionLayout="dropdown-buttons"` with a custom Shadcn-compatible Dropdown component to allow intuitive year/month navigation.
+- **Options Layout**: Refined "Snooze Timing" into "Start Day" and "End Day" rows, and aligned "Keyboard Shortcuts" for consistent UI flow.

@@ -7,13 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getSettings } from '@/utils/timeUtils';
-import { Trash2, ExternalLink, AppWindow, Download, Upload, Check, ChevronsUpDown, Inbox, Settings, Github, Coffee, RotateCcw, Globe } from 'lucide-react';
+import { Trash2, ExternalLink, AppWindow, Download, Upload, Check, ChevronsUpDown, Inbox, Settings, Github, Coffee, RotateCcw, Globe, Search, X } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import SnoozedList from './SnoozedList';
 import { DEFAULT_SHORTCUTS } from '@/utils/constants';
 import ShortcutEditor from './ShortcutEditor';
 export default function Options() {
     const [snoozedTabs, setSnoozedTabs] = useState({});
+    const [searchQuery, setSearchQuery] = useState('');
     const [settings, setSettings] = useState({});
     const [activeTab, setActiveTab] = useState(() => {
         // Check URL hash for initial tab
@@ -144,6 +145,28 @@ export default function Options() {
         event.target.value = ''; // Reset file input
     };
 
+    const filteredTabs = React.useMemo(() => {
+        if (!searchQuery) return snoozedTabs;
+        const keywords = searchQuery.toLowerCase().split(/[\s,]+/).filter(k => k.trim() !== '');
+        if (keywords.length === 0) return snoozedTabs;
+
+        const filtered = { tabCount: 0 };
+        Object.keys(snoozedTabs).forEach(key => {
+            if (key === 'tabCount') return;
+            const tabs = snoozedTabs[key].filter(t => {
+                const title = (t.title || '').toLowerCase();
+                const url = (t.url || '').toLowerCase();
+                return keywords.every(k => title.includes(k) || url.includes(k));
+            });
+
+            if (tabs.length > 0) {
+                filtered[key] = tabs;
+                filtered.tabCount += tabs.length; // Approximate count for display if needed
+            }
+        });
+        return filtered;
+    }, [snoozedTabs, searchQuery]);
+
     return (
         <div className="container max-w-3xl py-8">
             <img src={logo} alt="Snooze" className="h-8 mb-6" />
@@ -162,53 +185,70 @@ export default function Options() {
 
                 <TabsContent value="snoozed-tabs">
                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle>Snoozed tabs</CardTitle>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="secondary"
-                                    size="xs"
-                                    className="h-7 text-[10px]"
-                                    onClick={handleExport}
-                                >
-                                    <Download className="mr-2 h-3 w-3" />
-                                    Export
-                                </Button>
-                                <Button
-                                    variant="secondary"
-                                    size="xs"
-                                    className="h-7 text-[10px]"
-                                    onClick={() => fileInputRef.current?.click()}
-                                >
-                                    <Upload className="mr-2 h-3 w-3" />
-                                    Import
-                                </Button>
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleImport}
-                                    accept=".json"
-                                    className="hidden"
-                                />
-
-                                {(snoozedTabs.tabCount > 0) && (
+                        <CardHeader>
+                            <CardTitle>Snoozed tabs</CardTitle>
+                            <div className="flex items-center justify-between pt-4">
+                                <div className="relative w-[280px]">
+                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Search tabs..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="pl-8 pr-8 h-9 text-xs"
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            onClick={() => setSearchQuery('')}
+                                            className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="flex gap-2">
                                     <Button
-                                        variant="destructive"
+                                        variant="secondary"
                                         size="xs"
                                         className="h-7 text-[10px]"
-                                        onClick={clearAll}
+                                        onClick={handleExport}
                                     >
-                                        <Trash2 className="mr-2 h-3 w-3" />
-                                        Delete All
+                                        <Download className="mr-2 h-3 w-3" />
+                                        Export
                                     </Button>
-                                )}
+                                    <Button
+                                        variant="secondary"
+                                        size="xs"
+                                        className="h-7 text-[10px]"
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        <Upload className="mr-2 h-3 w-3" />
+                                        Import
+                                    </Button>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleImport}
+                                        accept=".json"
+                                        className="hidden"
+                                    />
+
+                                    {(snoozedTabs.tabCount > 0) && (
+                                        <Button
+                                            variant="destructive"
+                                            size="xs"
+                                            className="h-7 text-[10px]"
+                                            onClick={clearAll}
+                                        >
+                                            <Trash2 className="mr-2 h-3 w-3" />
+                                            Delete All
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                         </CardHeader>
 
                         <CardContent>
-                            <SnoozedList snoozedTabs={snoozedTabs} onClearTab={clearTab} />
+                            <SnoozedList snoozedTabs={filteredTabs} onClearTab={clearTab} />
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -221,12 +261,13 @@ export default function Options() {
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Snooze Timing</label>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-10 gap-3">
-                                <div className="space-y-2 sm:col-span-3">
-                                    <label className="text-[10px] font-medium">Start Day (Morning)</label>
+                                <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <label className="text-sm font-medium">Start Day (Morning)</label>
+                                        <p className="text-xs text-muted-foreground">When "Tomorrow" or morning snoozes trigger.</p>
+                                    </div>
+                                    <div className="w-[120px]">
                                     <Select
                                         value={settings['start-day'] || '9:00 AM'}
                                         onValueChange={(value) => updateSetting('start-day', value)}
@@ -240,9 +281,15 @@ export default function Options() {
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    </div>
                                 </div>
-                                <div className="space-y-2 sm:col-span-3">
-                                    <label className="text-[10px] font-medium">End Day (Evening)</label>
+
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <label className="text-sm font-medium">End Day (Evening)</label>
+                                        <p className="text-xs text-muted-foreground">When "This Evening" snoozes trigger.</p>
+                                    </div>
+                                    <div className="w-[120px]">
                                     <Select
                                         value={settings['end-day'] || '6:00 PM'}
                                         onValueChange={(value) => updateSetting('end-day', value)}
@@ -256,12 +303,15 @@ export default function Options() {
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    </div>
                                 </div>
                                 </div>
-                                </div>
-                                <div className="space-y-2 sm:col-span-12 pt-4">
+                                <div className="space-y-4 pt-4">
                                     <div className="flex items-center justify-between">
-                                        <label className="text-sm font-medium">Keyboard Shortcuts</label>
+                                        <div className="space-y-0.5">
+                                            <label className="text-sm font-medium">Keyboard Shortcuts</label>
+                                            <p className="text-xs text-muted-foreground">Customize hotkeys for each snooze option (Max 2 keys, no modifiers).</p>
+                                        </div>
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -276,7 +326,6 @@ export default function Options() {
                                             Reset default
                                         </Button>
                                     </div>
-                                    <p className="text-xs text-muted-foreground pb-2">Customize hotkeys for each snooze option (Max 2 keys, no modifiers).</p>
                                     <ShortcutEditor
                                         shortcuts={settings.shortcuts || DEFAULT_SHORTCUTS}
                                         onUpdate={(newShortcuts) => updateSetting('shortcuts', newShortcuts)}
