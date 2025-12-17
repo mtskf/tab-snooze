@@ -14,6 +14,11 @@ All notable changes to this project will be documented in this file.
 - **Options UI**: Removed Timezone dropdown for a cleaner interface.
 - **README**: Updated installation commands to `pnpm` and refined feature descriptions.
 
+### Added
+- **Global Shortcut UI**: Added dedicated section in Options to view/configure the global extension shortcut.
+- **Dynamic Shortcut Display**: Options page now shows the *actual* currently bound global shortcut (e.g., if user changed it to `Cmd+Shift+S`).
+- **Refactoring**: Split `Options.jsx` into smaller, maintainable components (`TimeSettings`, `GlobalShortcutSettings`, `SnoozeActionSettings`).
+
 ## [v0.1.0] - 2025-12-16
 
 ### Added
