@@ -4,9 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Docs**: Created draft article for Qiita (`temp/qiita_article.md`).
+
 ### Changed
 - **Package Manager**: Migrated from `npm` to `pnpm` for faster installs and disk space efficiency.
 - **Workflows**: Updated all `.agent/workflows` to use `pnpm` and added safety checks for uncommitted changes.
+- **Timezone**: Automates timezone detection using the system's timezone (`Intl.DateTimeFormat`), removing manual selection.
+- **Options UI**: Removed Timezone dropdown for a cleaner interface.
 
 ## [v0.1.0] - 2025-12-16
 
