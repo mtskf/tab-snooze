@@ -44,7 +44,7 @@ Declutter your browser and your mind. **Snooooze** helps you focus on the task a
 | :--- | :--- |
 | **⏱️ Smart Scheduling** | Presets for "Later Today", "Tomorrow", "This Weekend", or pick a custom date. |
 | **🔄 Auto Restoration** | Tabs magically reappear at the scheduled time—even if your computer was sleeping. |
-| **🌍 Timezone Aware** | "9:00 AM" means *your* 9:00 AM, automatically adjusted for your location. |
+| **🌍 Timezone Aware** | Automatically detects your system timezone. "9:00 AM" means *your* 9:00 AM, wherever you are. |
 | **📥 Inbox Zero** | View pending tabs in a clean list. Delete or restore them early if you change your mind. |
 | **💾 Backup & Sync** | Export your data to JSON to transfer between devices or keep safe. |
 
@@ -76,12 +76,12 @@ This extension is built with **React**, **Vite**, and **Tailwind CSS**.
 
 2.  **Install dependencies**
     ```bash
-    npm install
+    pnpm install
     ```
 
 3.  **Start Dev Server** (Hot Module Replacement)
     ```bash
-    npm run dev
+    pnpm run dev
     ```
 
 4.  **Load in Chrome**
@@ -95,7 +95,7 @@ This extension is built with **React**, **Vite**, and **Tailwind CSS**.
 To create a new release for the Chrome Web Store:
 
 1.  **Bump Version**: Update version in `package.json` and `manifest.json`.
-2.  **Build**: Run `npm run build`.
+2.  **Build**: Run `pnpm run build`.
 3.  **Package**: Zip the contents of the `dist` folder.
     *   `cd dist && zip -r ../release/snooooze-vX.X.X-release.zip .`
 4.  **Upload**: Submit the zip file from the `release/` directory to the Chrome Web Store Dashboard.

@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - **Workflows**: Updated all `.agent/workflows` to use `pnpm` and added safety checks for uncommitted changes.
 - **Timezone**: Automates timezone detection using the system's timezone (`Intl.DateTimeFormat`), removing manual selection.
 - **Options UI**: Removed Timezone dropdown for a cleaner interface.
+- **README**: Updated installation commands to `pnpm` and refined feature descriptions.
 
 ## [v0.1.0] - 2025-12-16
 
