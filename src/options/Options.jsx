@@ -11,7 +11,9 @@ import { Trash2, ExternalLink, AppWindow, Download, Upload, Check, ChevronsUpDow
 import { cn } from "@/lib/utils";
 import SnoozedList from './SnoozedList';
 import { DEFAULT_SHORTCUTS } from '@/utils/constants';
-import ShortcutEditor from './ShortcutEditor';
+import TimeSettings from './TimeSettings';
+import GlobalShortcutSettings from './GlobalShortcutSettings';
+import SnoozeActionSettings from './SnoozeActionSettings';
 export default function Options() {
     const [snoozedTabs, setSnoozedTabs] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
@@ -268,108 +270,20 @@ export default function Options() {
 
                         </CardHeader>
                         <CardContent className="space-y-10">
-                            <div className="space-y-4">
-                                <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <label className="text-sm font-medium">Start Day (Morning)</label>
-                                        <p className="text-xs text-muted-foreground">When "Tomorrow" or morning snoozes trigger.</p>
-                                    </div>
-                                    <div className="w-[120px]">
-                                    <Select
-                                        value={settings['start-day'] || '9:00 AM'}
-                                        onValueChange={(value) => updateSetting('start-day', value)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {['5:00 AM', '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM'].map((time) => (
-                                                <SelectItem key={time} value={time}>{time}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    </div>
-                                </div>
+                                <TimeSettings settings={settings} updateSetting={updateSetting} />
 
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <label className="text-sm font-medium">End Day (Evening)</label>
-                                        <p className="text-xs text-muted-foreground">When "This Evening" snoozes trigger.</p>
-                                    </div>
-                                    <div className="w-[120px]">
-                                    <Select
-                                        value={settings['end-day'] || '6:00 PM'}
-                                        onValueChange={(value) => updateSetting('end-day', value)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {['4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM', '11:00 PM'].map((time) => (
-                                                <SelectItem key={time} value={time}>{time}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    </div>
-                                </div>
-                                </div>
                                 <div className="space-y-8 pt-6">
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
                                             <label className="text-sm font-medium">Keyboard Shortcuts</label>
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between mb-2 mt-4">
-                                            <span className="text-xs text-muted-foreground font-medium">Global shortcut</span>
-                                        </div>
 
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex items-center gap-3 text-muted-foreground">
-                                                    <Keyboard className="h-4 w-4 text-primary" />
-                                                    <span>Activate Extension</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })}
-                                                >
-                                                    <Settings className="mr-2 h-3 w-3 text-muted-foreground" />
-                                                    {extensionShortcut || 'Not set'}
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <GlobalShortcutSettings extensionShortcut={extensionShortcut} />
 
-                                    <div className="space-y-3">
-
-                                        <div className="flex items-center justify-between mb-2 mt-4">
-                                            <span className="text-xs text-muted-foreground font-medium">Snooze Actions</span>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                                                onClick={() => {
-                                                    if (confirm("Reset all shortcuts to default?")) {
-                                                        updateSetting('shortcuts', DEFAULT_SHORTCUTS);
-                                                    }
-                                                }}
-                                            >
-                                                <RotateCcw className="mr-1.5 h-3 w-3" />
-                                                Reset default
-                                            </Button>
-                                        </div>
-
-                                        <ShortcutEditor
-                                            shortcuts={{ ...DEFAULT_SHORTCUTS, ...settings.shortcuts }}
-                                            onUpdate={(newShortcuts) => updateSetting('shortcuts', newShortcuts)}
-                                        />
-                                    </div>
+                                    <SnoozeActionSettings settings={settings} updateSetting={updateSetting} />
                                 </div>
-                            </div>
+
 
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
