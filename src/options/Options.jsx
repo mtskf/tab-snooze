@@ -314,13 +314,16 @@ export default function Options() {
                                         </div>
                                     </div>
 
+                                    <div className="flex items-center justify-between mb-2 mt-4">
+                                        <span className="text-xs text-muted-foreground font-medium">Global shortcut</span>
+                                    </div>
+
                                     <div className="pt-3 pb-3 mb-4 flex items-center justify-between border-b border-border/50">
                                         <div className="flex items-center gap-3">
                                             <div className="flex items-center gap-3 text-muted-foreground">
                                                 <Keyboard className="h-4 w-4 text-primary" />
                                                 <div className="space-y-0.5">
                                                     <div className="text-sm font-medium text-foreground">Activate Extension</div>
-                                                    <div className="text-xs text-muted-foreground">Global shortcut to open Snooze popup</div>
                                                 </div>
                                             </div>
                                         </div>
