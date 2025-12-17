@@ -4,11 +4,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export default function TimeSettings({ settings, updateSetting }) {
     return (
         <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                    <label className="text-sm font-medium">Snooze Timing</label>
+                </div>
+            </div>
+
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                        <label className="text-sm font-medium">Start Day (Morning)</label>
-                        <p className="text-xs text-muted-foreground">When "Tomorrow" or morning snoozes trigger.</p>
+                        <span className="text-xs text-muted-foreground font-medium">Start Day (Morning)</span>
                     </div>
                     <div className="w-[120px]">
                         <Select
@@ -29,8 +34,7 @@ export default function TimeSettings({ settings, updateSetting }) {
 
                 <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                        <label className="text-sm font-medium">End Day (Evening)</label>
-                        <p className="text-xs text-muted-foreground">When "This Evening" snoozes trigger.</p>
+                        <span className="text-xs text-muted-foreground font-medium">End Day (Evening)</span>
                     </div>
                     <div className="w-[120px]">
                         <Select
