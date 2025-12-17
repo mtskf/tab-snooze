@@ -332,16 +332,13 @@ export default function Options() {
                                                     <span>Activate Extension</span>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <span className="bg-background text-muted-foreground text-[12px] font-mono font-medium px-1.5 py-1 rounded border border-border/50">
-                                                {extensionShortcut || 'Not set'}
-                                            </span>
+                                            <div className="flex items-center">
                                                 <Button
                                                     variant="outline"
                                                     onClick={() => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })}
                                                 >
-                                                    <Settings className="mr-2 h-4 w-4" />
-                                                    Configure
+                                                    <Settings className="mr-2 h-3 w-3 text-muted-foreground" />
+                                                    {extensionShortcut || 'Not set'}
                                                 </Button>
                                             </div>
                                         </div>
