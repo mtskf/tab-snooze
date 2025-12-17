@@ -47,7 +47,7 @@ async function handleMessage(request, sendResponse) {
                 sendResponse({ success: true });
                 break;
             case "snooze":
-                await snooze(request.tab, request.popTime, request.openInNewWindow);
+                await snooze(request.tab, request.popTime, request.openInNewWindow, request.groupId);
                 sendResponse({ success: true });
                 break;
             case "removeSnoozedTab":
@@ -99,7 +99,7 @@ async function initStorage() {
 
 // Logic Functions
 
-async function snooze(tab, popTime, openInNewWindow) {
+async function snooze(tab, popTime, openInNewWindow, groupId = null) {
     // Note: tab is passed from popup, might not be full Tab object but has necessary props
     // popTime comes as string or timestamp from message usually
 
@@ -114,7 +114,7 @@ async function snooze(tab, popTime, openInNewWindow) {
     }
 
     // Add to storage
-    await addSnoozedTab(tab, popTimeObj, openInNewWindow);
+    await addSnoozedTab(tab, popTimeObj, openInNewWindow, groupId);
 }
 
 async function popCheck() {
@@ -156,12 +156,39 @@ async function restoreTabs(tabs, timesToRemove) {
     var settings = await getSettings(); // Retrieve latest settings
     var openInNewTab = settings["open-new-tab"] === "true" || settings["open-new-tab"] === true;
 
-    if (openInNewTab) {
-            const currentWindow = await chrome.windows.getCurrent();
-            await createTabsInWindow(tabs, currentWindow);
-    } else {
+    // Group by groupId
+    const groups = {};
+    const ungrouped = [];
+
+    tabs.forEach(tab => {
+        if (tab.groupId) {
+            if (!groups[tab.groupId]) {
+                groups[tab.groupId] = [];
+            }
+            groups[tab.groupId].push(tab);
+        } else {
+            ungrouped.push(tab);
+        }
+    });
+
+    // Restore Groups (Always in new window per plan)
+    for (const groupId in groups) {
+        const groupTabs = groups[groupId];
+        if (groupTabs.length > 0) {
             const newWindow = await chrome.windows.create({});
-            await createTabsInWindow(tabs, newWindow);
+            await createTabsInWindow(groupTabs, newWindow);
+        }
+    }
+
+    // Restore Ungrouped Tabs (Follow setting)
+    if (ungrouped.length > 0) {
+        if (openInNewTab) {
+                const currentWindow = await chrome.windows.getCurrent();
+                await createTabsInWindow(ungrouped, currentWindow);
+        } else {
+                const newWindow = await chrome.windows.create({});
+                await createTabsInWindow(ungrouped, newWindow);
+        }
     }
 
     // Cleanup storage
@@ -196,7 +223,7 @@ async function createTab(tab, w) {
 // Mutex for storage operations
 let storageLock = Promise.resolve();
 
-async function addSnoozedTab(tab, popTime, openInNewWindow) {
+async function addSnoozedTab(tab, popTime, openInNewWindow, groupId = null) {
     // Wrap the logic in the lock
     storageLock = storageLock.then(async () => {
         const snoozedTabs = await getSnoozedTabs();
@@ -212,7 +239,8 @@ async function addSnoozedTab(tab, popTime, openInNewWindow) {
             favicon: tab.favIconUrl || tab.favicon,
             creationTime: (new Date()).getTime(),
             popTime: popTime.getTime(),
-            openInNewWindow: !!openInNewWindow
+            openInNewWindow: !!openInNewWindow,
+            groupId: groupId
         });
 
         snoozedTabs["tabCount"] = (snoozedTabs["tabCount"] || 0) + 1;

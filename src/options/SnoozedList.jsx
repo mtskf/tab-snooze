@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, AppWindow } from 'lucide-react';
 
 const SnoozedList = React.memo(({ snoozedTabs, onClearTab }) => {
     const renderList = () => {
@@ -31,33 +31,77 @@ const SnoozedList = React.memo(({ snoozedTabs, onClearTab }) => {
             return <div className="text-center p-8 text-muted-foreground">No snoozed tabs.</div>;
         }
 
-        return days.map(day => (
-            <div key={day.key} className="mb-6">
-                <h3 className="text-sm font-medium mb-2 ml-1 text-muted-foreground">{formatDay(day.date)}</h3>
-                <div className="grid gap-2">
-                    {day.items.map((tab, idx) => (
-                        <Card key={`${tab.url}-${tab.creationTime}-${idx}`} className="flex flex-row items-center p-3 justify-between hover:bg-accent/5 transition-colors">
-                             <div className="flex items-center gap-3 overflow-hidden">
-                                {tab.favicon && <img src={tab.favicon} className="w-4 h-4 ml-1" alt="" />}
-                                <div className="flex flex-col overflow-hidden">
-                                    <a href={tab.url} target="_blank" rel="noreferrer" className="text-sm font-medium truncate hover:underline block max-w-[400px]">
-                                        {tab.title}
-                                    </a>
-                                    <span className="text-xs text-muted-foreground flex gap-2">
-                                        <span>{tab.url ? new URL(tab.url).hostname : 'Unknown'}</span>
-                                        <span>•</span>
-                                        <span>{formatTime(tab.popTime)}</span>
-                                    </span>
+        return days.map(day => {
+            // Further group day items by groupId
+            const dayGroups = {};
+            const dayUngrouped = [];
+
+            day.items.forEach(item => {
+                if (item.groupId) {
+                    if (!dayGroups[item.groupId]) {
+                        dayGroups[item.groupId] = [];
+                    }
+                    dayGroups[item.groupId].push(item);
+                } else {
+                    dayUngrouped.push(item);
+                }
+            });
+
+            return (
+                <div key={day.key} className="mb-6">
+                    <h3 className="text-sm font-medium mb-2 ml-1 text-muted-foreground">{formatDay(day.date)}</h3>
+                    <div className="grid gap-2">
+                        {/* Render Window Groups */}
+                        {Object.entries(dayGroups).map(([groupId, groupItems]) => (
+                            <Card key={groupId} className="p-3 bg-muted/30 border-dashed">
+                                <div className="flex items-center gap-2 mb-2 text-xs font-medium text-muted-foreground">
+                                    <AppWindow className="h-3 w-3" />
+                                    <span>Window Group ({groupItems.length} tabs)</span>
+                                    <span className="ml-auto">{formatTime(groupItems[0].popTime)}</span>
                                 </div>
-                             </div>
-                             <Button variant="ghost" size="icon" onClick={() => onClearTab(tab)} className="hover:text-destructive">
-                                 <Trash2 className="h-4 w-4" />
-                             </Button>
-                        </Card>
-                    ))}
+                                <div className="space-y-1 pl-2 border-l-2 border-muted">
+                                    {groupItems.map((tab, idx) => (
+                                        <div key={`${tab.url}-${tab.creationTime}-${idx}`} className="flex flex-row items-center justify-between group">
+                                             <div className="flex items-center gap-2 overflow-hidden">
+                                                {tab.favicon && <img src={tab.favicon} className="w-3 h-3 grayscale opacity-70" alt="" />}
+                                                <a href={tab.url} target="_blank" rel="noreferrer" className="text-sm truncate hover:underline block max-w-[350px] text-muted-foreground hover:text-foreground transition-colors">
+                                                    {tab.title}
+                                                </a>
+                                             </div>
+                                             <Button variant="ghost" size="icon" onClick={() => onClearTab(tab)} className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive text-muted-foreground">
+                                                 <Trash2 className="h-3 w-3" />
+                                             </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+                        ))}
+
+                        {/* Render Ungrouped Tabs */}
+                        {dayUngrouped.map((tab, idx) => (
+                            <Card key={`${tab.url}-${tab.creationTime}-${idx}`} className="flex flex-row items-center p-3 justify-between hover:bg-accent/5 transition-colors">
+                                 <div className="flex items-center gap-3 overflow-hidden">
+                                    {tab.favicon && <img src={tab.favicon} className="w-4 h-4 ml-1" alt="" />}
+                                    <div className="flex flex-col overflow-hidden">
+                                        <a href={tab.url} target="_blank" rel="noreferrer" className="text-sm font-medium truncate hover:underline block max-w-[400px]">
+                                            {tab.title}
+                                        </a>
+                                        <span className="text-xs text-muted-foreground flex gap-2">
+                                            <span>{tab.url ? new URL(tab.url).hostname : 'Unknown'}</span>
+                                            <span>•</span>
+                                            <span>{formatTime(tab.popTime)}</span>
+                                        </span>
+                                    </div>
+                                 </div>
+                                 <Button variant="ghost" size="icon" onClick={() => onClearTab(tab)} className="hover:text-destructive">
+                                     <Trash2 className="h-4 w-4" />
+                                 </Button>
+                            </Card>
+                        ))}
+                    </div>
                 </div>
-            </div>
-        ));
+            );
+        });
     };
 
     return (
