@@ -165,8 +165,8 @@ export default function Options() {
       try {
         const importedTabs = JSON.parse(e.target.result);
 
-        if (!importedTabs || typeof importedTabs !== "object") {
-          throw new Error("Invalid JSON format");
+        if (!validateImportData(importedTabs)) {
+          throw new Error("Invalid data structure");
         }
 
         chrome.storage.local.get("snoozedTabs", (res) => {
@@ -202,12 +202,37 @@ export default function Options() {
           });
         });
       } catch (error) {
-        // console.error(error);
-        alert("Failed to import: Invalid JSON file.");
+        console.error(error);
+        alert(
+          `Failed to import: ${error.message === "Invalid data structure" ? "The file contains invalid data." : "Invalid JSON file."}`
+        );
       }
     };
     reader.readAsText(file);
     event.target.value = ""; // Reset file input
+  };
+
+  const validateImportData = (data) => {
+    if (!data || typeof data !== "object") return false;
+
+    for (const [key, value] of Object.entries(data)) {
+      if (key === "tabCount") {
+        if (typeof value !== "number") return false;
+        continue;
+      }
+
+      // Key must be a timestamp (number-like string)
+      if (isNaN(parseInt(key))) return false;
+
+      // Value must be an array of objects
+      if (!Array.isArray(value)) return false;
+      for (const item of value) {
+        if (typeof item !== "object" || !item.url || !item.title) {
+          return false;
+        }
+      }
+    }
+    return true;
   };
 
   const filteredTabs = React.useMemo(() => {
