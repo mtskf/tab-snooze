@@ -90,6 +90,8 @@ export default function Popup() {
   const [tabCount, setTabCount] = useState(0);
   const [snoozedCount, setSnoozedCount] = useState(0);
   const [pickDateShortcut, setPickDateShortcut] = useState("P");
+  const [snoozedItemsShortcut, setSnoozedItemsShortcut] = useState("I");
+  const [settingsShortcut, setSettingsShortcut] = useState(",");
   const [focusedIndex, setFocusedIndex] = useState(-1); // -1 = no focus, 0-6 = items, 7 = pick date
 
   useEffect(() => {
@@ -125,6 +127,10 @@ export default function Popup() {
       // Set pick-date shortcut (empty string if not set)
       const pdShortcut = finalShortcuts["pick-date"]?.[0] || "";
       setPickDateShortcut(pdShortcut);
+
+      // Set snoozed-items and settings shortcuts
+      setSnoozedItemsShortcut(finalShortcuts["snoozed-items"]?.[0] || "I");
+      setSettingsShortcut(finalShortcuts["settings"]?.[0] || ",");
     });
 
     return () => {
@@ -199,6 +205,23 @@ export default function Popup() {
       // Calendar triggers (only if shortcut is set)
       if (pickDateShortcut && key === pickDateShortcut.toUpperCase()) {
         setIsCalendarOpen(true);
+        return;
+      }
+
+      // Snoozed items shortcut
+      if (
+        snoozedItemsShortcut &&
+        key === snoozedItemsShortcut.toUpperCase()
+      ) {
+        chrome.runtime.openOptionsPage();
+        return;
+      }
+
+      // Settings shortcut
+      if (settingsShortcut && e.key === settingsShortcut) {
+        chrome.tabs.create({
+          url: chrome.runtime.getURL("options/index.html#settings"),
+        });
         return;
       }
 
@@ -314,7 +337,8 @@ export default function Popup() {
       <div className="p-6 space-y-4">
         <div className="flex justify-between items-center">
           <img src={logo} alt="Snooze" className="h-6" />
-          <div className="flex gap-1">
+          <div className="flex gap-1 items-center">
+            <Kbd>{snoozedItemsShortcut}</Kbd>
             <div className="relative">
               <Button
                 size="icon"
@@ -329,6 +353,7 @@ export default function Popup() {
                 </span>
               )}
             </div>
+            <Kbd>{settingsShortcut}</Kbd>
             <Button
               size="icon"
               className="bg-secondary text-muted-foreground border border-border/50 h-8 w-8 hover:bg-secondary/80 shadow-none"
