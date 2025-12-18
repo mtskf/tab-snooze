@@ -245,7 +245,7 @@ export default function Popup() {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [items]); // Remove scope dependency since we use e.shiftKey directly
+  }, [items, focusedIndex]); // Add focusedIndex to fix stale closure
 
   const updateTabCount = () => {
     if (scope === "selected") {
