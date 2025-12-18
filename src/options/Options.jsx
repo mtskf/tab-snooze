@@ -232,7 +232,7 @@ export default function Options() {
   }, [snoozedTabs, searchQuery]);
 
   return (
-    <div className="container min-w-2xl max-w-2xl py-8">
+    <div className="container max-w-2xl py-8">
       <img src={logo} alt="Snooze" className="h-8 mb-6" />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -341,15 +341,23 @@ export default function Options() {
 
                 <GlobalShortcutSettings extensionShortcut={extensionShortcut} />
 
-                <AppearanceSettings
-                  settings={settings}
-                  updateSetting={updateSetting}
-                />
-
                 <SnoozeActionSettings
                   settings={settings}
                   updateSetting={updateSetting}
                   appearance={settings.appearance || "default"}
+                />
+              </div>
+
+              <div className="space-y-8 pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <label className="text-sm font-medium">Appearance</label>
+                  </div>
+                </div>
+
+                <AppearanceSettings
+                  settings={settings}
+                  updateSetting={updateSetting}
                 />
               </div>
             </CardContent>
