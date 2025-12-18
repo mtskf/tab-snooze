@@ -20,6 +20,9 @@ export const SNOOZE_ACTIONS = [
   { id: "in-a-week", label: "In a week" },
   { id: "in-a-month", label: "In a month" },
   { id: "pick-date", label: "Pick Date" },
+];
+
+export const OTHER_SHORTCUTS = [
   { id: "snoozed-items", label: "Snoozed Items" },
   { id: "settings", label: "Settings" },
 ];
