@@ -112,20 +112,20 @@ const SnoozedList = React.memo(
                       </div>
                     </div>
                     {onClearGroup && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
+                      <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           onClearGroup(groupId);
                         }}
                         className={cn(
-                          "h-8 w-8 text-muted-foreground transition-colors",
+                          "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+                          "h-8 w-8 text-muted-foreground",
                           deleteHoverStyle
                         )}
                       >
                         <Trash2 className="h-4 w-4" />
-                      </Button>
+                      </button>
                     )}
                   </div>
 
@@ -153,17 +153,17 @@ const SnoozedList = React.memo(
                             {tab.title}
                           </a>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
+                        <button
+                          type="button"
                           onClick={() => onClearTab(tab)}
                           className={cn(
+                            "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
                             "h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground",
                             deleteHoverStyle
                           )}
                         >
                           <Trash2 className="h-3 w-3" />
-                        </Button>
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -198,17 +198,17 @@ const SnoozedList = React.memo(
                       </span>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                  <button
+                    type="button"
                     onClick={() => onClearTab(tab)}
                     className={cn(
-                      "h-8 w-8 text-muted-foreground transition-colors",
+                      "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+                      "h-8 w-8 text-muted-foreground",
                       deleteHoverStyle
                     )}
                   >
                     <Trash2 className="h-4 w-4" />
-                  </Button>
+                  </button>
                 </Card>
               ))}
             </div>
