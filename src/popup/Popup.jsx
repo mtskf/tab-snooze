@@ -167,7 +167,7 @@ export default function Popup() {
         setFocusedIndex((prev) => (prev - 1 + totalOptions) % totalOptions);
         return;
       }
-      if (e.key === "Enter" && focusedIndex >= 0) {
+      if ((e.key === "Enter" || e.key === " ") && focusedIndex >= 0) {
         e.preventDefault();
         if (focusedIndex < items.length) {
           handleSnooze(items[focusedIndex].id);
