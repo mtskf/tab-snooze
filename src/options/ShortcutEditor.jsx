@@ -1,6 +1,10 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
-import { SNOOZE_ACTIONS, OTHER_SHORTCUTS } from "@/utils/constants";
+import {
+  SNOOZE_ACTIONS,
+  DEFAULT_COLORS,
+  VIVID_COLORS,
+} from "@/utils/constants";
 import {
   Clock,
   Moon,
@@ -10,8 +14,6 @@ import {
   CalendarDays,
   CalendarRange,
   Archive,
-  Inbox,
-  Settings,
 } from "lucide-react";
 
 // Icon mapping for each action (matches Popup)
@@ -24,29 +26,20 @@ const ACTION_ICONS = {
   "in-a-week": CalendarRange,
   "in-a-month": Archive,
   "pick-date": CalendarDays,
-  "snoozed-items": Inbox,
-  settings: Settings,
-};
-
-// Color mapping for each action (matches Popup Neo Carbon theme)
-const ACTION_COLORS = {
-  "later-today": "text-sky-300",
-  "this-evening": "text-sky-400",
-  tomorrow: "text-blue-400",
-  "this-weekend": "text-blue-500",
-  "next-monday": "text-blue-600",
-  "in-a-week": "text-indigo-500",
-  "in-a-month": "text-indigo-600",
-  "pick-date": "text-[#6540E9]",
-  "snoozed-items": "text-muted-foreground",
-  settings: "text-muted-foreground",
 };
 
 // ShortcutEditor component
 // props:
 // - shortcuts: object { 'later-today': ['L'], ... }
 // - onUpdate: function(newShortcuts)
-export default function ShortcutEditor({ shortcuts, onUpdate }) {
+// - appearance: 'default' | 'vivid'
+export default function ShortcutEditor({
+  shortcuts,
+  onUpdate,
+  appearance = "default",
+}) {
+  const colorScheme = appearance === "vivid" ? VIVID_COLORS : DEFAULT_COLORS;
+
   const handleChange = (actionId, value) => {
     // Validation: Single char only, uppercase
     let char = value.slice(-1).toUpperCase(); // Take last char if multiple typed
@@ -74,7 +67,7 @@ export default function ShortcutEditor({ shortcuts, onUpdate }) {
   const renderActionRow = (action) => {
     const keys = shortcuts[action.id] || [];
     const Icon = ACTION_ICONS[action.id] || CalendarDays;
-    const iconColor = ACTION_COLORS[action.id] || "text-muted-foreground";
+    const iconColor = colorScheme[action.id] || "text-muted-foreground";
     return (
       <div
         key={action.id}

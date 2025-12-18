@@ -46,6 +46,7 @@ import { DEFAULT_SHORTCUTS } from "@/utils/constants";
 import TimeSettings from "./TimeSettings";
 import GlobalShortcutSettings from "./GlobalShortcutSettings";
 import SnoozeActionSettings from "./SnoozeActionSettings";
+import AppearanceSettings from "./AppearanceSettings";
 import { Kbd } from "@/components/ui/kbd";
 export default function Options() {
   const [snoozedTabs, setSnoozedTabs] = useState({});
@@ -231,11 +232,11 @@ export default function Options() {
   }, [snoozedTabs, searchQuery]);
 
   return (
-    <div className="container max-w-2xl py-8">
+    <div className="w-[672px] mx-auto py-8">
       <img src={logo} alt="Snooze" className="h-8 mb-6" />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-4 bg-card">
+        <TabsList className="mb-4 bg-secondary">
           <TabsTrigger value="snoozed-tabs">
             <Inbox className="h-4 w-4 mr-2" />
             Snoozed
@@ -258,6 +259,7 @@ export default function Options() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-8 pr-8 h-9 text-xs"
+                    autoFocus
                   />
                   {searchQuery && (
                     <button
@@ -341,6 +343,20 @@ export default function Options() {
                 <GlobalShortcutSettings extensionShortcut={extensionShortcut} />
 
                 <SnoozeActionSettings
+                  settings={settings}
+                  updateSetting={updateSetting}
+                  appearance={settings.appearance || "default"}
+                />
+              </div>
+
+              <div className="space-y-4 pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <label className="text-sm font-medium">Appearance</label>
+                  </div>
+                </div>
+
+                <AppearanceSettings
                   settings={settings}
                   updateSetting={updateSetting}
                 />

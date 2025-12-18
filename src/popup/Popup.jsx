@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import { DEFAULT_SHORTCUTS } from "@/utils/constants";
+import { DEFAULT_SHORTCUTS, DEFAULT_COLORS, VIVID_COLORS } from "@/utils/constants";
 
 export default function Popup() {
   const [date, setDate] = useState();
@@ -93,6 +93,7 @@ export default function Popup() {
   const [snoozedItemsShortcut, setSnoozedItemsShortcut] = useState("I");
   const [settingsShortcut, setSettingsShortcut] = useState(",");
   const [focusedIndex, setFocusedIndex] = useState(-1); // -1 = no focus, 0-6 = items, 7 = pick date
+  const [appearance, setAppearance] = useState("default");
 
   useEffect(() => {
     // Update tab count based on scope
@@ -118,11 +119,21 @@ export default function Popup() {
       const finalShortcuts = { ...DEFAULT_SHORTCUTS, ...userShortcuts };
 
       setItems((prevItems) =>
-        prevItems.map((item) => ({
-          ...item,
-          shortcuts: finalShortcuts[item.id] || [],
-        })),
+        prevItems.map((item) => {
+          const colorScheme =
+            (result.settings || {}).appearance === "vivid"
+              ? VIVID_COLORS
+              : DEFAULT_COLORS;
+          return {
+            ...item,
+            shortcuts: finalShortcuts[item.id] || [],
+            color: colorScheme[item.id] || item.color,
+          };
+        }),
       );
+
+      // Set appearance
+      setAppearance((result.settings || {}).appearance || "default");
 
       // Set pick-date shortcut (empty string if not set)
       const pdShortcut = finalShortcuts["pick-date"]?.[0] || "";
@@ -463,7 +474,7 @@ export default function Popup() {
             )}
           >
             <div className="flex items-center gap-3">
-              <CalendarDays className={cn("h-5 w-5 text-[#6540E9]")} />
+              <CalendarDays className={cn(`h-5 w-5 ${appearance === "vivid" ? VIVID_COLORS["pick-date"] : DEFAULT_COLORS["pick-date"]}`)} />
               <span className="font-medium">Pick Date</span>
             </div>
             <div className="flex gap-1">
