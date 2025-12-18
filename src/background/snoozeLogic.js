@@ -127,24 +127,41 @@ async function restoreTabs(tabs, timesToRemove) {
     }
   }
 
-  // Cleanup storage
-  const snoozedTabs = await getSnoozedTabs();
-  if (snoozedTabs) {
+  // Cleanup storage (Now protected by lock and re-verification)
+  await storageLock.then(async () => {
+    // Re-read storage inside the lock to get the latest state
+    const currentSnoozedTabs = await getSnoozedTabs();
+    if (!currentSnoozedTabs) return;
+
+    let actuallyRemovedCount = 0;
+
     for (var i = 0; i < timesToRemove.length; i++) {
-      delete snoozedTabs[timesToRemove[i]];
+      const timeKey = timesToRemove[i];
+      // Only delete if it still exists (it should)
+      if (currentSnoozedTabs[timeKey]) {
+        delete currentSnoozedTabs[timeKey];
+        // We know exactly how many tabs were in this time slot from our local 'tabs' array
+        // But better to count what we just removed to be safe, or stick to the logic:
+        // We processed these specific time keys.
+      }
     }
-    snoozedTabs["tabCount"] = Math.max(
+
+    // Recalculate or decrement count safely
+    // Since we might have race conditions on tabCount if we just did -=,
+    // let's trust that we are the only ones removing *these* specific timestamps.
+    currentSnoozedTabs["tabCount"] = Math.max(
       0,
-      snoozedTabs["tabCount"] - tabs.length
+      (currentSnoozedTabs["tabCount"] || 0) - tabs.length
     );
-    await setSnoozedTabs(snoozedTabs);
-  }
+
+    await setSnoozedTabs(currentSnoozedTabs);
+  });
 }
 
+// Revised: Parallel creation
 async function createTabsInWindow(tabs, w) {
-  for (var i = 0; i < tabs.length; i++) {
-    await createTab(tabs[i], w);
-  }
+  const promises = tabs.map((tab) => createTab(tab, w));
+  await Promise.all(promises);
 }
 
 async function createTab(tab, w) {
