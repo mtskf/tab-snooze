@@ -107,8 +107,10 @@ async function restoreTabs(tabs, timesToRemove) {
   for (const groupId in groups) {
     const groupTabs = groups[groupId];
     if (groupTabs.length > 0) {
-      const newWindow = await chrome.windows.create({});
-      await createTabsInWindow(groupTabs, newWindow);
+    if (groupTabs.length > 0) {
+      const urls = groupTabs.map((t) => t.url);
+      await chrome.windows.create({ url: urls, focused: true });
+    }
     }
   }
 
@@ -210,8 +212,9 @@ export async function restoreWindowGroup(groupId) {
   if (groupTabs.length === 0) return;
 
   // 2. Open in New Window
-  const newWindow = await chrome.windows.create({});
-  await createTabsInWindow(groupTabs, newWindow);
+  // 2. Open in New Window
+  const urls = groupTabs.map((t) => t.url);
+  await chrome.windows.create({ url: urls, focused: true });
 
   // 3. Remove from storage
   await removeWindowGroup(groupId);
