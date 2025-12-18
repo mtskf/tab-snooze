@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import logo from '../assets/logo.svg';
 import { Button } from '@/components/ui/button';
+import { Kbd } from '@/components/ui/kbd';
 
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -272,9 +273,9 @@ export default function Popup() {
                             </div>
                             <div className="flex gap-1">
                                 {item.shortcuts.map((key) => (
-                                    <span key={key} className="bg-secondary text-muted-foreground text-xs font-mono font-medium w-5 h-5 flex items-center justify-center rounded border border-border/50">
+                                    <Kbd key={key}>
                                         {key}
-                                    </span>
+                                    </Kbd>
                                 ))}
                             </div>
                         </button>
@@ -290,9 +291,9 @@ export default function Popup() {
                         <span className="font-medium">Pick Date</span>
                     </div>
                     <div className="flex gap-1">
-                        <span className="bg-secondary text-muted-foreground text-xs font-mono font-medium w-5 h-5 flex items-center justify-center rounded border border-border/50">
+                        <Kbd>
                             {pickDateShortcut}
-                        </span>
+                        </Kbd>
                     </div>
                 </button>
 
