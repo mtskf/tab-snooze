@@ -474,7 +474,7 @@ export default function Popup() {
             )}
           >
             <div className="flex items-center gap-3">
-              <CalendarDays className={cn("h-5 w-5 text-[#6540E9]")} />
+              <CalendarDays className={cn(`h-5 w-5 ${appearance === "vivid" ? VIVID_COLORS["pick-date"] : DEFAULT_COLORS["pick-date"]}`)} />
               <span className="font-medium">Pick Date</span>
             </div>
             <div className="flex gap-1">
