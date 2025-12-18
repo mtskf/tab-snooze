@@ -18,7 +18,7 @@
       <img src="https://img.shields.io/github/license/mtskf/Snooooze?style=flat-square&color=4F46E5" alt="License" />
     </a>
     <a href="https://github.com/mtskf/Snooooze/releases">
-      <img src="https://img.shields.io/badge/version-v0.0.0_Beta-blue.svg" alt="Version" />
+      <img src="https://img.shields.io/badge/version-v0.2.0-blue.svg" alt="Version" />
     </a>
     <img src="https://img.shields.io/badge/Made%20with-Love-ff4081?style=flat-square" alt="Made with Love" />
   </p>

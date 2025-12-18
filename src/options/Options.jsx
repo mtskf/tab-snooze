@@ -411,7 +411,7 @@ export default function Options() {
           <span>GitHub</span>
         </a>
         <span>•</span>
-        <span>v0.0.0 Beta</span>
+        <span>v0.2.0</span>
         <span>•</span>
         <a
           href="https://github.com/mtskf/Snooooze/issues"
