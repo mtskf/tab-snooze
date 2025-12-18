@@ -16,13 +16,13 @@ import { DEFAULT_SHORTCUTS } from '@/utils/constants';
 export default function Popup() {
     const [date, setDate] = useState();
     const [items, setItems] = useState([
-         { id: 'later-today', label: 'Later today', icon: Clock, shortcuts: [], color: 'text-sky-400' },
-         { id: 'this-evening', label: 'This evening', icon: Moon, shortcuts: [], color: 'text-indigo-400' },
+         { id: 'later-today', label: 'Later today', icon: Clock, shortcuts: [], color: 'text-sky-300' },
+         { id: 'this-evening', label: 'This evening', icon: Moon, shortcuts: [], color: 'text-sky-400' },
          { id: 'tomorrow', label: 'Tomorrow', icon: Sun, shortcuts: [], color: 'text-blue-400' },
-         { id: 'this-weekend', label: 'This weekend', icon: Armchair, shortcuts: [], color: 'text-teal-400' },
-         { id: 'next-monday', label: 'Next Monday', icon: Briefcase, shortcuts: [], color: 'text-sky-500' },
-         { id: 'in-a-week', label: 'In a week', icon: CalendarRange, shortcuts: [], color: 'text-blue-500' },
-         { id: 'in-a-month', label: 'In a month', icon: Archive, shortcuts: [], color: 'text-indigo-500' },
+         { id: 'this-weekend', label: 'This weekend', icon: Armchair, shortcuts: [], color: 'text-blue-500' },
+         { id: 'next-monday', label: 'Next Monday', icon: Briefcase, shortcuts: [], color: 'text-blue-600' },
+         { id: 'in-a-week', label: 'In a week', icon: CalendarRange, shortcuts: [], color: 'text-indigo-500' },
+         { id: 'in-a-month', label: 'In a month', icon: Archive, shortcuts: [], color: 'text-indigo-600' },
     ]);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [scope, setScope] = useState('selected'); // 'selected' | 'window'
