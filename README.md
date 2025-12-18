@@ -32,7 +32,7 @@
 
 Declutter your browser and your mind. **Snooooze** helps you focus on the task at hand by temporarily stashing tabs away until you actually need them. No more "I'll read this later" tabs clogging your RAM.
 
-- **🌑 Neo Carbon Theme**: A sleek, dark-mode-first aesthetic that looks great day or night.
+- **🎨 Personalized Themes**: Choose between sleek Dark Mode, vibrant Vivid, or urgency-focused Warm Heatmap.
 - **⚡️ Zero Friction**: Snooze standard tabs or entire windows with keyboard shortcuts.
 - **🔒 Privacy First**: All data is stored locally on your device. Nothing touches the cloud.
 

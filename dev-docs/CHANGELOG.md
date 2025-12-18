@@ -15,6 +15,18 @@ All notable changes to this project will be documented in this file.
 - **README**: Updated installation commands to `pnpm` and refined feature descriptions.
 
 ### Added
+- **Appearance Settings**: Added visual theme selection with 3 options:
+    - **Default**: The classic monochromatic "Neo Carbon" look.
+    - **Vivid**: High-contrast semantic colors (Cyan, Purple, Blue, Green, Yellow, Rose).
+    - **Warm Heatmap**: Urgency-based warm palette ranging from critical Red to neutral Orange.
+- **Dynamic Theming**: Snooze action icons, delete buttons, and UI accents now dynamically reflect the selected theme colors across Popup and Options pages.
+- **UI Polish**: Added auto-focus to search input in Snoozed Items list for immediate filtering.
+
+### Changed
+- **Options Layout**: Fixed Options panel width to prevent layout shifts.
+- **Visuals**: Enhanced "Window Group" label with hover effects and standardized delete button sizing.
+
+### Added
 - **Global Shortcut UI**: Added dedicated section in Options to view/configure the global extension shortcut.
 - **Dynamic Shortcut Display**: Options page now shows the *actual* currently bound global shortcut (e.g., if user changed it to `Cmd+Shift+S`).
 - **Refactoring**: Split `Options.jsx` into smaller, maintainable components (`TimeSettings`, `GlobalShortcutSettings`, `SnoozeActionSettings`).
