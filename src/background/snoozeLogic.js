@@ -107,10 +107,10 @@ async function restoreTabs(tabs, timesToRemove) {
   for (const groupId in groups) {
     const groupTabs = groups[groupId];
     if (groupTabs.length > 0) {
-    if (groupTabs.length > 0) {
+      // Sort by original tab index to preserve order
+      groupTabs.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
       const urls = groupTabs.map((t) => t.url);
       await chrome.windows.create({ url: urls, focused: true });
-    }
     }
   }
 
@@ -181,6 +181,7 @@ async function addSnoozedTab(tab, popTime, openInNewWindow, groupId = null) {
         popTime: popTime.getTime(),
         openInNewWindow: !!openInNewWindow,
         groupId: groupId,
+        index: tab.index,
       });
 
       snoozedTabs["tabCount"] = (snoozedTabs["tabCount"] || 0) + 1;
@@ -211,8 +212,10 @@ export async function restoreWindowGroup(groupId) {
 
   if (groupTabs.length === 0) return;
 
-  // 2. Open in New Window
-  // 2. Open in New Window
+  // 2. Sort by original tab index to preserve order
+  groupTabs.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+
+  // 3. Open in New Window
   const urls = groupTabs.map((t) => t.url);
   await chrome.windows.create({ url: urls, focused: true });
 
