@@ -239,8 +239,8 @@ export default function Popup() {
 
     return (
         <div className="w-[350px] bg-background text-foreground min-h-[500px] flex flex-col">
-            <div className="p-4 pt-6">
-                <div className="flex justify-between items-center mb-4">
+            <div className="p-6 space-y-4">
+                <div className="flex justify-between items-center">
                     <img src={logo} alt="Snooze" className="h-6" />
                     <div className="flex gap-1">
                         <Button className="bg-secondary text-muted-foreground border border-border/50 h-8 px-3 hover:bg-secondary/80 shadow-none flex items-center gap-2" onClick={() => chrome.runtime.openOptionsPage()}>
@@ -259,7 +259,7 @@ export default function Popup() {
                 </div>
 
                 {/* Scope Selection via RadioGroup */}
-                <RadioGroup value={scope} onValueChange={setScope} className="grid grid-cols-2 gap-3 mb-4">
+                <RadioGroup value={scope} onValueChange={setScope} className="grid grid-cols-2 gap-3">
                     <label
                         className={cn(
                             "cursor-pointer rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 border-2 transition-all hover:bg-secondary",
@@ -381,12 +381,13 @@ export default function Popup() {
                     </div>
                 )}
             </div>
+                {/* Navigation hint */}
+                <div className="text-center text-[9px] text-muted-foreground flex items-center justify-center gap-1">
+                    <Kbd>▲</Kbd><Kbd>▼</Kbd> to navigate
+                </div>
+
             </div>
 
-            {/* Navigation hint */}
-            <div className="p-2 text-center text-[9px] text-muted-foreground flex items-center justify-center gap-1">
-                <Kbd>▲</Kbd><Kbd>▼</Kbd> to navigate
-            </div>
 
         </div>
     );
