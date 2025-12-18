@@ -107,7 +107,7 @@ const SnoozedList = React.memo(
                   </div>
 
                   {/* Inner Tabs List */}
-                  <div className="space-y-1 p-3 pt-0 pl-12 bg-muted/10">
+                  <div className="p-3 pl-12 bg-muted/10">
                     {groupItems.map((tab, idx) => (
                       <div
                         key={`${tab.url}-${tab.creationTime}-${idx}`}
