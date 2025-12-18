@@ -33,6 +33,7 @@ export default function TimeSettings({ settings, updateSetting }) {
               </SelectTrigger>
               <SelectContent>
                 {[
+                  "4:00 AM",
                   "5:00 AM",
                   "6:00 AM",
                   "7:00 AM",
