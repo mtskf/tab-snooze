@@ -16,13 +16,13 @@ import { DEFAULT_SHORTCUTS } from '@/utils/constants';
 export default function Popup() {
     const [date, setDate] = useState();
     const [items, setItems] = useState([
-         { id: 'later-today', label: 'Later today', icon: Clock, shortcuts: [], color: 'text-amber-400' },
-         { id: 'this-evening', label: 'This evening', icon: Moon, shortcuts: [], color: 'text-purple-400' },
-         { id: 'tomorrow', label: 'Tomorrow', icon: Sun, shortcuts: [], color: 'text-amber-400' },
-         { id: 'this-weekend', label: 'This weekend', icon: Armchair, shortcuts: [], color: 'text-green-400' },
-         { id: 'next-monday', label: 'Next Monday', icon: Briefcase, shortcuts: [], color: 'text-amber-400' },
-         { id: 'in-a-week', label: 'In a week', icon: CalendarRange, shortcuts: [], color: 'text-blue-400' },
-         { id: 'in-a-month', label: 'In a month', icon: Archive, shortcuts: [], color: 'text-purple-400' },
+         { id: 'later-today', label: 'Later today', icon: Clock, shortcuts: [], color: 'text-sky-400' },
+         { id: 'this-evening', label: 'This evening', icon: Moon, shortcuts: [], color: 'text-indigo-400' },
+         { id: 'tomorrow', label: 'Tomorrow', icon: Sun, shortcuts: [], color: 'text-blue-400' },
+         { id: 'this-weekend', label: 'This weekend', icon: Armchair, shortcuts: [], color: 'text-teal-400' },
+         { id: 'next-monday', label: 'Next Monday', icon: Briefcase, shortcuts: [], color: 'text-sky-500' },
+         { id: 'in-a-week', label: 'In a week', icon: CalendarRange, shortcuts: [], color: 'text-blue-500' },
+         { id: 'in-a-month', label: 'In a month', icon: Archive, shortcuts: [], color: 'text-indigo-500' },
     ]);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [scope, setScope] = useState('selected'); // 'selected' | 'window'
@@ -233,7 +233,7 @@ export default function Popup() {
                             scope === 'selected' ? "border-primary bg-accent/10" : "border-transparent bg-secondary/50"
                         )}
                     >
-                        <div className="rounded-md bg-gradient-to-br from-pink-500 to-rose-500 p-2 text-white shadow-sm">
+                        <div className="rounded-md bg-gradient-to-br from-blue-600 to-cyan-500 p-2 text-white shadow-sm">
                             <Album className="h-5 w-5" />
                         </div>
                         <span className="font-medium">Selected tabs</span>
@@ -247,7 +247,7 @@ export default function Popup() {
                             scope === 'window' ? "border-primary bg-accent/10" : "border-transparent bg-secondary/50"
                         )}
                     >
-                         <div className="rounded-md bg-gradient-to-br from-blue-500 to-cyan-500 p-2 text-white shadow-sm">
+                         <div className="rounded-md bg-gradient-to-br from-slate-600 to-zinc-500 p-2 text-white shadow-sm">
                             <AppWindow className="h-5 w-5" />
                         </div>
                         <span className="font-medium">Window</span>
@@ -287,7 +287,7 @@ export default function Popup() {
                     className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors group text-left"
                 >
                     <div className="flex items-center gap-3">
-                        <CalendarDays className={cn("h-5 w-5 text-indigo-400")} />
+                        <CalendarDays className={cn("h-5 w-5 text-primary")} />
                         <span className="font-medium">Pick Date</span>
                     </div>
                     <div className="flex gap-1">
