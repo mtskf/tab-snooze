@@ -53,3 +53,14 @@ Documents significant architectural decisions made during development.
 - **Context**: `Options.jsx` was becoming monolithic, mixing layout code for distinct sections (Time, Shortcuts, Global Actions) with state management.
 - **Decision**: Extracted logical sections into separate components: `TimeSettings`, `GlobalShortcutSettings`, and `SnoozeActionSettings`.
 - **Consequences**: `Options.jsx` is now a cleaner orchestrator. Logic for each section is encapsulated, making maintenance and future updates (like adding more settings) much easier.
+
+## ADR-011: Appearance Themes
+- **Context**: Users interpret color differently; some prefer a calm monochromatic look ("Neo Carbon"), while others need strong visual cues for urgency or categorization.
+- **Decision**: Introduced an "Appearance" setting with three distinct themes:
+    1. **Default**: Monochromatic Blue/Indigo gradient (Calm, Professional).
+    2. **Vivid**: Semantic colors distinct for each time option (Cyan, Purple, Green, Yellow, etc.).
+    3. **Warm Heatmap**: Gradient from Red (Urgent/Critical) to Orange/Yellow (Distant) to visualize priority.
+- **Consequences**:
+    - `constants.js` now exports `DEFAULT_COLORS`, `VIVID_COLORS`, and `HEATMAP_COLORS`.
+    - Components (`Popup`, `ShortcutEditor`, `SnoozedList`) subscribe to `settings.appearance` to dynamically resolve Tailwind color classes.
+    - "Delete" actions also inherit the theme's critical color (e.g., Rose for Vivid, Red for Heatmap).

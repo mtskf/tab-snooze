@@ -62,7 +62,8 @@ Snooooze/
   "start-day": "9:00 AM",
   "end-day": "6:00 PM",
   "timezone": "Australia/Sydney",
-  "open-new-tab": "true"
+  "open-new-tab": "true",
+  "appearance": "heatmap"
 }
 ```
 
