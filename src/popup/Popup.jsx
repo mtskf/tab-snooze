@@ -183,7 +183,7 @@ export default function Popup() {
         ? { currentWindow: true, highlighted: true }
         : { currentWindow: true };
 
-    chrome.tabs.query(query, (tabs) => {
+    chrome.tabs.query(query, async (tabs) => {
       // Generate groupId if multiple tabs or window scope
       // We use a simple timestamp + random suffix for unique ID
       const groupId =
@@ -191,34 +191,37 @@ export default function Popup() {
           ? `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
           : null;
 
-      tabs.forEach((tab) => {
-        performSnooze(tab, time, targetScope === "window", groupId);
+      const promises = tabs.map((tab) => {
+        return performSnooze(tab, time, targetScope === "window", groupId);
       });
+
+      await Promise.all(promises);
       window.close();
     });
   };
 
   const performSnooze = (tab, time, openInNewWindow, groupId = null) => {
-    const tabToSend = {
-      id: tab.id,
-      url: tab.url,
-      title: tab.title,
-      favIconUrl: tab.favIconUrl,
-    };
+    return new Promise((resolve) => {
+      const tabToSend = {
+        id: tab.id,
+        url: tab.url,
+        title: tab.title,
+        favIconUrl: tab.favIconUrl,
+      };
 
-    chrome.runtime.sendMessage(
-      {
-        action: "snooze",
-        tab: tabToSend,
-        popTime: time.getTime(),
-        openInNewWindow: openInNewWindow,
-        groupId: groupId,
-      },
-      (response) => {
-        // The window.close() is now handled by snoozeTabs, not here.
-        // This ensures all tabs are processed before closing.
-      },
-    );
+      chrome.runtime.sendMessage(
+        {
+          action: "snooze",
+          tab: tabToSend,
+          popTime: time.getTime(),
+          openInNewWindow: openInNewWindow,
+          groupId: groupId,
+        },
+        () => {
+          resolve();
+        }
+      );
+    });
   };
 
   // Use the extracted hook
