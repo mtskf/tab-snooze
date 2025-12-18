@@ -16,6 +16,7 @@ import {
   Settings,
   Inbox,
   Archive,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -89,6 +90,7 @@ export default function Popup() {
   const [settingsShortcut, setSettingsShortcut] = useState(",");
   const [focusedIndex, setFocusedIndex] = useState(-1); // -1 = no focus, 0-6 = items, 7 = pick date
   const [appearance, setAppearance] = useState("default");
+  const [isSnoozing, setIsSnoozing] = useState(false);
 
   useEffect(() => {
     // Update tab count based on scope
@@ -177,6 +179,7 @@ export default function Popup() {
 
   const snoozeTabsWithScope = (time, targetScope) => {
     if (!time) return; // Safety check
+    setIsSnoozing(true); // Show loading state
 
     const query =
       targetScope === "selected"
@@ -250,7 +253,14 @@ export default function Popup() {
   });
 
   return (
-    <div className="w-[350px] bg-background text-foreground min-h-[500px] flex flex-col">
+    <div className="w-[350px] bg-background text-foreground min-h-[500px] flex flex-col relative">
+      {/* Loading Overlay */}
+      {isSnoozing && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="mt-2 text-sm text-muted-foreground">Snoozing...</span>
+        </div>
+      )}
       <div className="p-6 space-y-4">
         <div className="flex justify-between items-center">
           <img src={logo} alt="Snooze" className="h-6" />
