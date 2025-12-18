@@ -340,8 +340,7 @@ export default function Popup() {
           <div className="flex gap-1 items-center">
             <div className="relative">
               <Button
-                variant="ghost"
-                className="text-muted-foreground h-8 px-2 flex items-center gap-1"
+                className="bg-secondary/50 text-muted-foreground border border-border/30 h-8 px-2 hover:bg-secondary shadow-none flex items-center gap-1"
                 onClick={() => chrome.runtime.openOptionsPage()}
               >
                 <Inbox className="h-4 w-4" />
@@ -354,8 +353,7 @@ export default function Popup() {
               )}
             </div>
             <Button
-              variant="ghost"
-              className="text-muted-foreground h-8 px-2 flex items-center gap-1"
+              className="bg-secondary/50 text-muted-foreground border border-border/30 h-8 px-2 hover:bg-secondary shadow-none flex items-center gap-1"
               onClick={() =>
                 chrome.tabs.create({
                   url: chrome.runtime.getURL("options/index.html#settings"),
