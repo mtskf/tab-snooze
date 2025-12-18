@@ -207,6 +207,7 @@ export default function Popup() {
         url: tab.url,
         title: tab.title,
         favIconUrl: tab.favIconUrl,
+        index: tab.index,
       };
 
       chrome.runtime.sendMessage(
@@ -224,7 +225,7 @@ export default function Popup() {
     });
   };
 
-  // Hidden command: 1-minute snooze (jjj)
+  // Hidden command: 1-minute snooze (jjj) for debugging
   const handleOneMinuteSnooze = (targetScope) => {
     const time = new Date();
     time.setMinutes(time.getMinutes() + 1);
