@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import logo from "../assets/logo.svg";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Toaster } from "@/components/ui/sonner";
 import {
   Card,
   CardContent,
@@ -465,6 +466,7 @@ export default function Options() {
           <span>Buy me a coffee</span>
         </a>
       </div>
+      <Toaster position="top-center" />
     </div>
   );
 }

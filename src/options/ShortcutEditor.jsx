@@ -1,5 +1,6 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import {
   SNOOZE_ACTIONS,
   DEFAULT_COLORS,
@@ -47,9 +48,21 @@ export default function ShortcutEditor({
     // Validation: Single char only, uppercase
     let char = value.slice(-1).toUpperCase(); // Take last char if multiple typed
 
-    // Printable ASCII only (space 0x20 to tilde 0x7E)
-    if (!char.match(/^[\x20-\x7E]$/)) {
+    // Printable ASCII only (space to tilde, codes 32-126)
+    if (char.length !== 1 || char.charCodeAt(0) < 32 || char.charCodeAt(0) > 126) {
       char = "";
+    }
+
+    // Check for duplicates (only if char is valid)
+    if (char) {
+      const existingAction = Object.entries(shortcuts).find(
+        ([id, keys]) => id !== actionId && keys.some(k => k.toUpperCase() === char)
+      );
+      if (existingAction) {
+        const actionLabel = SNOOZE_ACTIONS.find(a => a.id === existingAction[0])?.label || existingAction[0];
+        toast.warning(`"${char}" is already assigned to "${actionLabel}"`);
+        return; // Don't update, keep current value
+      }
     }
 
     const newShortcuts = {
