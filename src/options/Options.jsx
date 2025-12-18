@@ -235,7 +235,7 @@ export default function Options() {
       <img src={logo} alt="Snooze" className="h-8 mb-6" />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-4 bg-card">
+        <TabsList className="mb-4 bg-secondary">
           <TabsTrigger value="snoozed-tabs">
             <Inbox className="h-4 w-4 mr-2" />
             Snoozed
