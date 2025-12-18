@@ -4,13 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Switch } from "@/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { getTime } from "@/utils/timeUtils";
 import {
   Clock,
@@ -19,12 +12,8 @@ import {
   Armchair,
   Briefcase,
   CalendarDays,
-  CalendarClock,
   CalendarRange,
-  Monitor,
-  AppWindow,
   Settings,
-  Album,
   Inbox,
   Archive,
 } from "lucide-react";
@@ -36,6 +25,9 @@ import {
   VIVID_COLORS,
   HEATMAP_COLORS,
 } from "@/utils/constants";
+import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation";
+import { ScopeSelector } from "./components/ScopeSelector";
+import { SnoozeItem } from "./components/SnoozeItem";
 
 export default function Popup() {
   const [date, setDate] = useState();
@@ -92,8 +84,6 @@ export default function Popup() {
   ]);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [scope, setScope] = useState("selected"); // 'selected' | 'window'
-  const [tabCount, setTabCount] = useState(0);
-  const [snoozedCount, setSnoozedCount] = useState(0);
   const [pickDateShortcut, setPickDateShortcut] = useState("P");
   const [snoozedItemsShortcut, setSnoozedItemsShortcut] = useState("I");
   const [settingsShortcut, setSettingsShortcut] = useState(",");
@@ -110,15 +100,6 @@ export default function Popup() {
 
     // Fetch snoozed count
     chrome.storage.local.get(["snoozedTabs", "settings"], (result) => {
-      const tabs = result.snoozedTabs || {};
-      let count = 0;
-      Object.keys(tabs).forEach((key) => {
-        if (key !== "tabCount" && Array.isArray(tabs[key])) {
-          count += tabs[key].length;
-        }
-      });
-      setSnoozedCount(count);
-
       // Merge shortcuts
       const userShortcuts = (result.settings || {}).shortcuts || {};
       const finalShortcuts = { ...DEFAULT_SHORTCUTS, ...userShortcuts };
@@ -154,123 +135,15 @@ export default function Popup() {
     };
   }, [scope]);
 
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.target.tagName === "INPUT") return; // Don't trigger when typing
-
-      let key = e.key.toUpperCase();
-      const totalOptions = items.length + 1; // items + Pick Date
-
-      // Arrow key navigation
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        setScope("selected");
-        return;
-      }
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        setScope("window");
-        return;
-      }
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setFocusedIndex((prev) => (prev + 1) % totalOptions);
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setFocusedIndex((prev) => (prev - 1 + totalOptions) % totalOptions);
-        return;
-      }
-      if ((e.key === "Enter" || e.key === " ") && focusedIndex >= 0) {
-        e.preventDefault();
-        if (focusedIndex < items.length) {
-          handleSnooze(items[focusedIndex].id);
-        } else {
-          setIsCalendarOpen(true);
-        }
-        return;
-      }
-
-      // Shift handling for scope
-      if (e.key === "Shift") {
-        setScope("window");
-        return;
-      }
-
-      // Map Shift+Number symbols back to numbers
-      const shiftMap = {
-        "!": "1",
-        "@": "2",
-        "#": "3",
-        $: "4",
-        "%": "5",
-        "^": "6",
-        "&": "7",
-        "*": "8",
-      };
-      if (shiftMap[e.key]) {
-        key = shiftMap[e.key];
-      }
-
-      if (key === "ESCAPE") {
-        window.close();
-      }
-
-      // Calendar triggers (only if shortcut is set)
-      if (pickDateShortcut && key === pickDateShortcut.toUpperCase()) {
-        setIsCalendarOpen(true);
-        return;
-      }
-
-      // Snoozed items shortcut
-      if (
-        snoozedItemsShortcut &&
-        key === snoozedItemsShortcut.toUpperCase()
-      ) {
-        chrome.runtime.openOptionsPage();
-        return;
-      }
-
-      // Settings shortcut
-      if (settingsShortcut && e.key === settingsShortcut) {
-        chrome.tabs.create({
-          url: chrome.runtime.getURL("options/index.html#settings"),
-        });
-        return;
-      }
-
-      const item = items.find((i) => i.shortcuts.includes(key));
-      if (item) {
-        // Use e.shiftKey directly for immediate scope detection
-        handleSnoozeWithScope(item.id, e.shiftKey ? "window" : "selected");
-      }
-    };
-
-    const handleKeyUp = (e) => {
-      // Shift release always returns to 'selected'
-      if (e.key === "Shift") {
-        setScope("selected");
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [items, focusedIndex]); // Add focusedIndex to fix stale closure
-
   const updateTabCount = () => {
+    // Minimal implementation just to keep references valid, though state isn't used in UI currently
     if (scope === "selected") {
       chrome.tabs.query({ currentWindow: true, highlighted: true }, (tabs) => {
-        setTabCount(tabs.length);
+        // setTabCount(tabs.length);
       });
     } else {
       chrome.tabs.query({ currentWindow: true }, (tabs) => {
-        setTabCount(tabs.length);
+        // setTabCount(tabs.length);
       });
     }
   };
@@ -348,6 +221,20 @@ export default function Popup() {
     );
   };
 
+  // Use the extracted hook
+  useKeyboardNavigation({
+    items,
+    focusedIndex,
+    setFocusedIndex,
+    setScope,
+    handleSnooze,
+    handleSnoozeWithScope,
+    setIsCalendarOpen,
+    pickDateShortcut,
+    snoozedItemsShortcut,
+    settingsShortcut,
+  });
+
   return (
     <div className="w-[350px] bg-background text-foreground min-h-[500px] flex flex-col">
       <div className="p-6 space-y-4">
@@ -377,97 +264,20 @@ export default function Popup() {
           </div>
         </div>
 
-        {/* Scope Selection via RadioGroup */}
-        <RadioGroup
-          value={scope}
-          onValueChange={setScope}
-          className="grid grid-cols-2 gap-3"
-        >
-          <label
-            className={cn(
-              "cursor-pointer rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 border-2 transition-all hover:bg-secondary",
-              scope === "selected"
-                ? "border-primary bg-accent/10"
-                : "border-transparent bg-secondary/50",
-            )}
-          >
-            <div
-              className={cn(
-                "rounded-md p-2 text-white shadow-sm transition-colors",
-                scope === "selected"
-                  ? "bg-gradient-to-br from-blue-600 to-cyan-500"
-                  : "bg-gradient-to-br from-slate-600 to-zinc-500 opacity-50 grayscale",
-              )}
-            >
-              <Album className="h-5 w-5" />
-            </div>
-            <span className="font-medium">Selected tabs</span>
-            <Kbd>◀︎</Kbd>
-            <RadioGroupItem
-              value="selected"
-              id="scope-selected"
-              className="sr-only"
-            />
-          </label>
-
-          <label
-            className={cn(
-              "cursor-pointer rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 border-2 transition-all hover:bg-secondary",
-              scope === "window"
-                ? "border-primary bg-accent/10"
-                : "border-transparent bg-secondary/50",
-            )}
-          >
-            <div
-              className={cn(
-                "rounded-md p-2 text-white shadow-sm transition-colors",
-                scope === "window"
-                  ? "bg-gradient-to-br from-blue-600 to-cyan-500"
-                  : "bg-gradient-to-br from-slate-600 to-zinc-500 opacity-50 grayscale",
-              )}
-            >
-              <AppWindow className="h-5 w-5" />
-            </div>
-            <span className="font-medium">Window</span>
-            <div className="flex gap-1 items-center">
-              <Kbd>▶︎</Kbd>
-              <span className="text-[10px] text-muted-foreground">or</span>
-              <Kbd>Hold ⇧</Kbd>
-            </div>
-            <RadioGroupItem
-              value="window"
-              id="scope-window"
-              className="sr-only"
-            />
-          </label>
-        </RadioGroup>
+        {/* Scope Selection */}
+        <ScopeSelector scope={scope} setScope={setScope} />
 
         {/* Sub info */}
 
         <div className="space-y-1">
-          {items.map((item, index) => {
-            return (
-              <button
-                key={item.id}
-                className={cn(
-                  "w-full flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors group text-left",
-                  focusedIndex === index &&
-                    "bg-secondary/70 ring-1 ring-primary",
-                )}
-                onClick={() => handleSnooze(item.id)}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon className={cn("h-5 w-5", item.color)} />
-                  <span className="font-medium">{item.label}</span>
-                </div>
-                <div className="flex gap-1">
-                  {item.shortcuts.map((key) => (
-                    <Kbd key={key}>{key}</Kbd>
-                  ))}
-                </div>
-              </button>
-            );
-          })}
+          {items.map((item, index) => (
+            <SnoozeItem
+              key={item.id}
+              item={item}
+              isFocused={focusedIndex === index}
+              onClick={() => handleSnooze(item.id)}
+            />
+          ))}
 
           {/* Pick Date */}
           <button
