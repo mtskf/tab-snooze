@@ -120,10 +120,18 @@ export default function Options() {
   };
 
   const restoreGroup = (groupId) => {
-    chrome.runtime.sendMessage({
-      action: "restoreWindowGroup",
-      groupId: groupId,
-    });
+    chrome.runtime.sendMessage(
+      {
+        action: "restoreWindowGroup",
+        groupId: groupId,
+      },
+      () => {
+        // Manual refresh to ensure UI sync
+        chrome.storage.local.get(["snoozedTabs"], (res) => {
+          if (res.snoozedTabs) setSnoozedTabs(res.snoozedTabs);
+        });
+      }
+    );
   };
 
   const clearAll = () => {
