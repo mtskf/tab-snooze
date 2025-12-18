@@ -4,7 +4,11 @@ import { RotateCcw } from "lucide-react";
 import ShortcutEditor from "./ShortcutEditor";
 import { DEFAULT_SHORTCUTS } from "@/utils/constants";
 
-export default function SnoozeActionSettings({ settings, updateSetting }) {
+export default function SnoozeActionSettings({
+  settings,
+  updateSetting,
+  appearance = "default",
+}) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between mb-2 mt-4">
@@ -29,6 +33,7 @@ export default function SnoozeActionSettings({ settings, updateSetting }) {
       <ShortcutEditor
         shortcuts={{ ...DEFAULT_SHORTCUTS, ...settings.shortcuts }}
         onUpdate={(newShortcuts) => updateSetting("shortcuts", newShortcuts)}
+        appearance={appearance}
       />
     </div>
   );
