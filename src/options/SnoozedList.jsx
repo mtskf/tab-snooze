@@ -170,6 +170,7 @@ const SnoozedList = React.memo(
                                 href={tab.url}
                                 target="_blank"
                                 rel="noreferrer"
+                                onClick={() => onClearTab(tab)}
                                 className="text-sm truncate hover:underline block max-w-[350px] text-muted-foreground hover:text-foreground transition-colors"
                               >
                                 {tab.title}
@@ -211,6 +212,7 @@ const SnoozedList = React.memo(
                             href={tab.url}
                             target="_blank"
                             rel="noreferrer"
+                            onClick={() => onClearTab(tab)}
                             className="text-sm font-medium truncate hover:underline block max-w-[400px]"
                           >
                             {tab.title}
