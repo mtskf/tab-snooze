@@ -304,7 +304,7 @@ export default function Options() {
                   {snoozedTabs.tabCount > 0 && (
                     <Button
                       className={cn(
-                        "h-7 text-[10px]",
+                        "h-7 text-[10px] px-2",
                         (!settings.appearance ||
                           settings.appearance === "default" ||
                           settings.appearance === "neo-carbon") &&
