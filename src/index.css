@@ -34,9 +34,9 @@
   .dark {
     --background: 220 29% 6%;
     --foreground: 210 20% 96%;
-    --card: 221 39% 11%;
+    --card: 221 39% 8%;
     --card-foreground: 210 20% 96%;
-    --popover: 221 39% 11%;
+    --popover: 221 39% 8%;
     --popover-foreground: 210 20% 96%;
     --primary: 211 87% 48%;
     --primary-foreground: 0 0% 100%;
