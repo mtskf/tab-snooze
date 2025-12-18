@@ -29,6 +29,7 @@ export default function Popup() {
     const [tabCount, setTabCount] = useState(0);
     const [snoozedCount, setSnoozedCount] = useState(0);
     const [pickDateShortcut, setPickDateShortcut] = useState('P');
+    const [focusedIndex, setFocusedIndex] = useState(-1); // -1 = no focus, 0-6 = items, 7 = pick date
 
     useEffect(() => {
         // Update tab count based on scope
@@ -74,6 +75,38 @@ export default function Popup() {
             if (e.target.tagName === 'INPUT') return; // Don't trigger when typing
 
             let key = e.key.toUpperCase();
+            const totalOptions = items.length + 1; // items + Pick Date
+
+            // Arrow key navigation
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                setScope('selected');
+                return;
+            }
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                setScope('window');
+                return;
+            }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setFocusedIndex(prev => (prev + 1) % totalOptions);
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setFocusedIndex(prev => (prev - 1 + totalOptions) % totalOptions);
+                return;
+            }
+            if (e.key === 'Enter' && focusedIndex >= 0) {
+                e.preventDefault();
+                if (focusedIndex < items.length) {
+                    handleSnooze(items[focusedIndex].id);
+                } else {
+                    setIsCalendarOpen(true);
+                }
+                return;
+            }
 
             // Shift handling for scope
             if (e.key === 'Shift') {
@@ -270,11 +303,14 @@ export default function Popup() {
 
 
                 <div className="space-y-1">
-                    {items.map((item) => {
+                    {items.map((item, index) => {
                         return (
                          <button
                             key={item.id}
-                            className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors group text-left"
+                            className={cn(
+                                "w-full flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors group text-left",
+                                focusedIndex === index && "bg-secondary/70 ring-1 ring-primary"
+                            )}
                             onClick={() => handleSnooze(item.id)}
                         >
                             <div className="flex items-center gap-3">
@@ -294,7 +330,10 @@ export default function Popup() {
                 {/* Pick Date */}
                 <button
                     onClick={() => setIsCalendarOpen(true)}
-                    className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors group text-left"
+                    className={cn(
+                        "w-full flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors group text-left",
+                        focusedIndex === items.length && "bg-secondary/70 ring-1 ring-primary"
+                    )}
                 >
                     <div className="flex items-center gap-3">
                         <CalendarDays className={cn("h-5 w-5 text-[#6540E9]")} />
