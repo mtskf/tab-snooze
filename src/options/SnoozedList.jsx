@@ -176,7 +176,7 @@ const SnoozedList = React.memo(
                     variant="ghost"
                     size="icon"
                     onClick={() => onClearTab(tab)}
-                    className="hover:text-destructive"
+                    className="h-8 w-8 hover:text-destructive text-muted-foreground transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
