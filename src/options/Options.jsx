@@ -307,11 +307,24 @@ export default function Options() {
                       size="xs"
                       className={cn(
                         "h-7 text-[10px]",
-                        settings.appearance === "vivid"
-                          ? `text-[${VIVID_COLORS.delete.replace("text-[", "").replace("]", "")}] hover:text-[${VIVID_COLORS.delete.replace("text-[", "").replace("]", "")}] hover:bg-[${VIVID_COLORS.delete.replace("text-[", "").replace("]", "")}]/10`
-                          : settings.appearance === "heatmap"
-                          ? `text-[${HEATMAP_COLORS.delete.replace("text-[", "").replace("]", "")}] hover:text-[${HEATMAP_COLORS.delete.replace("text-[", "").replace("]", "")}] hover:bg-[${HEATMAP_COLORS.delete.replace("text-[", "").replace("]", "")}]/10`
-                          : "text-destructive hover:text-destructive hover:bg-destructive/10"
+                        (() => {
+                          const appearance = settings.appearance;
+                          const getHex = (cls) =>
+                            cls?.replace("text-[", "").replace("]", "");
+
+                          if (appearance === "vivid" && VIVID_COLORS?.delete) {
+                            const hex = getHex(VIVID_COLORS.delete);
+                            return `text-[${hex}] hover:text-[${hex}] hover:bg-[${hex}]/10`;
+                          }
+                          if (
+                            appearance === "heatmap" &&
+                            HEATMAP_COLORS?.delete
+                          ) {
+                            const hex = getHex(HEATMAP_COLORS.delete);
+                            return `text-[${hex}] hover:text-[${hex}] hover:bg-[${hex}]/10`;
+                          }
+                          return "text-destructive hover:text-destructive hover:bg-destructive/10";
+                        })()
                       )}
                       onClick={() => {
                         if (confirm("Clear all snoozed tabs?")) {

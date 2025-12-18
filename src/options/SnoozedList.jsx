@@ -15,12 +15,17 @@ const SnoozedList = React.memo(
     appearance = "default",
   }) => {
     // Delete color style
-    const deleteHoverStyle =
-      appearance === "vivid"
-        ? `hover:text-[${VIVID_COLORS.delete.replace("text-[", "").replace("]", "")}]`
-        : appearance === "heatmap"
-        ? `hover:text-[${HEATMAP_COLORS.delete.replace("text-[", "").replace("]", "")}]`
-        : "hover:text-destructive";
+    const deleteHoverStyle = (() => {
+      const getHex = (cls) => cls?.replace("text-[", "").replace("]", "");
+
+      if (appearance === "vivid" && VIVID_COLORS?.delete) {
+        return `hover:text-[${getHex(VIVID_COLORS.delete)}]`;
+      }
+      if (appearance === "heatmap" && HEATMAP_COLORS?.delete) {
+        return `hover:text-[${getHex(HEATMAP_COLORS.delete)}]`;
+      }
+      return "hover:text-destructive";
+    })();
     const renderList = () => {
       const timestamps = Object.keys(snoozedTabs).sort();
       const days = [];
