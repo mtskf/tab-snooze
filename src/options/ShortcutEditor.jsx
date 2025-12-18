@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { SNOOZE_ACTIONS } from "@/utils/constants";
+import { SNOOZE_ACTIONS, OTHER_SHORTCUTS } from "@/utils/constants";
 import {
   Clock,
   Moon,
@@ -9,30 +8,38 @@ import {
   Armchair,
   Briefcase,
   CalendarDays,
+  CalendarRange,
+  Archive,
+  Inbox,
+  Settings,
 } from "lucide-react";
 
-// Icon mapping for each action
+// Icon mapping for each action (matches Popup)
 const ACTION_ICONS = {
   "later-today": Clock,
   "this-evening": Moon,
   tomorrow: Sun,
   "this-weekend": Armchair,
   "next-monday": Briefcase,
-  "in-a-week": Briefcase,
-  "in-a-month": CalendarDays,
+  "in-a-week": CalendarRange,
+  "in-a-month": Archive,
   "pick-date": CalendarDays,
+  "snoozed-items": Inbox,
+  settings: Settings,
 };
 
-// Color mapping for each action (matches Popup)
+// Color mapping for each action (matches Popup Neo Carbon theme)
 const ACTION_COLORS = {
-  "later-today": "text-amber-400",
-  "this-evening": "text-purple-400",
-  tomorrow: "text-amber-400",
-  "this-weekend": "text-green-400",
-  "next-monday": "text-amber-400",
-  "in-a-week": "text-blue-400",
-  "in-a-month": "text-purple-400",
-  "pick-date": "text-indigo-400",
+  "later-today": "text-sky-300",
+  "this-evening": "text-sky-400",
+  tomorrow: "text-blue-400",
+  "this-weekend": "text-blue-500",
+  "next-monday": "text-blue-600",
+  "in-a-week": "text-indigo-500",
+  "in-a-month": "text-indigo-600",
+  "pick-date": "text-[#6540E9]",
+  "snoozed-items": "text-muted-foreground",
+  settings: "text-muted-foreground",
 };
 
 // ShortcutEditor component
@@ -64,34 +71,36 @@ export default function ShortcutEditor({ shortcuts, onUpdate }) {
     }
   };
 
+  const renderActionRow = (action) => {
+    const keys = shortcuts[action.id] || [];
+    const Icon = ACTION_ICONS[action.id] || CalendarDays;
+    const iconColor = ACTION_COLORS[action.id] || "text-muted-foreground";
+    return (
+      <div
+        key={action.id}
+        className="flex items-center justify-between text-sm"
+      >
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Icon className={`h-4 w-4 ${iconColor}`} />
+          <span>{action.label}</span>
+        </div>
+        <div className="flex gap-2 justify-end">
+          <Input
+            value={keys[0] || ""}
+            onChange={(e) => handleChange(action.id, e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="w-12 h-8 text-center uppercase font-mono text-xs"
+            placeholder="-"
+            maxLength={2}
+          />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="grid grid-cols-1 gap-2">
-      {SNOOZE_ACTIONS.map((action) => {
-        const keys = shortcuts[action.id] || [];
-        const Icon = ACTION_ICONS[action.id] || CalendarDays;
-        const iconColor = ACTION_COLORS[action.id] || "text-muted-foreground";
-        return (
-          <div
-            key={action.id}
-            className="flex items-center justify-between text-sm"
-          >
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <Icon className={`h-4 w-4 ${iconColor}`} />
-              <span>{action.label}</span>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Input
-                value={keys[0] || ""}
-                onChange={(e) => handleChange(action.id, e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="w-12 h-8 text-center uppercase font-mono text-xs"
-                placeholder="-"
-                maxLength={2}
-              />
-            </div>
-          </div>
-        );
-      })}
+      {SNOOZE_ACTIONS.map(renderActionRow)}
     </div>
   );
 }

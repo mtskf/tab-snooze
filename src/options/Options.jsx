@@ -46,6 +46,7 @@ import { DEFAULT_SHORTCUTS } from "@/utils/constants";
 import TimeSettings from "./TimeSettings";
 import GlobalShortcutSettings from "./GlobalShortcutSettings";
 import SnoozeActionSettings from "./SnoozeActionSettings";
+import { Kbd } from "@/components/ui/kbd";
 export default function Options() {
   const [snoozedTabs, setSnoozedTabs] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -234,7 +235,7 @@ export default function Options() {
       <img src={logo} alt="Snooze" className="h-8 mb-6" />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 bg-card">
           <TabsTrigger value="snoozed-tabs">
             <Inbox className="h-4 w-4 mr-2" />
             Snoozed

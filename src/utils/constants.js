@@ -7,6 +7,8 @@ export const DEFAULT_SHORTCUTS = {
   "in-a-week": ["W"],
   "in-a-month": ["M"],
   "pick-date": ["P"],
+  "snoozed-items": ["I"],
+  settings: [","],
 };
 
 export const SNOOZE_ACTIONS = [
@@ -18,4 +20,9 @@ export const SNOOZE_ACTIONS = [
   { id: "in-a-week", label: "In a week" },
   { id: "in-a-month", label: "In a month" },
   { id: "pick-date", label: "Pick Date" },
+];
+
+export const OTHER_SHORTCUTS = [
+  { id: "snoozed-items", label: "Snoozed Items" },
+  { id: "settings", label: "Settings" },
 ];

@@ -90,6 +90,8 @@ export default function Popup() {
   const [tabCount, setTabCount] = useState(0);
   const [snoozedCount, setSnoozedCount] = useState(0);
   const [pickDateShortcut, setPickDateShortcut] = useState("P");
+  const [snoozedItemsShortcut, setSnoozedItemsShortcut] = useState("I");
+  const [settingsShortcut, setSettingsShortcut] = useState(",");
   const [focusedIndex, setFocusedIndex] = useState(-1); // -1 = no focus, 0-6 = items, 7 = pick date
 
   useEffect(() => {
@@ -125,6 +127,10 @@ export default function Popup() {
       // Set pick-date shortcut (empty string if not set)
       const pdShortcut = finalShortcuts["pick-date"]?.[0] || "";
       setPickDateShortcut(pdShortcut);
+
+      // Set snoozed-items and settings shortcuts
+      setSnoozedItemsShortcut(finalShortcuts["snoozed-items"]?.[0] || "I");
+      setSettingsShortcut(finalShortcuts["settings"]?.[0] || ",");
     });
 
     return () => {
@@ -199,6 +205,23 @@ export default function Popup() {
       // Calendar triggers (only if shortcut is set)
       if (pickDateShortcut && key === pickDateShortcut.toUpperCase()) {
         setIsCalendarOpen(true);
+        return;
+      }
+
+      // Snoozed items shortcut
+      if (
+        snoozedItemsShortcut &&
+        key === snoozedItemsShortcut.toUpperCase()
+      ) {
+        chrome.runtime.openOptionsPage();
+        return;
+      }
+
+      // Settings shortcut
+      if (settingsShortcut && e.key === settingsShortcut) {
+        chrome.tabs.create({
+          url: chrome.runtime.getURL("options/index.html#settings"),
+        });
         return;
       }
 
@@ -314,22 +337,19 @@ export default function Popup() {
       <div className="p-6 space-y-4">
         <div className="flex justify-between items-center">
           <img src={logo} alt="Snooze" className="h-6" />
-          <div className="flex gap-1">
+          <div className="flex gap-1 items-center">
             <Button
-              className="bg-secondary text-muted-foreground border border-border/50 h-8 px-3 hover:bg-secondary/80 shadow-none flex items-center gap-2"
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground h-8 w-8"
               onClick={() => chrome.runtime.openOptionsPage()}
             >
               <Inbox className="h-4 w-4" />
-
-              {snoozedCount > 0 && (
-                <span className="flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-[#1077E2] text-[9px] text-white font-bold">
-                  {snoozedCount > 999 ? "999+" : snoozedCount}
-                </span>
-              )}
             </Button>
             <Button
+              variant="ghost"
               size="icon"
-              className="bg-secondary text-muted-foreground border border-border/50 h-8 w-8 hover:bg-secondary/80 shadow-none"
+              className="text-muted-foreground h-8 w-8"
               onClick={() =>
                 chrome.tabs.create({
                   url: chrome.runtime.getURL("options/index.html#settings"),
