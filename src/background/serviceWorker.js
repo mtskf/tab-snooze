@@ -62,6 +62,10 @@ async function handleMessage(request, sendResponse) {
                 await removeWindowGroup(request.groupId);
                 sendResponse({ success: true });
                 break;
+            case "restoreWindowGroup":
+                await restoreWindowGroup(request.groupId);
+                sendResponse({ success: true });
+                break;
 
 
             default:
@@ -255,6 +259,33 @@ async function addSnoozedTab(tab, popTime, openInNewWindow, groupId = null) {
     });
 
     return storageLock;
+}
+
+
+
+async function restoreWindowGroup(groupId) {
+    const snoozedTabs = await getSnoozedTabs();
+    const timestamps = Object.keys(snoozedTabs);
+    let groupTabs = [];
+
+    // 1. Gather Tabs
+    for (const ts of timestamps) {
+        if (ts === 'tabCount') continue;
+        const tabs = snoozedTabs[ts];
+        if (!Array.isArray(tabs)) continue;
+
+        const matchingTabs = tabs.filter(t => t.groupId === groupId);
+        groupTabs = groupTabs.concat(matchingTabs);
+    }
+
+    if (groupTabs.length === 0) return;
+
+    // 2. Open in New Window
+    const newWindow = await chrome.windows.create({});
+    await createTabsInWindow(groupTabs, newWindow);
+
+    // 3. Remove from storage
+    await removeWindowGroup(groupId);
 }
 
 async function removeSnoozedTabWrapper(tab) {

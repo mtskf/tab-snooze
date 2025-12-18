@@ -3,7 +3,9 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trash2, AppWindow } from 'lucide-react';
 
-const SnoozedList = React.memo(({ snoozedTabs, onClearTab, onClearGroup }) => {
+import { cn } from "@/lib/utils";
+
+const SnoozedList = React.memo(({ snoozedTabs, onClearTab, onClearGroup, onRestoreGroup }) => {
     const renderList = () => {
         const timestamps = Object.keys(snoozedTabs).sort();
         const days = [];
@@ -55,7 +57,10 @@ const SnoozedList = React.memo(({ snoozedTabs, onClearTab, onClearGroup }) => {
                         {Object.entries(dayGroups).map(([groupId, groupItems]) => (
                             <Card key={groupId} className="p-0 bg-card hover:bg-accent/5 transition-colors overflow-hidden">
                                 {/* Group Header - Styled like a Snoozed Tab Item */}
-                                <div className="flex flex-row items-center p-3 justify-between border-b border-border/40">
+                                <div
+                                    className={cn("flex flex-row items-center p-3 justify-between border-b border-border/40", onRestoreGroup && "cursor-pointer hover:bg-accent/10 transition-colors")}
+                                    onClick={() => onRestoreGroup && onRestoreGroup(groupId)}
+                                >
                                      <div className="flex items-center gap-3">
                                         {/* Icon Facade */}
                                         <div className="w-4 h-4 ml-1 flex items-center justify-center bg-muted/40 text-foreground rounded-[2px]">
@@ -74,7 +79,10 @@ const SnoozedList = React.memo(({ snoozedTabs, onClearTab, onClearGroup }) => {
                                          <Button
                                              variant="ghost"
                                              size="icon"
-                                             onClick={() => onClearGroup(groupId)}
+                                             onClick={(e) => {
+                                                 e.stopPropagation();
+                                                 onClearGroup(groupId);
+                                             }}
                                              className="h-8 w-8 hover:text-destructive text-muted-foreground transition-colors"
                                          >
                                              <Trash2 className="h-4 w-4" />
@@ -140,7 +148,7 @@ function formatDay(date) {
 }
 
 function formatTime(timestamp) {
-    return new Date(timestamp).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    return new Date(timestamp).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 export default SnoozedList;

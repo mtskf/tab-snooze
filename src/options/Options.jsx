@@ -78,6 +78,10 @@ export default function Options() {
         }
     };
 
+    const restoreGroup = (groupId) => {
+        chrome.runtime.sendMessage({ action: "restoreWindowGroup", groupId: groupId });
+    };
+
 
 
     const clearAll = () => {
@@ -264,7 +268,12 @@ export default function Options() {
                         </CardHeader>
 
                         <CardContent>
-                            <SnoozedList snoozedTabs={filteredTabs} onClearTab={clearTab} onClearGroup={clearGroup} />
+                            <SnoozedList
+                                snoozedTabs={filteredTabs}
+                                onClearTab={clearTab}
+                                onClearGroup={clearGroup}
+                                onRestoreGroup={restoreGroup}
+                            />
                         </CardContent>
                     </Card>
                 </TabsContent>
