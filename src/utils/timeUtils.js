@@ -1,4 +1,5 @@
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
+import { addMonths } from "date-fns";
 
 export async function getTime(timeName) {
   console.log("timeName", timeName);
@@ -109,13 +110,13 @@ export async function getTime(timeName) {
       result.setDate(result.getDate() + 7);
       break;
     case "next-month":
-      result.setMonth(result.getMonth() + 1);
+      result = addMonths(result, 1);
       break;
     case "in-a-month":
-      result.setMonth(result.getMonth() + 1);
+      result = addMonths(result, 1);
       break;
     case "someday":
-      result.setMonth(result.getMonth() + parseInt(settings["someday"]));
+      result = addMonths(result, parseInt(settings["someday"]));
       break;
     case "pick-date":
       result = undefined;

@@ -52,8 +52,11 @@ export async function snooze(tab, popTime, openInNewWindow, groupId = null) {
   await addSnoozedTab(tab, popTimeObj, openInNewWindow, groupId);
 }
 
+// Restoration Lock
+let isRestoring = false;
+
 export async function popCheck() {
-  if (!navigator.onLine) {
+  if (isRestoring || !navigator.onLine) {
     return 0;
   }
 
@@ -81,7 +84,12 @@ export async function popCheck() {
   }
 
   if (tabsToPop.length > 0) {
-    await restoreTabs(tabsToPop, timesToRemove);
+    try {
+      isRestoring = true;
+      await restoreTabs(tabsToPop, timesToRemove);
+    } finally {
+      isRestoring = false;
+    }
   }
 
   return { count: tabsToPop.length };
