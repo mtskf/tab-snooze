@@ -1,23 +1,49 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export function useKeyboardNavigation({
   items,
   focusedIndex,
   setFocusedIndex,
   setScope,
+  scope,
   handleSnooze,
   handleSnoozeWithScope,
+  handleOneMinuteSnooze,
   setIsCalendarOpen,
   pickDateShortcut,
   snoozedItemsShortcut,
   settingsShortcut,
 }) {
+  // Hidden command: track consecutive "j" presses
+  const jPressRef = useRef({ count: 0, lastTime: 0 });
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.target.tagName === "INPUT") return; // Don't trigger when typing
 
       let key = e.key.toUpperCase();
       const totalOptions = items.length + 1; // items + Pick Date
+
+      // Hidden command: "jjj" - 3 consecutive j presses within 500ms
+      if (e.key.toLowerCase() === "j") {
+        const now = Date.now();
+        if (now - jPressRef.current.lastTime < 500) {
+          jPressRef.current.count++;
+        } else {
+          jPressRef.current.count = 1;
+        }
+        jPressRef.current.lastTime = now;
+
+        if (jPressRef.current.count >= 3) {
+          jPressRef.current.count = 0;
+          // Shift held or window scope selected = snooze window
+          const targetScope = e.shiftKey || scope === "window" ? "window" : "selected";
+          handleOneMinuteSnooze(targetScope);
+          return;
+        }
+      } else {
+        // Reset counter if any other key is pressed
+        jPressRef.current.count = 0;
+      }
 
       // Arrow key navigation
       if (e.key === "ArrowLeft") {
@@ -123,8 +149,10 @@ export function useKeyboardNavigation({
     focusedIndex,
     setFocusedIndex,
     setScope,
+    scope,
     handleSnooze,
     handleSnoozeWithScope,
+    handleOneMinuteSnooze,
     setIsCalendarOpen,
     pickDateShortcut,
     snoozedItemsShortcut,

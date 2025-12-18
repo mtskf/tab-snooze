@@ -224,14 +224,24 @@ export default function Popup() {
     });
   };
 
+  // Hidden command: 1-minute snooze (jjj)
+  const handleOneMinuteSnooze = (targetScope) => {
+    const time = new Date();
+    time.setMinutes(time.getMinutes() + 1);
+    time.setSeconds(0, 0);
+    snoozeTabsWithScope(time, targetScope);
+  };
+
   // Use the extracted hook
   useKeyboardNavigation({
     items,
     focusedIndex,
     setFocusedIndex,
     setScope,
+    scope,
     handleSnooze,
     handleSnoozeWithScope,
+    handleOneMinuteSnooze,
     setIsCalendarOpen,
     pickDateShortcut,
     snoozedItemsShortcut,
