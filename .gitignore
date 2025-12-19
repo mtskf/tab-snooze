@@ -34,4 +34,4 @@ release/*.zip
 
 dist/
 temp/
-.agent
+.agent/
