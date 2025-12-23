@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "build:firefox": "vite build && cp public/manifest.firefox.json dist/manifest.json",
+    "build:edge": "vite build"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
