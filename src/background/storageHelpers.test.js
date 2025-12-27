@@ -54,7 +54,7 @@ describe('Storage Helpers', () => {
 
   describe('getSettings', () => {
     it('should return settings from storage', async () => {
-      const mockSettings = { 'start-day': '9:00 AM' };
+      const mockSettings = { 'start-day': '8:00 AM' };
       chrome.storage.local.get.mockResolvedValue({ settings: mockSettings });
 
       const result = await getSettings();
@@ -66,7 +66,7 @@ describe('Storage Helpers', () => {
 
   describe('setSettings', () => {
     it('should save settings to storage', async () => {
-      const mockSettings = { 'end-day': '6:00 PM' };
+      const mockSettings = { 'end-day': '5:00 PM' };
       chrome.storage.local.set.mockResolvedValue();
 
       await setSettings(mockSettings);

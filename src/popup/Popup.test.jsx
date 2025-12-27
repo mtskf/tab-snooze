@@ -12,7 +12,7 @@ vi.mock('../background/snoozeLogic', () => ({
 vi.mock('../utils/timeUtils', () => ({
   getTime: vi.fn().mockResolvedValue(new Date('2024-01-01T10:00:00Z')),
   getSettings: vi.fn().mockResolvedValue({
-      'start-day': '9:00 AM',
+      'start-day': '8:00 AM',
       'later-today': 1,
       'timezone': 'UTC'
   })
@@ -34,7 +34,7 @@ describe('Popup', () => {
         const result = {
             settings: {
                 'later-today': 1,
-                'start-day': '9:00 AM',
+                'start-day': '8:00 AM',
                 timezone: 'UTC' // Default
             }
         };

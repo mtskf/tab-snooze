@@ -25,8 +25,8 @@ export default function TimeSettings({ settings, updateSetting }) {
           </div>
           <div className="w-[120px]">
             <Select
-              value={settings["start-day"] || "9:00 AM"}
-              onValueChange={(value) => updateSetting("start-day", value)}
+              value={settings["start-day"] || "8:00 AM"}
+              onValueChange={(val) => updateSetting("start-day", val)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select" />
@@ -60,7 +60,7 @@ export default function TimeSettings({ settings, updateSetting }) {
           </div>
           <div className="w-[120px]">
             <Select
-              value={settings["end-day"] || "6:00 PM"}
+              value={settings["end-day"] || "5:00 PM"}
               onValueChange={(value) => updateSetting("end-day", value)}
             >
               <SelectTrigger>

@@ -28,9 +28,8 @@ export async function initStorage() {
   let settings = await getSettings();
   if (!settings) {
     settings = {
-      "start-day": "9:00 AM",
-      "end-day": "6:00 PM",
-      "start-weekend": "10:00 AM",
+      "start-day": "8:00 AM",
+      "end-day": "5:00 PM",
       "week-begin": 1,
       "weekend-begin": 6,
       "later-today": 3,
