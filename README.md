@@ -49,7 +49,7 @@ Declutter your browser and your mind. **Snooooze** helps you focus on the task a
 | :--- | :--- |
 | **⏱️ Smart Scheduling** | Presets for "Later Today", "Tomorrow", "This Weekend", or pick a custom date. |
 | **🔄 Auto Restoration** | Tabs magically reappear at the scheduled time—even if your computer was sleeping. |
-| **🌍 Timezone Aware** | Automatically detects your system timezone. "9:00 AM" means *your* 9:00 AM, wherever you are. |
+| **🌍 Timezone Aware** | Automatically detects your system timezone. "8:00 AM" means *your* 8:00 AM, wherever you are. |
 | **📥 Inbox Zero** | View pending tabs in a clean list. Delete or restore them early if you change your mind. |
 | **💾 Backup & Sync** | Export your data to JSON to transfer between devices or keep safe. |
 

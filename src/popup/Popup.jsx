@@ -138,8 +138,8 @@ export default function Popup() {
         if (meridian === "PM" && hour < 12) hour += 12;
         return hour;
       };
-      setStartDayHour(parseTimeHour((result.settings || {})["start-day"] || "9:00 AM"));
-      setEndDayHour(parseTimeHour((result.settings || {})["end-day"] || "6:00 PM"));
+      setStartDayHour(parseTimeHour((result.settings || {})["start-day"] || "8:00 AM"));
+      setEndDayHour(parseTimeHour((result.settings || {})["end-day"] || "5:00 PM"));
     });
   }, []);
 

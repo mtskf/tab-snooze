@@ -14,7 +14,7 @@ export async function getTime(timeName) {
   const zonedNow = toZonedTime(now, timezone);
   var result = new Date(zonedNow); // Copy for manipulation
 
-  setSettingsTime(result, settings["start-day"]); // Default "9:00 AM" or similar
+  setSettingsTime(result, settings["start-day"]); // Default "8:00 AM" or similar
 
   // Calculate target zoned time
   switch (timeName) {

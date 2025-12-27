@@ -14,7 +14,7 @@ Too many open tabs? Afraid to close them because you might forget? Snooooze lets
 *   **⚡️ Keyboard First**: Blazing fast shortcuts. Press `Cmd/Ctrl + .` to open, then single keys (e.g., `L` for Later, `T` for Tomorrow) to snooze. Zero friction.
 *   **📥 Inbox Zero for Tabs**: View all pending tabs in a clean, organized list. Restore or delete them early if you change your mind.
 *   **🎨 Personalized Themes**: Customize your experience with sleek Dark Mode, vibrant Vivid colors, or an urgency-focused Heatmap.
-*   **🌍 Timezone Aware**: Works perfectly wherever you are. "9:00 AM" means *your* 9:00 AM.
+*   **🌍 Timezone Aware**: Works perfectly wherever you are. "8:00 AM" means *your* 8:00 AM.
 *   **🔒 Privacy First**: All data is stored locally on your device. No cloud sync, no tracking, complete privacy.
 
 ## Shortcuts (Customizable)
