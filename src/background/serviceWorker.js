@@ -11,12 +11,25 @@ import {
   removeWindowGroup,
   restoreWindowGroup,
 } from "./snoozeLogic";
-import {
-  getSnoozedTabs,
-  setSnoozedTabs,
-  getSettings,
-  setSettings,
-} from "../utils/storage";
+
+// Storage helper functions (inline)
+async function getSnoozedTabs() {
+  const res = await chrome.storage.local.get("snoozedTabs");
+  return res.snoozedTabs;
+}
+
+async function setSnoozedTabs(val) {
+  await chrome.storage.local.set({ snoozedTabs: val });
+}
+
+async function getSettings() {
+  const res = await chrome.storage.local.get("settings");
+  return res.settings;
+}
+
+async function setSettings(val) {
+  await chrome.storage.local.set({ settings: val });
+}
 
 // Initialize extension
 chrome.runtime.onInstalled.addListener(async () => {

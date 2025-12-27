@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- **DatePicker**: Calendar now starts on Monday (weekStartsOn=1).
+- **Scope Preservation**: Shift+P now correctly preserves window scope when snoozing via DatePicker.
+
+### Removed
+- **Unused Code**: Removed `storage.js` (dead code, never imported in production).
+- **Unused Time Keys**: Removed internal time options (`next-week`, `next-month`, `day-after-tomorrow`, `2-days-morning`, `2-days-evening`, `someday`) from `timeUtils.js`.
+- **Debug Code**: Removed `console.log` statements and duplicate `setBadgeBackgroundColor` call.
+
 ### Added
 - **Docs**: Created draft article for Qiita (`temp/qiita_article.md`).
 

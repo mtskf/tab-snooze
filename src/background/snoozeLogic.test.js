@@ -1,42 +1,42 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { snooze, popCheck, removeSnoozedTabWrapper, initStorage } from './snoozeLogic';
 
-// Mock storage utils
-vi.mock('../utils/storage', () => ({
-  getSnoozedTabs: vi.fn(),
-  setSnoozedTabs: vi.fn(),
-  getSettings: vi.fn(),
-  setSettings: vi.fn(),
-}));
-
-import { getSnoozedTabs, setSnoozedTabs, getSettings, setSettings } from '../utils/storage';
-
 describe('snoozeLogic', () => {
+  // Helper to mock storage get/set
+  let mockStorage = {};
+
   beforeEach(() => {
     vi.resetAllMocks();
     vi.useFakeTimers();
-    // Ensure chrome is available
-    if (!global.chrome) {
-        global.chrome = {
-            windows: {
-                getLastFocused: vi.fn(),
-                create: vi.fn(),
-            },
-            tabs: {
-                create: vi.fn(),
-                remove: vi.fn(),
-            },
-            storage: {
-                local: { get: vi.fn(), set: vi.fn() }
-            },
-            action: {
-                setBadgeBackgroundColor: vi.fn()
+    mockStorage = {};
+
+    global.chrome = {
+      windows: {
+        getLastFocused: vi.fn(),
+        create: vi.fn(),
+      },
+      tabs: {
+        create: vi.fn(),
+        remove: vi.fn(),
+      },
+      storage: {
+        local: {
+          get: vi.fn((key) => {
+            if (typeof key === 'string') {
+              return Promise.resolve({ [key]: mockStorage[key] });
             }
-        };
-    } else {
-        // Extend existing mock if needed
-        if (!global.chrome.windows) global.chrome.windows = { getLastFocused: vi.fn(), create: vi.fn() };
-    }
+            return Promise.resolve(mockStorage);
+          }),
+          set: vi.fn((obj) => {
+            Object.assign(mockStorage, obj);
+            return Promise.resolve();
+          })
+        }
+      },
+      action: {
+        setBadgeBackgroundColor: vi.fn()
+      }
+    };
   });
 
   afterEach(() => {
@@ -45,8 +45,8 @@ describe('snoozeLogic', () => {
 
   describe('snooze', () => {
     it('should snooze a tab correctly', async () => {
-      // Setup mock data
-      getSnoozedTabs.mockResolvedValue({});
+      // Setup initial mock storage
+      mockStorage.snoozedTabs = {};
 
       const tab = {
         id: 123,
@@ -64,8 +64,8 @@ describe('snoozeLogic', () => {
       expect(chrome.tabs.remove).toHaveBeenCalledWith(123);
 
       // Verify storage update
-      expect(setSnoozedTabs).toHaveBeenCalled();
-      const savedData = setSnoozedTabs.mock.calls[0][0];
+      expect(chrome.storage.local.set).toHaveBeenCalled();
+      const savedData = mockStorage.snoozedTabs;
       const timeKey = popTime.getTime();
       expect(savedData[timeKey]).toHaveLength(1);
       expect(savedData[timeKey][0].url).toBe('https://example.com');
@@ -76,17 +76,16 @@ describe('snoozeLogic', () => {
   describe('popCheck', () => {
     it('should restore tabs when time is up', async () => {
       const now = new Date('2024-01-01T12:00:00Z').getTime();
-      vi.setSystemTime(now); // System time matches "now"
+      vi.setSystemTime(now);
 
       // Mock stored snoozed tabs (past time)
-      const pastTime = now - 1000; // 1 second ago
-      const snoozedData = {
+      const pastTime = now - 1000;
+      mockStorage.snoozedTabs = {
         [pastTime]: [
           { url: 'https://restored.com', title: 'Restored' }
         ],
         tabCount: 1
       };
-      getSnoozedTabs.mockResolvedValue(snoozedData);
 
       // Mock window for restoration
       chrome.windows.getLastFocused.mockResolvedValue({ id: 999 });
@@ -100,10 +99,9 @@ describe('snoozeLogic', () => {
         windowId: 999
       }));
 
-      // Verify cleanup (should remove the processed time key)
-      const finalSave = setSnoozedTabs.mock.lastCall[0];
-      expect(finalSave[pastTime]).toBeUndefined();
-      expect(finalSave.tabCount).toBe(0);
+      // Verify cleanup
+      expect(mockStorage.snoozedTabs[pastTime]).toBeUndefined();
+      expect(mockStorage.snoozedTabs.tabCount).toBe(0);
     });
 
     it('should not restore tabs if time is not up', async () => {
@@ -112,13 +110,12 @@ describe('snoozeLogic', () => {
 
         // Mock future tab
         const futureTime = now + 10000;
-        const snoozedData = {
+        mockStorage.snoozedTabs = {
           [futureTime]: [
             { url: 'https://future.com', title: 'Future' }
           ],
           tabCount: 1
         };
-        getSnoozedTabs.mockResolvedValue(snoozedData);
 
         const result = await popCheck();
 
@@ -132,24 +129,22 @@ describe('snoozeLogic', () => {
           const creationTime = 123456789;
           const popTime = 987654321;
 
-          const snoozedData = {
+          mockStorage.snoozedTabs = {
               [popTime]: [
                   { url: 'https://test.com', creationTime: creationTime }
               ],
               tabCount: 1
           };
-          getSnoozedTabs.mockResolvedValue(snoozedData);
 
           const tabToRemove = {
-              popTime: new Date(popTime), // Wrapper expects calling code ensuring this format or logic handles it
+              popTime: new Date(popTime),
               creationTime: creationTime
           };
 
           await removeSnoozedTabWrapper(tabToRemove);
 
-          const savedData = setSnoozedTabs.mock.lastCall[0];
-          expect(savedData[popTime]).toBeUndefined(); // Should be removed as it was empty
-          expect(savedData.tabCount).toBe(0);
+          expect(mockStorage.snoozedTabs[popTime]).toBeUndefined();
+          expect(mockStorage.snoozedTabs.tabCount).toBe(0);
       });
   });
 });

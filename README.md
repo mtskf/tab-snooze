@@ -20,7 +20,7 @@
       <img src="https://img.shields.io/github/license/mtskf/Snooooze?style=flat-square&color=4F46E5" alt="License" />
     </a>
     <a href="https://github.com/mtskf/Snooooze/releases">
-      <img src="https://img.shields.io/badge/version-v0.2.0-blue.svg" alt="Version" />
+      <img src="https://img.shields.io/badge/version-v0.2.2-blue.svg" alt="Version" />
     </a>
     <a href="https://chromewebstore.google.com/detail/snooooze/gncjidjnndmkohhhnijekcjiakmllonk">
       <img src="https://img.shields.io/chrome-web-store/v/gncjidjnndmkohhhnijekcjiakmllonk?style=flat-square&color=4285F4&label=Chrome%20Web%20Store" alt="Chrome Web Store" />

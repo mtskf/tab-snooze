@@ -36,18 +36,6 @@ describe('timeUtils', () => {
       expect(result.getHours()).toBe(9);
     });
 
-    it('should calculate next-week correctly', async () => {
-      // 2024-01-15 is Monday.
-      // Default week-begin is 1 (Monday).
-      // If today is Monday, generally "Next Week" means next Monday (+7 days)
-      // BUT let's check logic:
-      // daysToNextDay(1, 1) -> 7 (if nextDay <= currentDay, 7 + next - current = 7)
-      // So it should be +7 days.
-      const result = await getTime('next-week');
-      expect(result.getDate()).toBe(22); // 15 + 7
-      expect(result.getHours()).toBe(9); // Default start time
-    });
-
     it('should calculate this-evening correctly', async () => {
         // Mock time to morning 10AM. "This Evening" default is 6:00 PM (18:00)
         const result = await getTime('this-evening');

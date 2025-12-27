@@ -2,8 +2,6 @@ import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { addMonths } from "date-fns";
 
 export async function getTime(timeName) {
-  console.log("timeName", timeName);
-
   const settings = await getSettings();
   const timezone =
     settings.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -67,21 +65,6 @@ export async function getTime(timeName) {
       }
       setSettingsTime(result, settings["end-day"]);
       break;
-    case "2-days-morning":
-      if (zonedNow.getHours() > 5) {
-        result.setDate(result.getDate() + 2);
-      } else {
-        result.setDate(result.getDate() + 1);
-      }
-      break;
-    case "2-days-evening":
-      if (zonedNow.getHours() > 5) {
-        result.setDate(result.getDate() + 2);
-      } else {
-        result.setDate(result.getDate() + 1);
-      }
-      setSettingsTime(result, settings["end-day"]);
-      break;
     case "this-weekend":
       // daysToNextDay works on getDay() (0-6). Zoned object returns correct local day.
       var daysToWeekend = daysToNextDay(
@@ -91,32 +74,15 @@ export async function getTime(timeName) {
       result.setDate(result.getDate() + daysToWeekend);
       setSettingsTime(result, settings["start-weekend"]);
       break;
-    case "day-after-tomorrow":
-      if (zonedNow.getHours() > 5) {
-        result.setDate(result.getDate() + 2);
-      } else {
-        result.setDate(result.getDate() + 1);
-      }
-      break;
     case "next-monday":
       var daysToMonday = daysToNextDay(result.getDay(), 1); // 1 is Monday
       result.setDate(result.getDate() + daysToMonday);
       break;
-    case "next-week":
-      var daysToWeek = daysToNextDay(result.getDay(), settings["week-begin"]);
-      result.setDate(result.getDate() + daysToWeek);
-      break;
     case "in-a-week":
       result.setDate(result.getDate() + 7);
       break;
-    case "next-month":
-      result = addMonths(result, 1);
-      break;
     case "in-a-month":
       result = addMonths(result, 1);
-      break;
-    case "someday":
-      result = addMonths(result, parseInt(settings["someday"]));
       break;
     case "pick-date":
       result = undefined;
@@ -187,7 +153,6 @@ export async function getSettings() {
     "week-begin": 1,
     "weekend-begin": 6,
     "later-today": 1,
-    someday: 3,
     "open-new-tab": "true",
     badge: "true",
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
