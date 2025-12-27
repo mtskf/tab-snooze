@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 *No unreleased changes*
 
+## v0.2.4
+
+- **Fix**: Updated default settings to 8:00 AM / 5:00 PM for all users (removed 9:00 AM / 6:00 PM logic).
+- **Fix**: Removed unused "Later Today" time setting to prevent confusion.
+- **Docs**: Updated documentation to reflect accurate default times.
+
 ## [v0.2.3] - 2025-12-27
 
 ### Added
