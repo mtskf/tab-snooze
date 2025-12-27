@@ -11,18 +11,23 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **Refactoring**: Consolidated storage helper functions in `snoozeLogic.js` (exported and shared with `serviceWorker.js`).
 - **Tests**: Added `storageHelpers.test.js` with 5 new tests for storage functions.
+- **Dynamic Labels**: "Tomorrow" becomes "This morning" (early hours) and "This weekend" becomes "Next weekend" (during weekend).
 
 ### Changed
 - **DatePicker**: Calendar now starts on Monday (`weekStartsOn=1`).
 - **Scope Preservation**: Shift+P now correctly preserves window scope when snoozing via DatePicker (`calendarScope` state).
 - **Package Manager**: Migrated from `npm` to `pnpm`.
 - **Timezone**: Automates timezone detection using `Intl.DateTimeFormat`, removed manual selection UI.
+- **Default Times**: Changed default `start-day` to 8:00 AM (was 9:00 AM) and `end-day` to 5:00 PM (was 6:00 PM).
+- **Pick Date**: Now defaults to `start-day` time instead of hardcoded 9:00 AM.
+- **This Weekend**: Now uses `start-day` time instead of separate `start-weekend` time.
 
 ### Removed
 - **Unused Code**: Removed `storage.js` (dead code).
 - **Unused Time Keys**: Removed internal time options (`next-week`, `next-month`, `day-after-tomorrow`, `2-days-morning`, `2-days-evening`, `someday`) from `timeUtils.js`.
 - **Debug Code**: Removed `console.log` statements and duplicate `setBadgeBackgroundColor` call.
 - **Delete Confirmation**: Removed confirmation dialog for single window group deletion.
+- **Tomorrow Evening**: Removed "Tomorrow Evening" option to simplify choices.
 
 ## [v0.2.2] - 2025-12-22
 

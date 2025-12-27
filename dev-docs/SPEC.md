@@ -27,7 +27,7 @@ All calculations are based on the **Current Zoned Time** (timezone comes from se
 | **Later Today** | Current time + 1 hour. Minutes are preserved; seconds are cleared. | `later-today`: stored, but not used in calculation |
 | **This Evening** | Today at `end-day`. <br> **Visibility:** Hidden when current time is past `end-day`. | `end-day`: 5:00 PM |
 | **Tomorrow** | Tomorrow at `start-day`. <br> **Exception:** If current time is before `start-day`, uses the current calendar date. <br> **Label:** Displayed as "This morning" when before `start-day`. In Settings, shown as "Tomorrow / This morning (after midnight)". | `start-day`: 8:00 AM |
-| **This Weekend** | Next occurrence of `weekend-begin` day (never the current day). Time is `start-day`. <br> **Label:** Displayed as "Next weekend" when current day is Saturday or Sunday. In Settings, shown as "This weekend / Next weekend". | `weekend-begin`: Saturday (6)<br>`start-day`: 8:00 AM |
+| **This Weekend** | Next occurrence of `weekend-begin` day (never the current day). Time is `start-day`. <br> **Label:** Displayed as "Next weekend" when current day is Saturday or Sunday. In Settings, shown as "This weekend / Next weekend (during weekend)". | `weekend-begin`: Saturday (6)<br>`start-day`: 8:00 AM |
 | **Next Monday** | Next occurrence of Monday (never "today"). Time is `start-day`. | `start-day`: 8:00 AM |
 | **In a Week** | Current date + 7 days at `start-day`. | `start-day`: 8:00 AM |
 | **In a Month** | Current date + 1 month (using `date-fns/addMonths`) at `start-day`. | `start-day`: 8:00 AM |

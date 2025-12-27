@@ -59,8 +59,8 @@ Snooooze/
 ### `settings` (chrome.storage.local)
 ```javascript
 {
-  "start-day": "9:00 AM",
-  "end-day": "6:00 PM",
+  "start-day": "8:00 AM",
+  "end-day": "5:00 PM",
   "timezone": "Australia/Sydney",
   "open-new-tab": "true",
   "appearance": "heatmap"
