@@ -112,12 +112,10 @@ export default function Options() {
   };
 
   const clearGroup = (groupId) => {
-    if (confirm("Are you sure you want to delete this window group?")) {
-      chrome.runtime.sendMessage({
-        action: "removeWindowGroup",
-        groupId: groupId,
-      });
-    }
+    chrome.runtime.sendMessage({
+      action: "removeWindowGroup",
+      groupId: groupId,
+    });
   };
 
   const restoreGroup = (groupId) => {
