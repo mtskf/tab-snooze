@@ -12,7 +12,7 @@
 
 ## State & Logic
 - **Storage**: `chrome.storage.local` (Snoozed tabs)
-- **Time/Date**: Native `Intl` API, `date-fns` (if applicable)
+- **Time/Date**: Native `Intl` API, `date-fns`, `date-fns-tz`
 
 ## Tooling
 - **Package Manager**: pnpm

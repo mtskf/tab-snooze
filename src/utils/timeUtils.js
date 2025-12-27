@@ -101,7 +101,6 @@ export async function getTime(timeName) {
     return fromZonedTime(result, timezone);
   }
 
-  console.log("result", result);
   return result;
 }
 

@@ -4,41 +4,36 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+*No unreleased changes*
+
+## [v0.2.3] - 2025-12-27
+
+### Added
+- **Refactoring**: Consolidated storage helper functions in `snoozeLogic.js` (exported and shared with `serviceWorker.js`).
+- **Tests**: Added `storageHelpers.test.js` with 5 new tests for storage functions.
+
 ### Changed
-- **DatePicker**: Calendar now starts on Monday (weekStartsOn=1).
-- **Scope Preservation**: Shift+P now correctly preserves window scope when snoozing via DatePicker.
+- **DatePicker**: Calendar now starts on Monday (`weekStartsOn=1`).
+- **Scope Preservation**: Shift+P now correctly preserves window scope when snoozing via DatePicker (`calendarScope` state).
+- **Package Manager**: Migrated from `npm` to `pnpm`.
+- **Timezone**: Automates timezone detection using `Intl.DateTimeFormat`, removed manual selection UI.
 
 ### Removed
-- **Unused Code**: Removed `storage.js` (dead code, never imported in production).
+- **Unused Code**: Removed `storage.js` (dead code).
 - **Unused Time Keys**: Removed internal time options (`next-week`, `next-month`, `day-after-tomorrow`, `2-days-morning`, `2-days-evening`, `someday`) from `timeUtils.js`.
 - **Debug Code**: Removed `console.log` statements and duplicate `setBadgeBackgroundColor` call.
+- **Delete Confirmation**: Removed confirmation dialog for single window group deletion.
+
+## [v0.2.2] - 2025-12-22
 
 ### Added
-- **Docs**: Created draft article for Qiita (`temp/qiita_article.md`).
+- **Appearance Settings**: Visual theme selection (Default, Vivid, Warm Heatmap).
+- **Dynamic Theming**: UI colors now reflect the selected theme.
+- **Global Shortcut UI**: View/configure global extension shortcut in Options.
+- **Refactoring**: Split `Options.jsx` into smaller components.
 
 ### Changed
-- **Package Manager**: Migrated from `npm` to `pnpm` for faster installs and disk space efficiency.
-- **Workflows**: Updated all `.agent/workflows` to use `pnpm` and added safety checks for uncommitted changes.
-- **Timezone**: Automates timezone detection using the system's timezone (`Intl.DateTimeFormat`), removing manual selection.
-- **Options UI**: Removed Timezone dropdown for a cleaner interface.
-- **README**: Updated installation commands to `pnpm` and refined feature descriptions.
-
-### Added
-- **Appearance Settings**: Added visual theme selection with 3 options:
-    - **Default**: The classic monochromatic "Neo Carbon" look.
-    - **Vivid**: High-contrast semantic colors (Cyan, Purple, Blue, Green, Yellow, Rose).
-    - **Warm Heatmap**: Urgency-based warm palette ranging from critical Red to neutral Orange.
-- **Dynamic Theming**: Snooze action icons, delete buttons, and UI accents now dynamically reflect the selected theme colors across Popup and Options pages.
-- **UI Polish**: Added auto-focus to search input in Snoozed Items list for immediate filtering.
-
-### Changed
-- **Options Layout**: Fixed Options panel width to prevent layout shifts.
-- **Visuals**: Enhanced "Window Group" label with hover effects and standardized delete button sizing.
-
-### Added
-- **Global Shortcut UI**: Added dedicated section in Options to view/configure the global extension shortcut.
-- **Dynamic Shortcut Display**: Options page now shows the *actual* currently bound global shortcut (e.g., if user changed it to `Cmd+Shift+S`).
-- **Refactoring**: Split `Options.jsx` into smaller, maintainable components (`TimeSettings`, `GlobalShortcutSettings`, `SnoozeActionSettings`).
+- **Options Layout**: Fixed panel width to prevent layout shifts.
 
 ## [v0.1.0] - 2025-12-16
 

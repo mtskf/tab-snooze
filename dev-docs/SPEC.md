@@ -36,7 +36,7 @@ All calculations are based on the **Current Zoned Time** (timezone comes from se
 
 ### 2.2. "Early Morning" Exception (The 5 AM Rule)
 To prevent frustration when working late (e.g., at 2 AM), "Tomorrow" refers to the *logical* tomorrow (after waking up), which is effectively the calendar's "Today".
-- **Rule:** If `Current Hour < 5`, "Tomorrow" and "Tomorrow Evening" use the current calendar date. The internal "day-after" and "2-days" options shift by +1 day instead of +2 in this window.
+- **Rule:** If `Current Hour < 5`, "Tomorrow" and "Tomorrow Evening" use the current calendar date.
 
 ## 3. Scope & Shortcuts
 
@@ -49,6 +49,7 @@ To prevent frustration when working late (e.g., at 2 AM), "Tomorrow" refers to t
 - **Single Key:** Triggers snooze for the corresponding option (e.g., 'T' for Tomorrow).
 - **Modifier (Shift):** Temporarily toggles the scope to "Current Window" while held.
     - Example: `T` snoozes selected tabs to Tomorrow. `Shift + T` snoozes the entire window to Tomorrow.
+- **DatePicker Scope Preservation:** When opening the DatePicker with `Shift + P`, the "Window" scope is preserved even after the Shift key is released. The scope at the time of opening is stored in `calendarScope` state.
 - **Configurable:** Default shortcuts live in `src/utils/constants.js` and can be customized in Options.
 
 ## 4. Restore Logic
@@ -61,6 +62,7 @@ To prevent frustration when working late (e.g., at 2 AM), "Tomorrow" refers to t
 ### 4.2. Grouping & Window Restoration
 - Tabs snoozed as a "Window" share a `groupId`.
 - *Current Behavior:* Tabs with a `groupId` are restored together in a **new window**. Ungrouped tabs are restored into the last focused window (fallbacks to a new window if none is available). Options page actions can also restore or delete an entire group.
+- **No Confirmation for Single Group Deletion:** Deleting a single window group does not show a confirmation dialog. "Delete All" still requires confirmation.
 
 ## 5. UI & Themes
 

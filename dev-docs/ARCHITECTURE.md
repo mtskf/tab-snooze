@@ -35,12 +35,12 @@ Snooooze/
 ### Popup (`Popup.jsx`)
 - **Scope Selection**: "Selected tabs" or "Window" (Shift key toggle)
 - **Snooze Options**: Later today, Evening, Tomorrow, Weekend, etc.
-- **Keyboard Shortcuts**: 1-7 for options, Shift+key for window scope
+- **Keyboard Shortcuts**: L, E, T, S, N, W, M, P for options, Shift+key for window scope
 - **Snoozed Counter**: Shows pending tab count (999+ for large numbers)
 
 ### Options (`Options.jsx`)
 - **Snoozed List**: Grouped by date, with delete/restore actions
-- **Settings**: Morning/Evening times, Timezone (grouped dropdown)
+- **Settings**: Morning/Evening times, Appearance theme
 - **Export/Import**: JSON format (preserves timestamps)
 - **URL Hash**: Supports `#settings` to open directly to Settings tab
 
