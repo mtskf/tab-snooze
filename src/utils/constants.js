@@ -14,7 +14,7 @@ export const DEFAULT_SHORTCUTS = {
 export const SNOOZE_ACTIONS = [
   { id: "later-today", label: "Later today" },
   { id: "this-evening", label: "This evening" },
-  { id: "tomorrow", label: "Tomorrow / This morning", settingsLabel: true },
+  { id: "tomorrow", label: "Tomorrow / This morning (after midnight)", settingsLabel: true },
   { id: "this-weekend", label: "This weekend" },
   { id: "next-monday", label: "Next Monday" },
   { id: "in-a-week", label: "In a week" },
