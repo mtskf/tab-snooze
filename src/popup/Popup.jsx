@@ -84,6 +84,7 @@ export default function Popup() {
     },
   ]);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarScope, setCalendarScope] = useState("selected"); // Scope to use when snoozing via calendar
   const [scope, setScope] = useState("selected"); // 'selected' | 'window'
   const [pickDateShortcut, setPickDateShortcut] = useState("P");
   const [snoozedItemsShortcut, setSnoozedItemsShortcut] = useState("I");
@@ -138,7 +139,7 @@ export default function Popup() {
       targetDate.setHours(9, 0, 0, 0);
 
       setDate(targetDate);
-      snoozeTabs(targetDate);
+      snoozeTabsWithScope(targetDate, calendarScope);
       setIsCalendarOpen(false);
     }
   };
@@ -223,6 +224,7 @@ export default function Popup() {
     handleSnoozeWithScope,
     handleOneMinuteSnooze,
     setIsCalendarOpen,
+    setCalendarScope,
     pickDateShortcut,
     snoozedItemsShortcut,
     settingsShortcut,
@@ -281,7 +283,10 @@ export default function Popup() {
 
           {/* Pick Date */}
           <button
-            onClick={() => setIsCalendarOpen(true)}
+            onClick={() => {
+              setCalendarScope(scope); // Capture current scope when opening via mouse
+              setIsCalendarOpen(true);
+            }}
             className={cn(
               "w-full flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors group text-left",
               focusedIndex === items.length &&
@@ -330,6 +335,7 @@ export default function Popup() {
                   selected={date}
                   onSelect={handleDateSelect}
                   initialFocus
+                  weekStartsOn={1}
                   captionLayout="dropdown-buttons"
                   fromYear={new Date().getFullYear()}
                   toYear={new Date().getFullYear() + 5}

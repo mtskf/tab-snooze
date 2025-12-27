@@ -10,6 +10,7 @@ export function useKeyboardNavigation({
   handleSnoozeWithScope,
   handleOneMinuteSnooze,
   setIsCalendarOpen,
+  setCalendarScope,
   pickDateShortcut,
   snoozedItemsShortcut,
   settingsShortcut,
@@ -71,6 +72,8 @@ export function useKeyboardNavigation({
         if (focusedIndex < items.length) {
           handleSnooze(items[focusedIndex].id);
         } else {
+          // Opening calendar: capture current scope (Shift held or window scope selected)
+          setCalendarScope(e.shiftKey || scope === "window" ? "window" : "selected");
           setIsCalendarOpen(true);
         }
         return;
@@ -103,6 +106,8 @@ export function useKeyboardNavigation({
 
       // Calendar triggers (only if shortcut is set)
       if (pickDateShortcut && key === pickDateShortcut.toUpperCase()) {
+        // Capture scope at the moment of opening calendar
+        setCalendarScope(e.shiftKey || scope === "window" ? "window" : "selected");
         setIsCalendarOpen(true);
         return;
       }
@@ -154,6 +159,7 @@ export function useKeyboardNavigation({
     handleSnoozeWithScope,
     handleOneMinuteSnooze,
     setIsCalendarOpen,
+    setCalendarScope,
     pickDateShortcut,
     snoozedItemsShortcut,
     settingsShortcut,
