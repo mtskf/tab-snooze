@@ -32,7 +32,6 @@ export async function initStorage() {
       "end-day": "5:00 PM",
       "week-begin": 1,
       "weekend-begin": 6,
-      "later-today": 3,
       badge: "true",
     };
     await setSettings(settings);

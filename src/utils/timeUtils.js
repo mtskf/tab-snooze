@@ -24,8 +24,7 @@ export async function getTime(timeName) {
       // Better: use result.setHours(result.getHours() + X)
       // User requested fixed 1 hour logic for "Later today"
       var hour = 1;
-      result.setHours(result.getHours() + hour, 0, 0, 0); // Reset minutes/seconds? Original logic implies rounding?
-      // Original logic: parseInt(settings["later-today"]) * hour + roundedTargetNow.getTime().
+      result.setHours(result.getHours() + hour, 0, 0, 0);
       // Let's assume user wants exactly +3 hours from now, maybe rounded to nearest hour?
       // Looking at original code: it rounded seconds to 0.
       result.setMinutes(zonedNow.getMinutes()); // Keep minutes? Original logic setSeconds(0,0) then added hours.
@@ -132,7 +131,6 @@ export async function getSettings() {
     "end-day": "5:00 PM",
     "week-begin": 1,
     "weekend-begin": 6,
-    "later-today": 1,
     "open-new-tab": "true",
     badge: "true",
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
