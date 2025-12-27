@@ -137,8 +137,8 @@ function setSettingsTime(result, settingsTime) {
 export async function getSettings() {
   const res = await chrome.storage.local.get("settings");
   const defaults = {
-    "start-day": "9:00 AM",
-    "end-day": "6:00 PM",
+    "start-day": "8:00 AM",
+    "end-day": "5:00 PM",
     "start-weekend": "10:00 AM",
     "week-begin": 1,
     "weekend-begin": 6,
