@@ -3,32 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snooooze - The Tab Snoozer for Pros</title>
-    <meta name="description" content="Declutter your browser and focus on what matters. Snooze tabs for later with a modern, darker experience.">
+    <title data-i18n="title">Snooooze - The Tab Snoozer for Pros</title>
+    <meta name="description" data-i18n-attr="content" data-i18n="meta_description" content="Declutter your browser and focus on what matters. Snooze tabs for later with a modern, darker experience.">
     <link rel="stylesheet" href="landing.css">
     <link rel="icon" type="image/png" href="assets/favicon-32.png" sizes="32x32">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 </head>
 <body>
+    <!-- Language Toggle (shadcn/ui Tabs style) -->
+    <div class="lang-toggle">
+        <div class="lang-tabs" role="tablist">
+            <button id="lang-en" class="lang-tab" role="tab" aria-selected="true" data-lang="en">
+                <span class="lang-flag">🇺🇸</span> English
+            </button>
+            <button id="lang-ja" class="lang-tab" role="tab" aria-selected="false" data-lang="ja">
+                <span class="lang-flag">🇯🇵</span> 日本語
+            </button>
+        </div>
+    </div>
 
     <div class="container">
         <!-- Hero Section -->
         <section class="hero">
             <div class="badge">v0.2.5</div>
             <img src="assets/logo.svg" alt="Snooooze Logo" class="hero-logo">
-            <h1>Focus on now.<br>Snooze for later.</h1>
-            <p class="hero-tagline">
+            <h1 data-i18n="hero_title">Focus on now.<br>Snooze for later.</h1>
+            <p class="hero-tagline" data-i18n="hero_tagline">
                 Declutter your workspace without losing context.<br>
                 The modern tab manager for Chrome that feels like native macOS.
             </p>
             <div class="hero-actions">
                 <a href="https://chromewebstore.google.com/detail/gncjidjnndmkohhhnijekcjiakmllonk" class="btn btn-primary" target="_blank">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.5rem"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
-                    Add to Chrome
+                    <span data-i18n="btn_add_chrome">Add to Chrome</span>
                 </a>
                 <a href="https://github.com/mtskf/Snooooze" class="btn btn-secondary">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.5rem"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
-                    View on GitHub
+                    <span data-i18n="btn_github">View on GitHub</span>
                 </a>
             </div>
 
@@ -44,24 +55,24 @@
                     <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <h3>Snooze Tabs</h3>
-                    <p>Save tabs for later in one click. Choose "Later Today", "Tomorrow", or pick a custom date.</p>
+                    <h3 data-i18n="feature1_title">Snooze Tabs</h3>
+                    <p data-i18n="feature1_desc">Save tabs for later in one click. Choose "Later Today", "Tomorrow", or pick a custom date.</p>
                 </div>
                 <!-- Feature 2 -->
                 <div class="feature-card">
                     <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    <h3>Auto Restore</h3>
-                    <p>Tabs automatically reopen when the time comes. No annoying notifications, just focus.</p>
+                    <h3 data-i18n="feature2_title">Auto Restore</h3>
+                    <p data-i18n="feature2_desc">Tabs automatically reopen when the time comes. No annoying notifications, just focus.</p>
                 </div>
                 <!-- Feature 3 -->
                 <div class="feature-card">
                     <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    <h3>Keyboard First</h3>
-                    <p>Blazing fast shortcuts. Use <code>Cmd + .</code> to open, single letters to snooze. Fully customizable.</p>
+                    <h3 data-i18n="feature3_title">Keyboard First</h3>
+                    <p data-i18n="feature3_desc">Blazing fast shortcuts. Use <code>Cmd + .</code> to open, single letters to snooze. Fully customizable.</p>
                 </div>
 
             </div>
@@ -77,19 +88,19 @@
                 </div>
             </div>
             <div class="text-col">
-                <h2>How to use</h2>
+                <h2 data-i18n="howto_title">How to use</h2>
                 <ol class="steps-list">
                     <li>
-                        <strong>Quick Command</strong>
-                        <p>Press <kbd>Cmd</kbd> + <kbd>.</kbd> to open. Customizable in Chrome settings.</p>
+                        <strong data-i18n="step1_title">Quick Command</strong>
+                        <p data-i18n="step1_desc">Press <kbd>Cmd</kbd> + <kbd>.</kbd> to open. Customizable in Chrome settings.</p>
                     </li>
                     <li>
-                        <strong>Instant Snooze</strong>
-                        <p>Type <kbd>L</kbd> for Later, <kbd>T</kbd> for Tomorrow, or <kbd>P</kbd> to Pick Date. Customize keys and themes in Options.</p>
+                        <strong data-i18n="step2_title">Instant Snooze</strong>
+                        <p data-i18n="step2_desc">Type <kbd>L</kbd> for Later, <kbd>T</kbd> for Tomorrow, or <kbd>P</kbd> to Pick Date. Customize keys and themes in Options.</p>
                     </li>
                     <li>
-                        <strong>Focus & Restore</strong>
-                        <p>Enjoy your clean workspace. Tabs magically reappear exactly when you need them.</p>
+                        <strong data-i18n="step3_title">Focus &amp; Restore</strong>
+                        <p data-i18n="step3_desc">Enjoy your clean workspace. Tabs magically reappear exactly when you need them.</p>
                     </li>
                 </ol>
             </div>
@@ -109,15 +120,15 @@
                 </span>
                 <a href="https://github.com/mtskf/Snooooze/issues" target="_blank" class="footer-link">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.2rem"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
-                    Report Issue
+                    <span data-i18n="footer_report">Report Issue</span>
                 </a>
                 <a href="https://www.buymeacoffee.com/mtskf" target="_blank" class="footer-link text-amber-400 hover:text-amber-300">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.2rem"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
-                    Buy me a coffee
+                    <span data-i18n="footer_coffee">Buy me a coffee</span>
                 </a>
 
             </div>
-            <p>&copy; 2025 Snooooze. Open source and MIT Licensed.</p>
+            <p data-i18n="footer_copyright">&copy; 2025 Snooooze. Open source and MIT Licensed.</p>
         </div>
     </footer>
 
@@ -131,6 +142,101 @@
     <script>
       // We pre-filled your app ID in the widget URL: 'https://widget.intercom.io/widget/juhmbs31'
       (function(){var w=window;var ic=w.Intercom;if(typeof ic==="function"){ic('reattach_activator');ic('update',w.intercomSettings);}else{var d=document;var i=function(){i.c(arguments);};i.q=[];i.c=function(args){i.q.push(args);};w.Intercom=i;var l=function(){var s=d.createElement('script');s.type='text/javascript';s.async=true;s.src='https://widget.intercom.io/widget/juhmbs31';var x=d.getElementsByTagName('script')[0];x.parentNode.insertBefore(s,x);};if(document.readyState==='complete'){l();}else if(w.attachEvent){w.attachEvent('onload',l);}else{w.addEventListener('load',l,false);}}})();
+    </script>
+
+    <!-- i18n Script -->
+    <script>
+    (function() {
+      const translations = {
+        en: {
+          title: "Snooooze - The Tab Snoozer for Pros",
+          meta_description: "Declutter your browser and focus on what matters. Snooze tabs for later with a modern, darker experience.",
+          hero_title: "Focus on now.<br>Snooze for later.",
+          hero_tagline: "Declutter your workspace without losing context.<br>The modern tab manager for Chrome that feels like native macOS.",
+          btn_add_chrome: "Add to Chrome",
+          btn_github: "View on GitHub",
+          feature1_title: "Snooze Tabs",
+          feature1_desc: 'Save tabs for later in one click. Choose "Later Today", "Tomorrow", or pick a custom date.',
+          feature2_title: "Auto Restore",
+          feature2_desc: "Tabs automatically reopen when the time comes. No annoying notifications, just focus.",
+          feature3_title: "Keyboard First",
+          feature3_desc: "Blazing fast shortcuts. Use <code>Cmd + .</code> to open, single letters to snooze. Fully customizable.",
+          howto_title: "How to use",
+          step1_title: "Quick Command",
+          step1_desc: "Press <kbd>Cmd</kbd> + <kbd>.</kbd> to open. Customizable in Chrome settings.",
+          step2_title: "Instant Snooze",
+          step2_desc: "Type <kbd>L</kbd> for Later, <kbd>T</kbd> for Tomorrow, or <kbd>P</kbd> to Pick Date. Customize keys and themes in Options.",
+          step3_title: "Focus & Restore",
+          step3_desc: "Enjoy your clean workspace. Tabs magically reappear exactly when you need them.",
+          footer_report: "Report Issue",
+          footer_coffee: "Buy me a coffee",
+          footer_copyright: "&copy; 2025 Snooooze. Open source and MIT Licensed.",
+          lang_label: "日本語"
+        },
+        ja: {
+          title: "Snooooze - 後で読むタブをスマートに管理",
+          meta_description: "タブを閉じずに一時保存。必要な時に自動で復活。散らかったブラウザをすっきり整理。",
+          hero_title: "タブを閉じて、<br>今すべきことに集中。",
+          hero_tagline: "読みたいけど今じゃない。そんなタブを一時保存。<br>指定した時間に自動で開くから、忘れる心配なし。",
+          btn_add_chrome: "Chromeに追加",
+          btn_github: "GitHub",
+          feature1_title: "ワンクリックで一時保存",
+          feature1_desc: "「後で読む」「明日見る」をワンクリックで。日時指定もできます。",
+          feature2_title: "時間が来たら自動で開く",
+          feature2_desc: "指定した時間にタブが自動復活。リマインドなし、通知なし。静かに開きます。",
+          feature3_title: "キーボードで爆速操作",
+          feature3_desc: "マウス不要で超高速。思考を止めずに、サクサクとタブを片付けられます。",
+          howto_title: "使い方",
+          step1_title: "ショートカットで起動",
+          step1_desc: "<kbd>Cmd</kbd> + <kbd>.</kbd>でポップアップを開く。ショートカットは変更可能。",
+          step2_title: "キー1つでスヌーズ",
+          step2_desc: "<kbd>L</kbd>で今日中、<kbd>T</kbd>で明日、<kbd>P</kbd>で日時を選んでスヌーズ。",
+          step3_title: "あとは待つだけ",
+          step3_desc: "時間が来れば勝手に開きます。タブを閉じて、今の作業に集中。",
+          footer_report: "問題を報告",
+          footer_coffee: "開発を支援",
+          footer_copyright: "&copy; 2025 Snooooze. MIT License.",
+          lang_label: "English"
+        }
+      };
+
+      function setLanguage(lang) {
+        document.documentElement.lang = lang;
+        localStorage.setItem('snooooze-lang', lang);
+
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+          const key = el.getAttribute('data-i18n');
+          const attrTarget = el.getAttribute('data-i18n-attr');
+          if (translations[lang][key]) {
+            if (attrTarget) {
+              el.setAttribute(attrTarget, translations[lang][key]);
+            } else {
+              el.innerHTML = translations[lang][key];
+            }
+          }
+        });
+
+        // Update tab active states
+        document.querySelectorAll('.lang-tab').forEach(tab => {
+          const isActive = tab.getAttribute('data-lang') === lang;
+          tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+      }
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', function() {
+        const savedLang = localStorage.getItem('snooooze-lang') ||
+                          (navigator.language.startsWith('ja') ? 'ja' : 'en');
+        setLanguage(savedLang);
+
+        document.querySelectorAll('.lang-tab').forEach(tab => {
+          tab.addEventListener('click', function() {
+            const lang = this.getAttribute('data-lang');
+            setLanguage(lang);
+          });
+        });
+      });
+    })();
     </script>
 </body>
 </html>
