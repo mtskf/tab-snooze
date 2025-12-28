@@ -26,11 +26,13 @@ Snooooze/
 
 ## Core Components
 
-### Service Worker (`serviceWorker.js`)
+### Service Worker (`serviceWorker.js` + `snoozeLogic.js`)
 - **Alarm System**: `popCheck` runs every minute (or on startup) to restore overdue tabs
 - **Storage**: `chrome.storage.local` for snoozed tabs and settings
 - **Restoration**: Directly opens tabs when time is reached
-- **Mutex Lock**: Prevents race conditions during batch operations
+- **Mutex Lock**: Promise-chain mutex (`storageLock`) prevents race conditions
+- **Shared Config**: `DEFAULT_SETTINGS` imported from `constants.js`
+- **Helper**: `getTabsByGroupId()` extracts tabs by group ID
 
 ### Popup (`Popup.jsx`)
 - **Scope Selection**: "Selected tabs" or "Window" (Shift key toggle)

@@ -8,9 +8,18 @@ All notable changes to this project will be documented in this file.
 
 ## v0.2.4
 
-- **Fix**: Updated default settings to 8:00 AM / 5:00 PM for all users (removed 9:00 AM / 6:00 PM logic).
-- **Fix**: Removed unused "Later Today" time setting to prevent confusion.
-- **Docs**: Updated documentation to reflect accurate default times.
+### Changed
+- **Default Settings**: Updated to 8:00 AM / 5:00 PM (previously 9:00 AM / 6:00 PM).
+- **Centralized Config**: Moved `DEFAULT_SETTINGS` to `constants.js` (shared by `snoozeLogic.js` and `timeUtils.js`).
+- **Code Quality**: Replaced all `var` with `const`/`let` in `snoozeLogic.js`.
+
+### Removed
+- **Unused Setting**: Removed vestigial "Later Today" time setting key (was unused, defaulted to +1 hour).
+
+### Refactored
+- **Helper Function**: Extracted `getTabsByGroupId()` to reduce code duplication.
+- **Synchronous Fix**: Removed incorrect `async` from `removeSnoozedTab()` (it was synchronous).
+- **Comments**: Fixed duplicate comment numbering and added clarifying comments for mutex pattern.
 
 ## [v0.2.3] - 2025-12-27
 
