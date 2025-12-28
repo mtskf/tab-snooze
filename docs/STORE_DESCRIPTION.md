@@ -21,9 +21,13 @@ Too many open tabs? Afraid to close them because you might forget? Snooooze lets
 
 *   `Cmd/Ctrl` + `.`: Open Snooooze Popup
 *   `L`: Snooze for Later Today
+*   `E`: Snooze for This Evening
 *   `T`: Snooze for Tomorrow
 *   `S`: Snooze for This Weekend
 *   `N`: Snooze for Next Monday
+*   `P`: Pick a Custom Date
+
+> **Tip:** Hold `Shift` while pressing any shortcut to snooze your **entire window** at once!
 
 ## Open Source
 
