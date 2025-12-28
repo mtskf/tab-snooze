@@ -1,5 +1,6 @@
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { addMonths } from "date-fns";
+import { DEFAULT_SETTINGS } from "./constants";
 
 export async function getTime(timeName) {
   const settings = await getSettings();
@@ -126,13 +127,9 @@ function setSettingsTime(result, settingsTime) {
 
 export async function getSettings() {
   const res = await chrome.storage.local.get("settings");
+  // Merge with defaults (timezone is dynamic, so added here)
   const defaults = {
-    "start-day": "8:00 AM",
-    "end-day": "5:00 PM",
-    "week-begin": 1,
-    "weekend-begin": 6,
-    "open-new-tab": "true",
-    badge: "true",
+    ...DEFAULT_SETTINGS,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   };
 

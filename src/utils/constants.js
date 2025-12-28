@@ -11,6 +11,16 @@ export const DEFAULT_SHORTCUTS = {
   settings: [","],
 };
 
+// Centralized default settings (used by snoozeLogic.js and timeUtils.js)
+export const DEFAULT_SETTINGS = {
+  "start-day": "8:00 AM",
+  "end-day": "5:00 PM",
+  "week-begin": 1,
+  "weekend-begin": 6,
+  "open-new-tab": "true",
+  badge: "true",
+};
+
 export const SNOOZE_ACTIONS = [
   { id: "later-today", label: "Later today" },
   { id: "this-evening", label: "This evening" },

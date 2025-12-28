@@ -1,3 +1,5 @@
+import { DEFAULT_SETTINGS } from "../utils/constants";
+
 // Storage helper functions (exported for use by serviceWorker.js)
 export async function getSnoozedTabs() {
   const res = await chrome.storage.local.get("snoozedTabs");
@@ -27,14 +29,7 @@ export async function initStorage() {
 
   let settings = await getSettings();
   if (!settings) {
-    settings = {
-      "start-day": "8:00 AM",
-      "end-day": "5:00 PM",
-      "week-begin": 1,
-      "weekend-begin": 6,
-      badge: "true",
-    };
-    await setSettings(settings);
+    await setSettings({ ...DEFAULT_SETTINGS });
   }
 
   await chrome.action.setBadgeBackgroundColor({ color: "#FED23B" });
@@ -53,7 +48,7 @@ export async function snooze(tab, popTime, openInNewWindow, groupId = null) {
   try {
     await chrome.tabs.remove(tab.id);
   } catch (e) {
-    // console.warn("Could not close tab (maybe already closed):", e);
+    // Tab may already be closed
   }
 
   // Add to storage
@@ -72,22 +67,22 @@ export async function popCheck() {
 
   if (!snoozedTabs) return 0;
 
-  var timestamps = Object.keys(snoozedTabs).sort();
-  var tabsToPop = [];
-  var timesToRemove = [];
+  const timestamps = Object.keys(snoozedTabs).sort();
+  const tabsToPop = [];
+  const timesToRemove = [];
 
-  var now = Date.now();
+  const now = Date.now();
 
-  for (var i = 0; i < timestamps.length; i++) {
-    var timeStr = timestamps[i];
+  for (let i = 0; i < timestamps.length; i++) {
+    const timeStr = timestamps[i];
     if (timeStr === "tabCount") continue; // Skip counter key if present in keys
 
-    var time = parseInt(timeStr); // keys are strings
+    const time = parseInt(timeStr); // keys are strings
     if (isNaN(time)) continue;
 
     if (time < now) {
       timesToRemove.push(timeStr);
-      tabsToPop = tabsToPop.concat(snoozedTabs[timeStr]);
+      tabsToPop.push(...snoozedTabs[timeStr]);
     }
   }
 
@@ -143,28 +138,22 @@ async function restoreTabs(tabs, timesToRemove) {
     }
   }
 
-  // Cleanup storage (Now protected by lock and re-verification)
+  // Cleanup storage
+  // storageLock is a promise-chain mutex to prevent race conditions
   await storageLock.then(async () => {
     // Re-read storage inside the lock to get the latest state
     const currentSnoozedTabs = await getSnoozedTabs();
     if (!currentSnoozedTabs) return;
 
-    let actuallyRemovedCount = 0;
-
-    for (var i = 0; i < timesToRemove.length; i++) {
+    for (let i = 0; i < timesToRemove.length; i++) {
       const timeKey = timesToRemove[i];
       // Only delete if it still exists (it should)
       if (currentSnoozedTabs[timeKey]) {
         delete currentSnoozedTabs[timeKey];
-        // We know exactly how many tabs were in this time slot from our local 'tabs' array
-        // But better to count what we just removed to be safe, or stick to the logic:
-        // We processed these specific time keys.
       }
     }
 
-    // Recalculate or decrement count safely
-    // Since we might have race conditions on tabCount if we just did -=,
-    // let's trust that we are the only ones removing *these* specific timestamps.
+    // Decrement count safely
     currentSnoozedTabs["tabCount"] = Math.max(
       0,
       (currentSnoozedTabs["tabCount"] || 0) - tabs.length
@@ -174,7 +163,7 @@ async function restoreTabs(tabs, timesToRemove) {
   });
 }
 
-// Revised: Parallel creation
+// Parallel tab creation
 async function createTabsInWindow(tabs, w) {
   const promises = tabs.map((tab) => createTab(tab, w));
   await Promise.all(promises);
@@ -188,11 +177,11 @@ async function createTab(tab, w) {
       active: false,
     });
   } catch (e) {
-    // console.error(e);
+    // Tab creation failed
   }
 }
 
-// Mutex for storage operations
+// Promise-chain mutex for storage operations
 let storageLock = Promise.resolve();
 
 async function addSnoozedTab(tab, popTime, openInNewWindow, groupId = null) {
@@ -222,18 +211,17 @@ async function addSnoozedTab(tab, popTime, openInNewWindow, groupId = null) {
       await setSnoozedTabs(snoozedTabs);
     })
     .catch((err) => {
-      // console.error("Error in storage lock:", err);
+      // Error in storage lock
     });
 
   return storageLock;
 }
 
-export async function restoreWindowGroup(groupId) {
-  const snoozedTabs = await getSnoozedTabs();
+// Helper: Get all tabs matching a specific groupId
+function getTabsByGroupId(snoozedTabs, groupId) {
   const timestamps = Object.keys(snoozedTabs);
   let groupTabs = [];
 
-  // 1. Gather Tabs
   for (const ts of timestamps) {
     if (ts === "tabCount") continue;
     const tabs = snoozedTabs[ts];
@@ -242,6 +230,15 @@ export async function restoreWindowGroup(groupId) {
     const matchingTabs = tabs.filter((t) => t.groupId === groupId);
     groupTabs = groupTabs.concat(matchingTabs);
   }
+
+  return groupTabs;
+}
+
+export async function restoreWindowGroup(groupId) {
+  const snoozedTabs = await getSnoozedTabs();
+
+  // 1. Gather Tabs using helper
+  const groupTabs = getTabsByGroupId(snoozedTabs, groupId);
 
   if (groupTabs.length === 0) return;
 
@@ -252,33 +249,33 @@ export async function restoreWindowGroup(groupId) {
   const urls = groupTabs.map((t) => t.url);
   await chrome.windows.create({ url: urls, focused: true });
 
-  // 3. Remove from storage
+  // 4. Remove from storage
   await removeWindowGroup(groupId);
 }
 
 export async function removeSnoozedTabWrapper(tab) {
   const snoozedTabs = await getSnoozedTabs();
-  await removeSnoozedTab(tab, snoozedTabs);
+  removeSnoozedTab(tab, snoozedTabs);
   // removeSnoozedTab modifies object, we need to save it.
   await setSnoozedTabs(snoozedTabs);
 }
 
-// Inner helper that modifies the object reference
-async function removeSnoozedTab(tab, snoozedTabs) {
+// Inner helper that modifies the object reference (synchronous)
+function removeSnoozedTab(tab, snoozedTabs) {
   // tab.popTime might be string or number
-  var popTime = new Date(tab.popTime).getTime();
-  var popSet = snoozedTabs[popTime];
+  const popTime = new Date(tab.popTime).getTime();
+  const popSet = snoozedTabs[popTime];
 
   if (!popSet) return; // not found
 
-  var tabIndex = -1;
+  let tabIndex = -1;
   // creationTime is used as unique ID match
-  var targetCreationTime = new Date(tab.creationTime).getTime();
+  const targetCreationTime = new Date(tab.creationTime).getTime();
 
-  for (var i = 0; i < popSet.length; i++) {
+  for (let i = 0; i < popSet.length; i++) {
     // Comparison of creation times
     // Note: storage JSON cycle might turn dates to strings, so safer to compare timestamps
-    let itemTime = new Date(popSet[i].creationTime).getTime();
+    const itemTime = new Date(popSet[i].creationTime).getTime();
 
     if (itemTime === targetCreationTime) {
       tabIndex = i;
@@ -290,7 +287,7 @@ async function removeSnoozedTab(tab, snoozedTabs) {
 
   popSet.splice(tabIndex, 1);
 
-  if (popSet.length == 0) {
+  if (popSet.length === 0) {
     delete snoozedTabs[popTime];
   } else {
     snoozedTabs[popTime] = popSet;
