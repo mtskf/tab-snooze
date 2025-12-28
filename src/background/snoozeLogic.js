@@ -1,4 +1,12 @@
-import { DEFAULT_SETTINGS } from "../utils/constants";
+// Default settings (inlined to avoid chunk splitting issues with Service Worker)
+const DEFAULT_SETTINGS = {
+  "start-day": "8:00 AM",
+  "end-day": "5:00 PM",
+  "week-begin": 1,
+  "weekend-begin": 6,
+  "open-new-tab": "true",
+  badge: "true",
+};
 
 // Storage helper functions (exported for use by serviceWorker.js)
 export async function getSnoozedTabs() {
