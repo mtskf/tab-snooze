@@ -8,14 +8,16 @@ Quick reference for system design and implementation.
 Snooooze/
 ├── src/
 │   ├── background/          # Service Worker (Manifest V3)
-│   │   └── serviceWorker.js # Alarm handling, tab restoration, storage
+│   │   ├── serviceWorker.js # Alarm handling
+│   │   └── snoozeLogic.js   # Storage & Tab mgmt logic
 │   ├── popup/               # Extension popup UI
 │   │   └── Popup.jsx        # Snooze options, scope selection
 │   ├── options/             # Options/Settings page
 │   │   └── Options.jsx      # Snoozed list, settings management
 │   ├── components/ui/       # shadcn/ui components
 │   ├── utils/               # Shared utilities
-│   │   └── timeUtils.js     # Time calculations, timezone handling
+│   │   ├── timeUtils.js     # Time calculations
+│   │   └── constants.js     # Config, Defaults, Theme colors
 │   ├── lib/                 # shadcn utilities (cn)
 │   └── index.css            # Global styles (Neo Carbon theme)
 ├── dist/                    # Built extension
