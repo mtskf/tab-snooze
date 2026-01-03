@@ -134,8 +134,19 @@ export async function setSnoozedTabs(legacyData) {
         return;
     }
 
+    // Reject future schema versions (cannot downgrade)
+    if (sourceVersion > CURRENT_SCHEMA_VERSION) {
+        throw new Error(`Cannot import data from future schema version ${sourceVersion}. Current version is ${CURRENT_SCHEMA_VERSION}.`);
+    }
+
     // Migrate from source version to current version
-    const v2Data = await runMigrations(legacyData, sourceVersion, CURRENT_SCHEMA_VERSION);
+    let v2Data = await runMigrations(legacyData, sourceVersion, CURRENT_SCHEMA_VERSION);
+
+    // Ensure version field is always present (even if source == target)
+    if (!v2Data.version) {
+        v2Data = { ...v2Data, version: CURRENT_SCHEMA_VERSION };
+    }
+
     await chrome.storage.local.set({ snoooze_v2: v2Data });
 }
 

@@ -485,5 +485,43 @@ describe('snoozeLogic.js (V2)', () => {
                 schedule: {}
             });
         });
+
+        test('should add version field to V2 data without version', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({});
+
+            // V2 data without version field
+            const v2DataWithoutVersion = {
+                items: { 'id-1': { id: 'id-1', url: TAB_URL, popTime: MOCK_TIME, creationTime: 100 } },
+                schedule: { [MOCK_TIME]: ['id-1'] }
+            };
+
+            await setSnoozedTabs(v2DataWithoutVersion);
+
+            const setCall = chromeMock.storage.local.set.mock.calls.find(
+                (call) => call[0].snoooze_v2
+            );
+            expect(setCall).toBeTruthy();
+
+            const savedV2 = setCall[0].snoooze_v2;
+            expect(savedV2.version).toBe(2); // Version should be added
+            expect(savedV2.items).toEqual(v2DataWithoutVersion.items);
+            expect(savedV2.schedule).toEqual(v2DataWithoutVersion.schedule);
+        });
+
+        test('should reject future schema versions', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({});
+
+            // Future schema version
+            const futureData = {
+                version: 3,
+                items: {},
+                schedule: {},
+                newField: {}
+            };
+
+            await expect(setSnoozedTabs(futureData)).rejects.toThrow(
+                'Cannot import data from future schema version 3'
+            );
+        });
     });
 });
