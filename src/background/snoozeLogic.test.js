@@ -9,6 +9,7 @@ import {
   removeSnoozedTabWrapper,
   removeWindowGroup,
   getSettings,
+  getValidatedSnoozedTabs,
 } from './snoozeLogic';
 
 vi.mock('../utils/uuid.js', async (importOriginal) => {
@@ -196,6 +197,15 @@ describe('snoozeLogic.js (V2)', () => {
         expect(verifyCall.snoooze_v2.items[id]).toBeUndefined();
     });
 
+    test('popCheck - returns early when offline', async () => {
+        vi.stubGlobal('navigator', { onLine: false });
+
+        const result = await popCheck();
+
+        expect(result).toBe(0);
+        expect(chromeMock.storage.local.get).not.toHaveBeenCalled();
+    });
+
     test('removeSnoozedTabWrapper - removes from V2 by ID', async () => {
         const popTime = MOCK_TIME + 10000;
         const id = 'tab-rem';
@@ -282,6 +292,34 @@ describe('snoozeLogic.js (V2)', () => {
             expect(settings.timezone).toBe('Mock/Zone');
 
 
+        });
+    });
+
+    describe('getValidatedSnoozedTabs', () => {
+        test('sanitizes invalid schedule references and persists', async () => {
+            const popTime = MOCK_TIME - 1000;
+            const id = 'tab-1';
+            const item = createItem(id, popTime);
+            const invalidV2 = {
+                snoooze_v2: {
+                    items: { [id]: item },
+                    schedule: { [popTime]: [id, 'missing-id'] }
+                }
+            };
+            chromeMock.storage.local.get.mockResolvedValue(invalidV2);
+
+            const result = await getValidatedSnoozedTabs();
+
+            expect(chromeMock.storage.local.set).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    snoooze_v2: expect.objectContaining({
+                        items: { [id]: item },
+                        schedule: { [popTime]: [id] }
+                    })
+                })
+            );
+            expect(result.tabCount).toBe(1);
+            expect(result[popTime]).toHaveLength(1);
         });
     });
 });

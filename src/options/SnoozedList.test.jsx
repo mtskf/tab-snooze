@@ -58,4 +58,75 @@ describe('SnoozedList', () => {
     render(<SnoozedList snoozedTabs={{}} />);
     expect(screen.getByText('No snoozed tabs.')).toBeInTheDocument();
   });
+
+  it('renders grouped window tabs and handles restore/clear actions', () => {
+    const onRestoreGroup = vi.fn();
+    const onClearGroup = vi.fn();
+    const onClearTab = vi.fn();
+    const groupedTabs = {
+      '1704100000000': [
+        {
+          url: 'https://example.com',
+          title: 'Grouped Tab A',
+          favicon: '',
+          creationTime: 123,
+          popTime: 1704100000000,
+          groupId: 'g1',
+        },
+        {
+          url: 'https://example.com/b',
+          title: 'Grouped Tab B',
+          favicon: '',
+          creationTime: 124,
+          popTime: 1704100000000,
+          groupId: 'g1',
+        },
+      ],
+      tabCount: 2,
+    };
+
+    render(
+      <SnoozedList
+        snoozedTabs={groupedTabs}
+        onRestoreGroup={onRestoreGroup}
+        onClearGroup={onClearGroup}
+        onClearTab={onClearTab}
+      />
+    );
+
+    const groupHeader = screen.getByText('Window Group');
+    fireEvent.click(groupHeader);
+    expect(onRestoreGroup).toHaveBeenCalledWith('g1');
+
+    const buttons = screen.getAllByRole('button');
+    const clearGroupButton = buttons.find((btn) =>
+      btn.className.includes('h-8 w-8')
+    );
+    expect(clearGroupButton).toBeTruthy();
+    fireEvent.click(clearGroupButton);
+    expect(onClearGroup).toHaveBeenCalledWith('g1');
+
+    fireEvent.click(screen.getByText('Grouped Tab A'));
+    expect(onClearTab).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Grouped Tab A' })
+    );
+  });
+
+  it('shows Unknown when tab URL is invalid', () => {
+    const invalidTabs = {
+      '1704100000000': [
+        {
+          url: 'not a url',
+          title: 'Broken Tab',
+          favicon: '',
+          creationTime: 123,
+          popTime: 1704100000000,
+        },
+      ],
+      tabCount: 1,
+    };
+
+    render(<SnoozedList snoozedTabs={invalidTabs} />);
+    expect(screen.getByText('Unknown')).toBeInTheDocument();
+  });
 });

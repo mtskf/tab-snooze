@@ -138,12 +138,13 @@ describe('Popup', () => {
     });
 
     render(<Popup />);
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
 
     // Since we fixed the fallback to 8, we expect "Tomorrow" NOT "This morning"
-    await waitFor(() => {
-        expect(screen.getByText('Tomorrow')).toBeInTheDocument();
-        expect(screen.queryByText('This morning')).not.toBeInTheDocument();
-    });
+    expect(screen.getByText('Tomorrow')).toBeInTheDocument();
+    expect(screen.queryByText('This morning')).not.toBeInTheDocument();
 
     vi.useRealTimers();
   });

@@ -1,13 +1,18 @@
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import TimeSettings from './TimeSettings';
 
-// Mock UI components that might interfere with simple testing if complex
-// But Select is from shadcn (radix), ensuring it works in JSDOM is key.
-// We will test interaction if possible, or at least rendering.
-// Radix primitives can be tricky in JSDOM without pointer events polyfills sometimes.
-// We'll rely on basic accessibility roles.
+vi.mock('@/components/ui/select', () => ({
+  Select: ({ value, onValueChange, children }) => {
+    if (onValueChange) onValueChange(value);
+    return <div>{children}</div>;
+  },
+  SelectTrigger: ({ children }) => <div>{children}</div>,
+  SelectValue: ({ placeholder }) => <span>{placeholder}</span>,
+  SelectContent: ({ children }) => <div>{children}</div>,
+  SelectItem: ({ children, value }) => <div data-value={value}>{children}</div>,
+}));
 
 describe('TimeSettings', () => {
   it('renders start and end day selectors', () => {
@@ -42,8 +47,12 @@ describe('TimeSettings', () => {
     expect(screen.getByText('5:00 PM')).toBeInTheDocument();
   });
 
-  // Note: Full interaction testing with Radix Select in JSDOM often requires
-  // user-event and ensuring pointer event mocks.
-  // For unit testing this component, verifying it renders correct props is sufficient
-  // if we assume the library component works.
+  it('calls updateSetting for both start and end selections', () => {
+    const settings = { 'start-day': '9:00 AM', 'end-day': '6:00 PM' };
+    const updateSetting = vi.fn();
+    render(<TimeSettings settings={settings} updateSetting={updateSetting} />);
+
+    expect(updateSetting).toHaveBeenCalledWith('start-day', '9:00 AM');
+    expect(updateSetting).toHaveBeenCalledWith('end-day', '6:00 PM');
+  });
 });

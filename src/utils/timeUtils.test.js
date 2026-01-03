@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getTime } from './timeUtils';
+import { getTime, getSettings } from './timeUtils';
+
+const originalIntl = global.Intl;
 
 
 describe('timeUtils', () => {
@@ -93,6 +95,65 @@ describe('timeUtils', () => {
         // 14 + 6 = 20
         expect(result.getDate()).toBe(20);
         expect(result.getHours()).toBe(8); // start-day
+    });
+
+    it('should return next Monday for next-monday', async () => {
+        // Set time to Wednesday 2024-01-17
+        vi.setSystemTime(new Date(2024, 0, 17, 10, 0, 0));
+        const result = await getTime('next-monday');
+        expect(result.getDay()).toBe(1);
+        expect(result.getHours()).toBe(8);
+    });
+
+    it('should return in-a-week by adding 7 days', async () => {
+        vi.setSystemTime(new Date(2024, 0, 15, 10, 0, 0));
+        const result = await getTime('in-a-week');
+        expect(result.getDate()).toBe(22);
+    });
+
+    it('should return in-a-month by adding one month', async () => {
+        vi.setSystemTime(new Date(2024, 0, 31, 10, 0, 0));
+        const result = await getTime('in-a-month');
+        expect(result.getMonth()).toBe(1);
+    });
+
+    it('returns undefined for pick-date', async () => {
+        const result = await getTime('pick-date');
+        expect(result).toBeUndefined();
+    });
+  });
+
+  describe('getSettings', () => {
+    it('merges defaults with stored settings', async () => {
+      global.Intl = {
+        DateTimeFormat: () => ({
+          resolvedOptions: () => ({ timeZone: 'Mock/Zone' }),
+        }),
+      };
+      chrome.storage.local.get.mockResolvedValue({
+        settings: { 'start-day': '9:00 AM' },
+      });
+
+      const settings = await getSettings();
+      expect(settings['start-day']).toBe('9:00 AM');
+      expect(settings['end-day']).toBe('5:00 PM');
+      expect(settings.timezone).toBe('Mock/Zone');
+      global.Intl = originalIntl;
+    });
+
+    it('returns defaults when no settings are stored', async () => {
+      global.Intl = {
+        DateTimeFormat: () => ({
+          resolvedOptions: () => ({ timeZone: 'Mock/Zone' }),
+        }),
+      };
+      chrome.storage.local.get.mockResolvedValue({});
+
+      const settings = await getSettings();
+      expect(settings['start-day']).toBe('8:00 AM');
+      expect(settings['end-day']).toBe('5:00 PM');
+      expect(settings.timezone).toBe('Mock/Zone');
+      global.Intl = originalIntl;
     });
   });
 });
