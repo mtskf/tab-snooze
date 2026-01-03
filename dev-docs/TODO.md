@@ -18,7 +18,11 @@
     - `Popup.jsx` の `parseTimeHour` を `timeUtils.js` へ移動。
     - `Popup` ロジックを `useSnooze` フックへ分離。
     - `timeUtils.getSettings()` を直接storage読取から排除し、呼び出し元から設定を注入する。
-9. [ ] 🟢: データフローを`ARCHITECTURE.md`に明示セクション化。
-10. [ ] 🟢: エラーハンドリングの統一（ログレベル制御、通知の一元化）。
-11. [ ] 🟢: `snoozeLogic.js` の分割（スキーマ整理後に実施）。
-12. [ ] 🟢: 未使用importの整理（Options/Popupなど）。
+9. [ ] 🟡: `snoozeLogic.js`のタブ復元失敗時、リトライを繰り返すのではなく、ユーザーが手動で確認できる隔離リストに移動する。
+10. [ ] 🟡: Reactコンポーネント（`Popup.jsx`, `Options.jsx`, `SnoozedList.jsx`）のパフォーマンス（再レンダリング）、アクセシビリティ、ベストプラクティスをレビューする。
+11. [ ] 🟡: ユーティリティファイル（`timeUtils.js`, `uuid.js`）を詳細にレビューし、改善の余地がないか確認する。
+12. [ ] 🟢: データフローを`ARCHITECTURE.md`に明示セクション化。
+13. [ ] 🟢: エラーハンドリングの統一（ログレベル制御、通知の一元化）。
+14. [ ] 🟢: `snoozeLogic.js` の分割（スキーマ整理後に実施）。
+15. [ ] 🟢: 未使用importの整理（Options/Popupなど）。
+16. [ ] 🟢: `serviceWorker.js`の`clearAllSnoozedTabs`アクションで、専用の`clearAll`メッセージハンドラを使い、V2ストアを直接クリアするようリファクタリングする。
