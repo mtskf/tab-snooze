@@ -99,6 +99,19 @@ describe('validation', () => {
       expect(result.repairable).toBe(true);
     });
 
+    it('should detect mismatching tabCount as repairable', () => {
+      const data = {
+        tabCount: 5, // actual is 1
+        '1704067200000': [
+          { url: 'https://example.com', creationTime: 1704000000000, popTime: 1704067200000 }
+        ]
+      };
+      const result = validateSnoozedTabs(data);
+      expect(result.valid).toBe(false);
+      expect(result.repairable).toBe(true);
+      expect(result.errors.some(e => e.includes('tabCount mismatch'))).toBe(true);
+    });
+
     it('should report invalid timestamp keys', () => {
       const data = {
         tabCount: 0,

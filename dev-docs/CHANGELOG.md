@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-*No unreleased changes*
+### Added
+- **Storage Size Warning**: Warn users when storage usage approaches the 10MB limit.
+  - Notification at 80% usage with 24-hour throttle
+  - Hysteresis (80%/70%) to prevent repeated warnings
+  - In-app Alert banner in Options page
+  - Click notification to open Options
+  - Firefox graceful fallback (feature disabled silently)
 
 ## v0.2.6
 

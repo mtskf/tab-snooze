@@ -16,6 +16,65 @@ const BACKUP_DEBOUNCE_MS = 2000;
 const BACKUP_PREFIX = 'snoozedTabs_backup_';
 let backupTimer = null;
 
+// Storage size warning configuration
+const STORAGE_LIMIT = 10 * 1024 * 1024;          // 10MB
+const WARNING_THRESHOLD = 0.8 * STORAGE_LIMIT;   // 80% = 8MB
+const CLEAR_THRESHOLD = 0.7 * STORAGE_LIMIT;     // 70% = 7MB
+const THROTTLE_MS = 24 * 60 * 60 * 1000;         // 24 hours
+
+/**
+ * Check storage size and warn user if approaching limit.
+ * Uses hysteresis (80%/70%) to prevent flapping.
+ * Gracefully handles Firefox (getBytesInUse not available).
+ */
+export async function checkStorageSize() {
+  try {
+    // Firefox doesn't support getBytesInUse - silently skip
+    if (typeof chrome.storage.local.getBytesInUse !== 'function') {
+      return;
+    }
+
+    const bytesUsed = await chrome.storage.local.getBytesInUse(null);
+    const storage = await chrome.storage.local.get(['sizeWarningActive', 'lastSizeWarningAt']);
+    const wasActive = storage.sizeWarningActive || false;
+    const lastWarningAt = storage.lastSizeWarningAt;
+    const now = Date.now();
+
+    let shouldBeActive = wasActive;
+
+    // Hysteresis logic
+    if (bytesUsed > WARNING_THRESHOLD) {
+      shouldBeActive = true;
+    } else if (bytesUsed < CLEAR_THRESHOLD) {
+      shouldBeActive = false;
+    }
+    // In hysteresis zone (70-80%): keep current state
+
+    // Update state if changed
+    if (shouldBeActive !== wasActive) {
+      await chrome.storage.local.set({ sizeWarningActive: shouldBeActive });
+    }
+
+    // Show notification if threshold exceeded and not throttled
+    if (shouldBeActive && !wasActive) {
+      const shouldNotify = !lastWarningAt || (now - lastWarningAt) > THROTTLE_MS;
+      if (shouldNotify) {
+        await chrome.notifications.create('storage-warning', {
+          type: 'basic',
+          iconUrl: 'assets/icon128.png',
+          title: 'Snooooze storage is almost full',
+          message: 'Open Snoozed list to delete or restore old tabs.',
+          priority: 1
+        });
+        await chrome.storage.local.set({ lastSizeWarningAt: now });
+      }
+    }
+  } catch (e) {
+    // Firefox or other error - silently ignore
+    console.warn('Storage size check failed:', e);
+  }
+}
+
 // Storage helper functions (exported for use by serviceWorker.js)
 export async function getSnoozedTabs() {
   const res = await chrome.storage.local.get("snoozedTabs");
@@ -29,7 +88,7 @@ export async function setSnoozedTabs(val) {
 }
 
 /**
- * Schedule a debounced backup rotation
+ * Schedule a debounced backup rotation and storage size check
  */
 function scheduleBackupRotation(data) {
   if (backupTimer) {
@@ -38,6 +97,7 @@ function scheduleBackupRotation(data) {
   backupTimer = setTimeout(async () => {
     backupTimer = null;
     await rotateBackups(data);
+    await checkStorageSize();
   }, BACKUP_DEBOUNCE_MS);
 }
 
@@ -94,7 +154,14 @@ export async function getValidatedSnoozedTabs() {
       return sanitized;
     } else {
       // Data is corrupted, try to recover from backup
-      return await recoverFromBackup();
+      const recovery = await recoverFromBackup();
+      // Set session flag for notification (same as initStorage)
+      if (recovery.recovered) {
+        if (chrome.storage.session) {
+          await chrome.storage.session.set({ pendingRecoveryNotification: recovery.tabCount });
+        }
+      }
+      return recovery.data;
     }
   }
 
@@ -199,7 +266,9 @@ export async function initStorage() {
       // Note: notification will be handled by serviceWorker if recovery.recovered is true
       if (recovery.recovered) {
         // Store recovery flag for notification (will be read by serviceWorker)
-        await chrome.storage.session.set({ pendingRecoveryNotification: recovery.tabCount });
+        if (chrome.storage.session) {
+          await chrome.storage.session.set({ pendingRecoveryNotification: recovery.tabCount });
+        }
       }
     }
   } else {
@@ -215,6 +284,9 @@ export async function initStorage() {
   }
 
   await chrome.action.setBadgeBackgroundColor({ color: "#FED23B" });
+
+  // Check storage size on startup
+  await checkStorageSize();
 }
 
 // Logic Functions

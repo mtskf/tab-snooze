@@ -107,6 +107,12 @@ export function validateSnoozedTabs(data) {
     e.includes('not an array')
   );
 
+  // Check tabCount consistency
+  if (data.tabCount !== undefined && actualTabCount !== data.tabCount) {
+    errors.push(`tabCount mismatch: expected ${actualTabCount}, got ${data.tabCount}`);
+    // Mismatch is repairable
+  }
+
   return {
     valid: errors.length === 0,
     errors,

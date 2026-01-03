@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import logo from "../assets/logo.svg";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
   CardContent,
@@ -40,6 +41,7 @@ import {
   Search,
   X,
   Keyboard,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SnoozedList from "./SnoozedList";
@@ -58,6 +60,7 @@ export default function Options() {
   const [searchQuery, setSearchQuery] = useState("");
   const [settings, setSettings] = useState({});
   const [extensionShortcut, setExtensionShortcut] = useState(null);
+  const [sizeWarningActive, setSizeWarningActive] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
     // Check URL hash for initial tab
     const hash = window.location.hash.slice(1);
@@ -93,9 +96,17 @@ export default function Options() {
         // For settings, we might want to re-merge if partial?
         // But usually changes.settings.newValue is the full object from set() actions.
         if (changes.settings) setSettings(changes.settings.newValue || {});
+        if (changes.sizeWarningActive !== undefined)
+          setSizeWarningActive(changes.sizeWarningActive.newValue || false);
       }
     };
     chrome.storage.onChanged.addListener(listener);
+
+    // Load size warning state
+    chrome.storage.local.get(["sizeWarningActive"], (res) => {
+      setSizeWarningActive(res.sizeWarningActive || false);
+    });
+
     return () => chrome.storage.onChanged.removeListener(listener);
   }, []);
 
@@ -204,9 +215,13 @@ export default function Options() {
           });
           currentTabs.tabCount = totalCount;
 
-          chrome.storage.local.set({ snoozedTabs: currentTabs }, () => {
-            alert(`Imported ${importedCount} tabs successfully!`);
-          });
+          // Use background setSnoozedTabs to trigger backup rotation and size check
+          chrome.runtime.sendMessage(
+            { action: "setSnoozedTabs", data: currentTabs },
+            () => {
+              alert(`Imported ${importedCount} tabs successfully!`);
+            }
+          );
         });
       } catch (error) {
         console.error(error);
@@ -270,6 +285,16 @@ export default function Options() {
   return (
     <div className="w-[672px] mx-auto py-8">
       <img src={logo} alt="Snooze" className="h-8 mb-6" />
+
+      {sizeWarningActive && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Storage is almost full</AlertTitle>
+          <AlertDescription>
+            Delete or restore old tabs to free up space.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-4 bg-secondary">

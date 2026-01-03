@@ -143,3 +143,10 @@ async function checkPendingRecoveryNotification() {
     console.warn('Recovery notification failed:', e);
   }
 }
+
+// Notification click handler - open Options page
+chrome.notifications.onClicked.addListener((notificationId) => {
+  if (notificationId === 'storage-warning' || notificationId === 'recovery-notification') {
+    chrome.tabs.create({ url: chrome.runtime.getURL('options/index.html') });
+  }
+});

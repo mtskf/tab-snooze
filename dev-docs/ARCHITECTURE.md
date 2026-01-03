@@ -87,6 +87,14 @@ Snooooze/
 }
 ```
 
+### Storage Size Warning (chrome.storage.local)
+```javascript
+{
+  "sizeWarningActive": true,         // true if usage > 80%
+  "lastSizeWarningAt": 1704067200000 // timestamp of last notification (24h throttle)
+}
+```
+
 ## Key Flows
 
 ### Snooze Flow
