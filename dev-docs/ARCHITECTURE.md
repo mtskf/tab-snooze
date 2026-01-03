@@ -37,6 +37,8 @@ Snooooze/
 - **Shared Config**: `DEFAULT_SETTINGS` imported from `constants.js`
 - **Helper**: `getTabsByGroupId()` extracts tabs by group ID
 - **Backup System**: Debounced 3-generation rotating backups with auto-recovery
+- **Badge Sync**: `updateBadge()` updates icon badge text on every storage/settings change
+- **Null Safety**: All storage operations guard against missing/corrupted data
 
 ### Popup (`Popup.jsx`)
 - **Scope Selection**: "Selected tabs" or "Window" (Shift key toggle)

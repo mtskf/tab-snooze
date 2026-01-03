@@ -40,9 +40,9 @@ To prevent frustration when working late (e.g., at 2 AM), "Tomorrow" refers to t
 ## 3. Scope & Shortcuts
 
 ### 3.1. Scope Selection
-- **Selected Tabs:** Only the currently highlighted tabs are snoozed.
-- **Current Window:** All tabs in the current window are snoozed.
-- A shared `groupId` is assigned when multiple tabs are snoozed together or when the scope is "Current Window".
+- **Selected Tabs:** Only the currently highlighted tabs are snoozed. Even if multiple tabs are selected, they are stored individually (no `groupId`).
+- **Current Window:** All tabs in the current window are snoozed together with a shared `groupId`.
+- A `groupId` is **only** assigned when scope is explicitly "Window". Multi-selected tabs in "Selected" scope do **not** get a `groupId` and will restore in the current window, not a new one.
 
 ### 3.2. Keyboard Shortcuts
 - **Single Key:** Triggers snooze for the corresponding option (e.g., 'T' for Tomorrow).
@@ -82,7 +82,9 @@ Defined in `src/utils/constants.js`.
 
 ### 5.2. Badge
 - Badge background is set to `#FED23B`.
-- No badge text updates are implemented in the current service worker (the UI still stores `tabCount` in storage).
+- Badge text displays the current `tabCount` (number of snoozed tabs). Empty when count is 0.
+- Updated automatically on every `setSnoozedTabs` and `setSettings` call via `updateBadge()`.
+- Respects `settings.badge` preference ("true"/"false"). If "false", badge text is hidden.
 
 ## 6. Data Integrity
 

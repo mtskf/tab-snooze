@@ -83,3 +83,27 @@ Documents significant architectural decisions made during development.
     - **Throttling**: Notifications limited to once per 24 hours to avoid annoyance.
     - **Firefox Handling**: `getBytesInUse` is missing in Firefox for local storage. We wrap calls in try-catch and silently disable the check features.
 - **Consequences**: Users get advanced warning before catastrophic failure. Options page banner provides persistent visual cue. Firefox users don't get warnings but also don't get crashes.
+
+## ADR-014: Centralized Import Validation
+- **Context**: `Options.jsx` had a weak local `validateImportData` that only checked for `parseInt`-able keys and presence of `url`/`title`. This allowed malformed data (missing `creationTime`, `popTime`) to be imported, causing issues downstream.
+- **Decision**: Replace local validation with the shared `validateSnoozedTabs` from `src/utils/validation.js`.
+- **Consequences**: Import now enforces the same strict schema as the backup/recovery system. Invalid imports are rejected with detailed error logging. Single source of truth for data validation.
+
+## ADR-015: Badge Text Updates
+- **Context**: The badge count was stored in `tabCount` but never displayed on the extension icon. Users had no quick visual indicator of pending snoozed tabs.
+- **Decision**: Implement `updateBadge()` in `snoozeLogic.js` that reads settings and tab count, then calls `chrome.action.setBadgeText`.
+    - Called automatically from `setSnoozedTabs` and `setSettings`.
+    - Respects `settings.badge === "false"` to hide the badge if user prefers.
+- **Consequences**: Badge is always in sync with storage. Adding a new message handler `updateBadgeText` was unnecessary but harmless (forwards to the same function).
+
+## ADR-016: Calendar Keyboard Conflict Resolution
+- **Context**: When the DatePicker calendar was open, global keyboard shortcuts (Arrow keys, Enter, letter shortcuts) still fired, causing accidental snoozes or focus jumps.
+- **Decision**: Pass `isCalendarOpen` state from `Popup.jsx` to `useKeyboardNavigation` hook. If true, the handler returns early, disabling all global shortcuts.
+- **Consequences**: Calendar navigation is unobstructed. Users can use arrows and Enter within the calendar without side effects. Escape still closes the calendar (handled by the modal overlay).
+
+## ADR-017: Defensive Storage Access
+- **Context**: Code review identified that `getSnoozedTabs()` could return `undefined` if storage was cleared or corrupted, and subsequent code would crash trying to access properties.
+- **Decision**: Add explicit null/undefined guards at the start of all functions that depend on `snoozedTabs`:
+    - `addSnoozedTab`: Initialize to `{ tabCount: 0 }` if missing.
+    - `removeSnoozedTabWrapper`, `removeWindowGroup`, `restoreWindowGroup`: Return early if missing.
+- **Consequences**: Extension is resilient to storage clearing (via DevTools or browser reset). No crashes, no data corruption—just graceful no-ops.

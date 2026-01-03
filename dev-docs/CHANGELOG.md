@@ -6,6 +6,25 @@ All notable changes to this project will be documented in this file.
 
 *No unreleased changes*
 
+## v0.2.8
+
+### Added
+- **Badge Text Update**: Badge now displays the current snoozed tab count, updated on every storage change and settings toggle.
+- **Safety Unit Tests**: New `snoozeLogic.safety.test.js` covering null storage handling, badge updates, and edge cases.
+
+### Fixed
+- **Critical: Storage Null Checks**: `addSnoozedTab`, `removeSnoozedTabWrapper`, `restoreWindowGroup`, and `removeWindowGroup` now safely handle missing or corrupted storage without crashing.
+- **High: Race Condition Guards**: `removeSnoozedTabWrapper` and `removeWindowGroup` are now wrapped in `storageLock` mutex to prevent concurrent storage mutations.
+- **Medium: Import Validation**: `Options.jsx` now uses the robust `validateSnoozedTabs` from `src/utils/validation.js` instead of a weak local validator.
+- **Medium: Search Filter Crash**: Added `Array.isArray` check in Options page search filter to prevent crashes from malformed storage data.
+- **Medium: Grouped Tab Scope**: Fixed "selected" scope with multiple tabs incorrectly assigning a `groupId`, causing restoration in a new window.
+- **Medium: Case-Insensitive Shortcuts**: Settings keyboard shortcut matching is now case-insensitive.
+- **Low: Calendar Keyboard Conflict**: Global keyboard shortcuts (arrows, Enter, snooze keys) are now disabled when the calendar picker is open.
+- **Low: Unsafe URL Parsing**: `SnoozedList.jsx` now wraps `new URL()` in try-catch to prevent rendering crashes from malformed URLs.
+
+### Changed
+- **Landing Page SEO**: Added `rel="noopener noreferrer"` to all external links, enhanced `og:image`/`twitter:image` meta tags, and added canonical link.
+
 ## v0.2.7
 
 ### Added

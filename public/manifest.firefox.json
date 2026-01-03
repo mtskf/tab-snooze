@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Snooooze",
-  "version": "0.2.7",
-  "version_name": "0.2.7",
+  "version": "0.2.8",
+  "version_name": "0.2.8",
 
   "description": "Snooze tabs for later.",
   "icons": {
