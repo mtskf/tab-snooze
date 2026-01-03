@@ -300,4 +300,44 @@ describe('snoozeLogic Safety Checks', () => {
           expect(true).toBe(true);
       }
   });
+
+  it('should fetch window details if create returns no tabs, and proceed if count matches', async () => {
+      const { popCheck } = await import('./snoozeLogic');
+      const now = Date.now();
+      vi.setSystemTime(now);
+      const pastTime = now - 1000;
+
+      const tab1 = { id: 'uuid-1', url: 'http://a.com', groupId: 'g1', index: 0, creationTime: 123, popTime: pastTime };
+
+      mockStorage.snoozedTabs = {
+        [pastTime]: [tab1],
+        tabCount: 1
+      };
+
+      global.chrome.storage.local.get = vi.fn().mockResolvedValue(mockStorage);
+
+      // windows.get mock needed
+      global.chrome.windows.get = vi.fn().mockResolvedValue({
+          id: 100,
+          tabs: [{ id: 101, url: 'http://a.com' }] // Found it!
+      });
+
+      // create returns NO tabs
+      global.chrome.windows.create = vi.fn().mockResolvedValue({ id: 100 });
+
+      await popCheck();
+
+      // Should have verified via get() and removed the tab from storage
+      expect(chrome.windows.get).toHaveBeenCalledWith(100, { populate: true });
+
+      const setCall = chrome.storage.local.set.mock.calls[0][0];
+      const savedTabs = setCall.snoozedTabs[pastTime];
+
+      // Should be removed (empty or key gone)
+      if (savedTabs) {
+          expect(savedTabs).toHaveLength(0);
+      } else {
+          expect(setCall.snoozedTabs[pastTime]).toBeUndefined();
+      }
+  });
 });

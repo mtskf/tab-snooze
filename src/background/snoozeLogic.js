@@ -604,7 +604,22 @@ async function restoreTabs(tabs, timesToRemove) {
       groupTabs.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
       const urls = groupTabs.map((t) => t.url);
       try {
-        const createdWindow = await chrome.windows.create({ url: urls, focused: true });
+        let createdWindow = await chrome.windows.create({ url: urls, focused: true });
+
+        // MV3 Note: create() might not return tabs property in some cases/environments.
+        // If missing, we must fetch the window again to verify the tab count.
+        if (createdWindow && !createdWindow.tabs) {
+             try {
+                 createdWindow = await chrome.windows.get(createdWindow.id, { populate: true });
+             } catch (e) {
+                 console.warn("Failed to refetch window for verification:", e);
+                 // If we can't verify, we should probably assume success to avoid massive duplication,
+                 // OR assume failure to be safe.
+                 // Given we just created it, failure to get it often means it closed immediately or ID is wrong?
+                 // Let's rely on createdWindow existence.
+             }
+        }
+
         // Partial Failure Detection:
         // If some URLs were ignored (e.g. invalid), chrome creates a window with fewer tabs.
         // We verify the count to ensure all were restored.
