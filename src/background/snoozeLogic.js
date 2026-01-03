@@ -97,7 +97,7 @@ const DEFAULT_SETTINGS = {
   "end-day": "5:00 PM",
   "week-begin": 1,
   "weekend-begin": 6,
-  badge: "true",
+  "weekend-begin": 6,
 };
 
 // Backup configuration
@@ -373,7 +373,7 @@ export async function initStorage() {
     await setSettings({ ...DEFAULT_SETTINGS });
   }
 
-  await chrome.action.setBadgeBackgroundColor({ color: "#FED23B" });
+
 
   // Check storage size on startup
   await checkStorageSize();
