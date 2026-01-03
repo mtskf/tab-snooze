@@ -1,27 +1,13 @@
 # Backlog
 
-## Storage size warning (separate feature)
+## Completed Features
 
-Goal: Warn users when `chrome.storage.local` usage approaches the limit.
-
-### Design
-
-#### 1. Size estimation
-- Use `chrome.storage.local.getBytesInUse(null)` to measure **total** bytes used (simpler than filtering keys).
-- Compare against thresholds (10MB = 10,485,760 bytes):
-  - **Warning threshold**: 80% (8,388,608 bytes)
-  - **Clear threshold**: 70% (7,340,032 bytes) — hysteresis to prevent flapping
-- Store `sizeWarningActive: boolean` in `chrome.storage.local` (persists across browser restarts).
-
-#### 2. Trigger
-- Evaluate on each `snoozedTabs` write (after `scheduleBackupRotation()` in `setSnoozedTabs()`).
-- **Also check once on startup** (`initStorage()`) to catch pre-existing high usage.
-- Debounce size check together with backup rotation (use same timer).
-- Persist `lastSizeWarningAt` in `chrome.storage.local` to throttle notifications (once per 24h).
-
-#### 3. Notification
-- Message: "Snooooze storage is almost full. Open Snoozed list to delete or restore old tabs."
-- Click handler opens Options page (`chrome.notifications.onClicked` in `serviceWorker.js`).
+### Storage Size Warning (v0.2.7)
+- **Goal**: Warn users when `chrome.storage.local` usage approaches limit.
+- **Status**: Implemented.
+  - Notification at 80% usage (24h throttle).
+  - In-app Alert banner.
+  - Firefox fallback included.
 - Icon: `assets/icon128.png` (existing).
 
 #### 4. In-app banner (Options.jsx)
