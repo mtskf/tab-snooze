@@ -247,7 +247,7 @@ export default function Popup() {
     });
   };
 
-  // Hidden command: 1-minute snooze (jjj) for debugging
+  // Hidden debug command: 1-minute snooze (jjj) - DEV mode only
   const handleOneMinuteSnooze = (targetScope) => {
     const time = new Date();
     time.setMinutes(time.getMinutes() + 1);

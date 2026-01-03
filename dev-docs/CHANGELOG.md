@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - **Unified Default Fallbacks**: Replaced hardcoded fallback values (`9` in `timeUtils.getSettingsTime`, `8` in `Popup.parseTimeHour`) with `DEFAULT_SETTINGS`-derived values via new shared `parseTimeString` utility.
 
 ### Changed
+- **Debug Command**: Limited `jjj` debug command (1-minute snooze) to development builds only via `import.meta.env.DEV` check.
 - **Options Import/Export**: Options page now delegates import/export to `StorageService`, simplifying UI logic and ensuring consistent validation/sanitization.
 - **Popup Settings Fetch**: Popup now requests settings via background messaging instead of direct storage reads.
 - **Import Merge Source**: Import merges against background `getSnoozedTabs` data to avoid overwriting V2 state.

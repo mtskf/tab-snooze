@@ -4,7 +4,7 @@
 
 1. [x] Medium: V2ストレージ取得時に常にバリデーション/サニタイズする入口を用意（`getStorageV2` or shared accessor）。破損データで`items`/`schedule`が欠落した場合のクラッシュを防ぐ。
 2. [x] Medium: `DEFAULT_SETTINGS`準拠のフォールバックに統一（`timeUtils.getSettingsTime`の`9`、`Popup.parseTimeHour`の`8`を排除）。
-3. [ ] Medium: デバッグ用の隠しコマンド（`jjj` 1分スヌーズ）を削除、または開発ビルド限定にする。
+3. [x] Medium: デバッグ用の隠しコマンド（`jjj` 1分スヌーズ）を削除、または開発ビルド限定にする。
 4. [ ] Medium: V2スキーマのバージョン定義とマイグレーション表を追加し、検証/修復の入口を単一化。
 5. [ ] Medium: JSDoc型定義（`SnoozedItemV2`, `ScheduleV2`, `Settings`等）を追加。
 6. [ ] Medium: `chrome.*` APIラッパー（`ChromeApi.js`）に集約。エラーハンドリング・テストモックを一元化。

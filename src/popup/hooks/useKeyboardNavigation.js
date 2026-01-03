@@ -26,8 +26,8 @@ export function useKeyboardNavigation({
       let key = e.key.toUpperCase();
       const totalOptions = items.length + 1; // items + Pick Date
 
-      // Hidden command: "jjj" - 3 consecutive j presses within 500ms
-      if (e.key.toLowerCase() === "j") {
+      // Hidden debug command: "jjj" - 3 consecutive j presses within 500ms (DEV only)
+      if (import.meta.env.DEV && e.key.toLowerCase() === "j") {
         const now = Date.now();
         if (now - jPressRef.current.lastTime < 500) {
           jPressRef.current.count++;
@@ -43,8 +43,8 @@ export function useKeyboardNavigation({
           handleOneMinuteSnooze(targetScope);
           return;
         }
-      } else {
-        // Reset counter if any other key is pressed
+      } else if (import.meta.env.DEV) {
+        // Reset counter if any other key is pressed (DEV only)
         jPressRef.current.count = 0;
       }
 
