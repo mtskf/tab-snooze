@@ -189,9 +189,10 @@ export async function recoverFromBackup() {
                  return { data: adapterV1(backupData), recovered: true, tabCount: Object.keys(backupData.items).length };
              }
              // If invalid, sanitize and use
+             console.warn('Backup data was invalid, using sanitized version. Some data may have been lost.');
              const sanitized = sanitizeSnoozedTabsV2(backupData);
              await chrome.storage.local.set({ snoooze_v2: sanitized });
-             return { data: adapterV1(sanitized), recovered: true, tabCount: Object.keys(sanitized.items).length };
+             return { data: adapterV1(sanitized), recovered: true, tabCount: Object.keys(sanitized.items).length, sanitized: true };
         }
     }
 
@@ -239,7 +240,8 @@ async function migrateStorageV2(legacyData) {
 
 export async function getSettings() {
   const res = await chrome.storage.local.get("settings");
-  return res.settings || DEFAULT_SETTINGS;
+  // Return raw value; initStorage writes defaults if missing
+  return res.settings;
 }
 
 export async function setSettings(val) {
