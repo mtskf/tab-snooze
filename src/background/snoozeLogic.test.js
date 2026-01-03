@@ -95,7 +95,7 @@ describe('snoozeLogic.js (V2)', () => {
         await initStorage();
         expect(chromeMock.storage.local.set).toHaveBeenCalledWith(
             expect.objectContaining({
-                snoooze_v2: { items: {}, schedule: {} }
+                snoooze_v2: { version: 2, items: {}, schedule: {} }
             })
         );
     });
@@ -418,6 +418,110 @@ describe('snoozeLogic.js (V2)', () => {
             const result = await getSnoozedTabs();
 
             expect(result).toEqual({ tabCount: 0 });
+        });
+    });
+
+    describe('setSnoozedTabs', () => {
+        test('should overwrite existing V2 data with provided legacy data', async () => {
+            // Existing V2 data in storage
+            const existingV2 = {
+                version: 2,
+                items: { 'old-id': { id: 'old-id', url: 'https://old.com', popTime: 999, creationTime: 900 } },
+                schedule: { '999': ['old-id'] }
+            };
+
+            // New legacy data to import
+            const newLegacyData = {
+                tabCount: 1,
+                [MOCK_TIME]: [{ url: TAB_URL, creationTime: 123 }]
+            };
+
+            // Mock storage.get to return existing V2 data
+            chromeMock.storage.local.get.mockImplementation((keys) => {
+                if (keys === null) {
+                    return Promise.resolve({ snoooze_v2: existingV2 });
+                }
+                if (keys === 'snoooze_v2') {
+                    return Promise.resolve({ snoooze_v2: existingV2 });
+                }
+                if (keys.includes('snoozedTabs')) {
+                    return Promise.resolve({ snoozedTabs: newLegacyData });
+                }
+                return Promise.resolve({});
+            });
+
+            await setSnoozedTabs(newLegacyData);
+
+            // Should have saved V2 data derived from newLegacyData, not existingV2
+            const setCall = chromeMock.storage.local.set.mock.calls.find(
+                (call) => call[0].snoooze_v2
+            );
+            expect(setCall).toBeTruthy();
+
+            const savedV2 = setCall[0].snoooze_v2;
+            expect(savedV2.version).toBe(2);
+
+            // Should contain tab from newLegacyData with TAB_URL
+            const itemIds = Object.keys(savedV2.items);
+            expect(itemIds.length).toBe(1);
+            expect(savedV2.items[itemIds[0]].url).toBe(TAB_URL);
+
+            // Should NOT contain old data
+            expect(savedV2.items['old-id']).toBeUndefined();
+        });
+
+        test('should handle empty legacy data', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({});
+
+            await setSnoozedTabs({ tabCount: 0 });
+
+            const setCall = chromeMock.storage.local.set.mock.calls.find(
+                (call) => call[0].snoooze_v2
+            );
+            expect(setCall).toBeTruthy();
+            expect(setCall[0].snoooze_v2).toEqual({
+                version: 2,
+                items: {},
+                schedule: {}
+            });
+        });
+
+        test('should add version field to V2 data without version', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({});
+
+            // V2 data without version field
+            const v2DataWithoutVersion = {
+                items: { 'id-1': { id: 'id-1', url: TAB_URL, popTime: MOCK_TIME, creationTime: 100 } },
+                schedule: { [MOCK_TIME]: ['id-1'] }
+            };
+
+            await setSnoozedTabs(v2DataWithoutVersion);
+
+            const setCall = chromeMock.storage.local.set.mock.calls.find(
+                (call) => call[0].snoooze_v2
+            );
+            expect(setCall).toBeTruthy();
+
+            const savedV2 = setCall[0].snoooze_v2;
+            expect(savedV2.version).toBe(2); // Version should be added
+            expect(savedV2.items).toEqual(v2DataWithoutVersion.items);
+            expect(savedV2.schedule).toEqual(v2DataWithoutVersion.schedule);
+        });
+
+        test('should reject future schema versions', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({});
+
+            // Future schema version
+            const futureData = {
+                version: 3,
+                items: {},
+                schedule: {},
+                newField: {}
+            };
+
+            await expect(setSnoozedTabs(futureData)).rejects.toThrow(
+                'Cannot import data from future schema version 3'
+            );
         });
     });
 });

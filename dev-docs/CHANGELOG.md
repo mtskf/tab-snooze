@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Schema Versioning**: Implemented schema versioning system with `version` field in V2 storage structure, migration registry (`SCHEMA_MIGRATIONS`), and unified entry point (`ensureValidStorage()`) for validation, migration, and repair.
 - **StorageService**: New `src/utils/StorageService.js` to centralize import/export parsing, validation, and merge behavior, with dedicated tests.
 
 ### Fixed
