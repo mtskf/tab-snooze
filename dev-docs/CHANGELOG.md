@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **Safety Tests**: Added `snoozeLogic.safety.test.js` covering storage persistence order, failure recovery, and restoration safety.
 - **Import Repair**: Added ability to "Sanitize & Import" partially valid backup files (e.g., mismatched tab counts).
+- **UUIDs**: Implemented UUID-based tab identification for robust restoration and deduplication.
 
 ### Changed
 - **Safe Snooze**: Changed operations order to save to storage *before* closing tabs. Ensures no data loss if storage write fails.
@@ -23,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - **Open in New Tab**: Removed the `openInNewWindow` setting. Restoration behavior is now strictly determined by the Snooze Scope (Selected Tabs vs. Window).
 
 ### Fixed
+- **Restoration Race**: Fixed race condition in `restoreTabs` by properly chaining storage cleanup to the mutex `storageLock`.
 - **Storage Lock**: Fixed critical bug where a storage write failure could leave the mutex lock (`storageLock`) in a rejected state, blocking all future operations.
 - **Config**: Fixed duplicate `weekend-begin` key in default settings.
 - **Critical: Storage Null Checks**: `addSnoozedTab`, `removeSnoozedTabWrapper`, `restoreWindowGroup`, and `removeWindowGroup` now safely handle missing or corrupted storage.
