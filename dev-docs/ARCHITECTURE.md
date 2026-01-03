@@ -51,9 +51,9 @@ Snooooze/
 
 ### Options (`Options.jsx`)
 - **Snoozed List**: Grouped by date, with delete/restore actions
-- **Settings**: Morning/Evening times, Appearance theme
-- **Export/Import**: JSON format (preserves timestamps) via `StorageService`
-- **Import Merge**: Uses `getSnoozedTabs` message to fetch current data before merge
+- **Settings**: Fetches via `getSettings` message (unified with Popup). Manage Morning/Evening times, Appearance theme.
+- **Export/Import**: JSON format via `StorageService`
+- **Import Merge**: Uses `getSnoozedTabs` message to fetch current data
 - **URL Hash**: Supports `#settings` to open directly to Settings tab
 
 ## Data Storage

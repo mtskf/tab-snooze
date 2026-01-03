@@ -6,7 +6,7 @@ None currently tracked.
 
 ## Refactoring Opportunities (Priority Order)
 
-1. [x] Medium: 設定取得の経路を統一（Popup/Optionsともに背景API経由でデフォルトをマージした設定を受け取る）。 ✅
+1. [x] Medium: 設定取得の経路を統一（Popup/Optionsともに背景API経由でデフォルトをマージした設定を受け取る）。 ✅ ✅
 2. [ ] Medium: V2スキーマのバージョン定義とマイグレーション表を追加し、検証/修復の入口を単一化。
 3. [ ] Medium: JSDoc型定義（`SnoozedItemV2`, `ScheduleV2`, `Settings`等）を追加。
 4. [ ] Medium: `chrome.*` APIラッパー（`ChromeApi.js`）に集約。エラーハンドリング・テストモックを一元化。
