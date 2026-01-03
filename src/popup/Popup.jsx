@@ -25,6 +25,7 @@ import {
   DEFAULT_COLORS,
   VIVID_COLORS,
   HEATMAP_COLORS,
+  DEFAULT_SETTINGS,
 } from "@/utils/constants";
 import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation";
 import { ScopeSelector } from "./components/ScopeSelector";
@@ -100,14 +101,16 @@ export default function Popup() {
     // Fetch settings and apply shortcuts/colors
     chrome.runtime.sendMessage({ action: "getSettings" }, (result) => {
       if (!result || result.error) return;
+      // Merge with defaults to ensure new keys have values
+      const settings = { ...DEFAULT_SETTINGS, ...result };
       // Merge shortcuts
-      const userShortcuts = (result || {}).shortcuts || {};
+      const userShortcuts = settings.shortcuts || {};
       const finalShortcuts = { ...DEFAULT_SHORTCUTS, ...userShortcuts };
 
       setItems((prevItems) =>
         prevItems.map((item) => {
           let colorScheme = DEFAULT_COLORS;
-          const appSetting = (result || {}).appearance;
+          const appSetting = settings.appearance;
           if (appSetting === "vivid") colorScheme = VIVID_COLORS;
           if (appSetting === "heatmap") colorScheme = HEATMAP_COLORS;
           return {
@@ -119,7 +122,7 @@ export default function Popup() {
       );
 
       // Set appearance
-      setAppearance((result || {}).appearance || "default");
+      setAppearance(settings.appearance || "default");
 
       // Set pick-date shortcut (empty string if not set)
       const pdShortcut = finalShortcuts["pick-date"]?.[0] || "";
@@ -139,8 +142,8 @@ export default function Popup() {
         if (meridian === "PM" && hour < 12) hour += 12;
         return hour;
       };
-      setStartDayHour(parseTimeHour((result || {})["start-day"] || "8:00 AM"));
-      setEndDayHour(parseTimeHour((result || {})["end-day"] || "5:00 PM"));
+      setStartDayHour(parseTimeHour(settings["start-day"]));
+      setEndDayHour(parseTimeHour(settings["end-day"]));
     });
   }, []);
 

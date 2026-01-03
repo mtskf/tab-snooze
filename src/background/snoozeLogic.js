@@ -173,26 +173,34 @@ export async function getValidatedSnoozedTabs() {
 }
 
 export async function recoverFromBackup() {
-    // V2 Recovery logic: Try to find latest valid backup and restore it as snoooze_v2
+    // V2 Recovery logic: Try to find fully valid backup first, then fall back to sanitized
     const allStorage = await chrome.storage.local.get(null);
     const backupKeys = Object.keys(allStorage)
         .filter(k => k.startsWith(BACKUP_PREFIX))
         .sort((a, b) => parseInt(b.replace(BACKUP_PREFIX, '')) - parseInt(a.replace(BACKUP_PREFIX, '')));
 
+    // First pass: Search for fully valid backup
     for (const key of backupKeys) {
         const backupData = allStorage[key];
-        // Validate backup data before restoring
         if (backupData && backupData.items && backupData.schedule) {
-             const validation = validateSnoozedTabsV2(backupData);
-             if (validation.valid) {
-                 await chrome.storage.local.set({ snoooze_v2: backupData });
-                 return { data: adapterV1(backupData), recovered: true, tabCount: Object.keys(backupData.items).length };
-             }
-             // If invalid, sanitize and use
-             console.warn('Backup data was invalid, using sanitized version. Some data may have been lost.');
-             const sanitized = sanitizeSnoozedTabsV2(backupData);
-             await chrome.storage.local.set({ snoooze_v2: sanitized });
-             return { data: adapterV1(sanitized), recovered: true, tabCount: Object.keys(sanitized.items).length, sanitized: true };
+            const validation = validateSnoozedTabsV2(backupData);
+            if (validation.valid) {
+                await chrome.storage.local.set({ snoooze_v2: backupData });
+                return { data: adapterV1(backupData), recovered: true, tabCount: Object.keys(backupData.items).length };
+            }
+        }
+    }
+
+    // Second pass: No valid backup found, try sanitizing newest backup with items/schedule
+    for (const key of backupKeys) {
+        const backupData = allStorage[key];
+        if (backupData && backupData.items && backupData.schedule) {
+            console.warn('No fully valid backup found, using sanitized version. Some data may have been lost.');
+            const sanitized = sanitizeSnoozedTabsV2(backupData);
+            if (Object.keys(sanitized.items).length > 0) {
+                await chrome.storage.local.set({ snoooze_v2: sanitized });
+                return { data: adapterV1(sanitized), recovered: true, tabCount: Object.keys(sanitized.items).length, sanitized: true };
+            }
         }
     }
 

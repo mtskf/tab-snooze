@@ -1,20 +1,11 @@
 # TODO
 
-## Code review
-- [ ] 096dbf62f9914589555d2496226e0906bcea7223
-- [ ] 72f168fbe7eaba7a2eff924f4bc918bbacf2597e
-- [ ] a4c941c1b858709ba946e4d84981f4fc86b9cfcb
-
 ## Known Issues
 
-- [x] Medium: `chrome.storage.session` が未対応環境（Firefox等）で `checkPendingRecoveryNotification` が例外になり得るため、feature detection ガードが必要。
-    - Resolved: Added early return guard in `checkPendingRecoveryNotification`.
-- [x] Low: `recoverFromBackup` がバックアップ内容のV2検証を行わず復旧するため、破損データを再投入する可能性がある。
-    - Resolved: Added `validateSnoozedTabsV2` check; sanitizes invalid backup data before restoring.
-- [x] Low: `snoozeLogic.js` L7 に古いコメント (`// Default settings...`) が残っている。削除推奨。
-    - Resolved: Stale comment removed.
-- [x] Low: 設定が未初期化の時に `getSettings` が `undefined` を返しうるため、Popup側でデフォルトが反映されない可能性がある。
-    - Resolved: Popup already handles undefined gracefully with `(result || {})`. `initStorage` writes defaults to storage on first run.
+- [x] Medium: `recoverFromBackup` は最新バックアップが不正な場合にサニタイズして即復旧するため、より古い正常バックアップを探索しない。結果的に欠損が増える可能性がある。
+    - Resolved: `recoverFromBackup` now iterates through all backups to find a fully valid one first.
+- [x] Low: Popupの`getSettings`はデフォルトマージを行わないため、新規設定キー追加時にデフォルトが反映されない可能性がある。
+    - Resolved: Popup now imports `DEFAULT_SETTINGS` and merges it with fetched settings.
 
 ## Refactoring Opportunities
 
