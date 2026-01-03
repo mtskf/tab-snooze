@@ -118,13 +118,25 @@ export async function getSnoozedTabs() {
 /**
  * Write Adapter (V1 -> V2)
  * Used if legacy code calls setSnoozedTabs. Converts structure and saves V2.
+ * Overwrites any existing V2 data with the provided data.
  */
 export async function setSnoozedTabs(legacyData) {
-    // Save legacy data temporarily, then use unified entry point to migrate
-    await chrome.storage.local.set({ snoozedTabs: legacyData });
-    const validData = await ensureValidStorage();
-    await chrome.storage.local.set({ snoooze_v2: validData });
-    await chrome.storage.local.remove('snoozedTabs');
+    const { detectSchemaVersion, runMigrations, CURRENT_SCHEMA_VERSION } = await import('./schemaVersioning.js');
+
+    // Detect source version and migrate to current version
+    const sourceVersion = detectSchemaVersion(legacyData);
+
+    if (sourceVersion === null) {
+        // Empty/invalid data - save empty V2
+        await chrome.storage.local.set({
+            snoooze_v2: { version: CURRENT_SCHEMA_VERSION, items: {}, schedule: {} }
+        });
+        return;
+    }
+
+    // Migrate from source version to current version
+    const v2Data = await runMigrations(legacyData, sourceVersion, CURRENT_SCHEMA_VERSION);
+    await chrome.storage.local.set({ snoooze_v2: v2Data });
 }
 
 // --- Backup & Rotation ---

@@ -420,4 +420,70 @@ describe('snoozeLogic.js (V2)', () => {
             expect(result).toEqual({ tabCount: 0 });
         });
     });
+
+    describe('setSnoozedTabs', () => {
+        test('should overwrite existing V2 data with provided legacy data', async () => {
+            // Existing V2 data in storage
+            const existingV2 = {
+                version: 2,
+                items: { 'old-id': { id: 'old-id', url: 'https://old.com', popTime: 999, creationTime: 900 } },
+                schedule: { '999': ['old-id'] }
+            };
+
+            // New legacy data to import
+            const newLegacyData = {
+                tabCount: 1,
+                [MOCK_TIME]: [{ url: TAB_URL, creationTime: 123 }]
+            };
+
+            // Mock storage.get to return existing V2 data
+            chromeMock.storage.local.get.mockImplementation((keys) => {
+                if (keys === null) {
+                    return Promise.resolve({ snoooze_v2: existingV2 });
+                }
+                if (keys === 'snoooze_v2') {
+                    return Promise.resolve({ snoooze_v2: existingV2 });
+                }
+                if (keys.includes('snoozedTabs')) {
+                    return Promise.resolve({ snoozedTabs: newLegacyData });
+                }
+                return Promise.resolve({});
+            });
+
+            await setSnoozedTabs(newLegacyData);
+
+            // Should have saved V2 data derived from newLegacyData, not existingV2
+            const setCall = chromeMock.storage.local.set.mock.calls.find(
+                (call) => call[0].snoooze_v2
+            );
+            expect(setCall).toBeTruthy();
+
+            const savedV2 = setCall[0].snoooze_v2;
+            expect(savedV2.version).toBe(2);
+
+            // Should contain tab from newLegacyData with TAB_URL
+            const itemIds = Object.keys(savedV2.items);
+            expect(itemIds.length).toBe(1);
+            expect(savedV2.items[itemIds[0]].url).toBe(TAB_URL);
+
+            // Should NOT contain old data
+            expect(savedV2.items['old-id']).toBeUndefined();
+        });
+
+        test('should handle empty legacy data', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({});
+
+            await setSnoozedTabs({ tabCount: 0 });
+
+            const setCall = chromeMock.storage.local.set.mock.calls.find(
+                (call) => call[0].snoooze_v2
+            );
+            expect(setCall).toBeTruthy();
+            expect(setCall[0].snoooze_v2).toEqual({
+                version: 2,
+                items: {},
+                schedule: {}
+            });
+        });
+    });
 });
