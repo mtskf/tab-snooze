@@ -64,3 +64,14 @@ Documents significant architectural decisions made during development.
     - `constants.js` now exports `DEFAULT_COLORS`, `VIVID_COLORS`, and `HEATMAP_COLORS`.
     - Components (`Popup`, `ShortcutEditor`, `SnoozedList`) subscribe to `settings.appearance` to dynamically resolve Tailwind color classes.
     - "Delete" actions also inherit the theme's critical color (e.g., Rose for Vivid, Red for Heatmap).
+
+## ADR-012: Auto Backup Fallback
+- **Context**: Users reported data loss when `snoozedTabs` storage became corrupted (cause unknown, possibly browser crash or extension update race).
+- **Decision**: Implement automatic backup and recovery system.
+    - 3 rotating backups with 2-second debounce to avoid I/O spam during rapid snoozing.
+    - Validation on read (`getValidatedSnoozedTabs`) with auto-recovery from backup.
+    - Recovery notification with 5-minute deduplication via `chrome.storage.session`.
+- **Consequences**:
+    - New `src/utils/validation.js` for data integrity checks.
+    - `initStorage()` now validates and creates initial backup for existing users (migration).
+    - Slight storage overhead (~3x for backups), acceptable for data safety.

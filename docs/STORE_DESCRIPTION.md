@@ -29,6 +29,10 @@ Too many open tabs? Afraid to close them because you might forget? Snooooze lets
 
 > **Tip:** Hold `Shift` while pressing any shortcut to snooze your **entire window** at once!
 
+## What's New in v0.2.6
+
+*   **🛡️ Auto Backup**: Your snoozed tabs are now automatically backed up locally in your browser. If data ever gets corrupted, Snooooze recovers from the latest backup automatically — no cloud, no tracking.
+
 ## Open Source
 
 Snooooze is open-source and MIT licensed.

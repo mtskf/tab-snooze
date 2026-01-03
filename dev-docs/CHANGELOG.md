@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 *No unreleased changes*
 
+## v0.2.6
+
+### Added
+- **Auto Backup Fallback**: Automatic backup and recovery for snoozed tabs storage.
+  - 3-generation rotating backups with 2-second debounce
+  - Validates data on read and recovers from backup if corrupted
+  - Migration creates initial backup for existing users
+  - Recovery notification with 5-minute deduplication
+- **Validation Utility**: New `src/utils/validation.js` for data integrity checks.
+
 ## v0.2.5
 
 ### Fixed

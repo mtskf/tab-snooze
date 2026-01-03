@@ -17,6 +17,7 @@ Snooooze/
 │   ├── components/ui/       # shadcn/ui components
 │   ├── utils/               # Shared utilities
 │   │   ├── timeUtils.js     # Time calculations
+│   │   ├── validation.js    # Storage data validation
 │   │   └── constants.js     # Config, Defaults, Theme colors
 │   ├── lib/                 # shadcn utilities (cn)
 │   └── index.css            # Global styles (Neo Carbon theme)
@@ -35,6 +36,7 @@ Snooooze/
 - **Mutex Lock**: Promise-chain mutex (`storageLock`) prevents race conditions
 - **Shared Config**: `DEFAULT_SETTINGS` imported from `constants.js`
 - **Helper**: `getTabsByGroupId()` extracts tabs by group ID
+- **Backup System**: Debounced 3-generation rotating backups with auto-recovery
 
 ### Popup (`Popup.jsx`)
 - **Scope Selection**: "Selected tabs" or "Window" (Shift key toggle)
@@ -68,6 +70,20 @@ Snooooze/
   "timezone": "Australia/Sydney",
   "open-new-tab": "true",
   "appearance": "heatmap"
+}
+```
+
+### Backup Keys (chrome.storage.local)
+```javascript
+"snoozedTabs_backup_<timestamp>": { /* same structure as snoozedTabs */ }
+// Up to 3 rotating backups
+```
+
+### Session State (chrome.storage.session)
+```javascript
+{
+  "pendingRecoveryNotification": 5,  // tab count if recovery needed
+  "lastRecoveryNotifiedAt": 1704067200000
 }
 ```
 

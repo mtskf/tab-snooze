@@ -443,7 +443,7 @@ export default function Options() {
           <span>GitHub</span>
         </a>
         <span>•</span>
-        <span>v0.2.5</span>
+        <span>v0.2.6</span>
         <span>•</span>
         <a
           href="https://github.com/mtskf/Snooooze/issues"

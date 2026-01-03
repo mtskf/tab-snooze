@@ -83,3 +83,19 @@ Defined in `src/utils/constants.js`.
 ### 5.2. Badge
 - Badge background is set to `#FED23B`.
 - No badge text updates are implemented in the current service worker (the UI still stores `tabCount` in storage).
+
+## 6. Data Integrity
+
+### 6.1. Backup System
+- **Rotation**: 3 generations of backups stored as `snoozedTabs_backup_<timestamp>`.
+- **Debounce**: Backup rotation is debounced by 2 seconds to avoid excessive writes during rapid snoozing.
+- **Validation**: Data is validated before backup (must have `tabCount`, numeric timestamp keys, and valid tab entries with `url`, `creationTime`, `popTime`).
+
+### 6.2. Recovery
+- **Trigger**: If `snoozedTabs` is missing, non-object, or fails validation, recovery is attempted.
+- **Process**: Backups are scanned newest-first; the first valid backup is restored.
+- **Fallback**: If no valid backups exist, resets to `{ tabCount: 0 }`.
+- **Notification**: Shows "Recovered X snoozed tabs from backup" with 5-minute deduplication.
+
+### 6.3. Migration
+- On first run after update, if valid data exists but no backups, an initial backup is created.

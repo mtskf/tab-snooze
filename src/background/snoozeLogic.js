@@ -1,3 +1,5 @@
+import { validateSnoozedTabs, sanitizeSnoozedTabs } from '../utils/validation';
+
 // Default settings (inlined to avoid chunk splitting issues with Service Worker)
 const DEFAULT_SETTINGS = {
   "start-day": "8:00 AM",
@@ -8,6 +10,12 @@ const DEFAULT_SETTINGS = {
   badge: "true",
 };
 
+// Backup configuration
+const BACKUP_COUNT = 3;
+const BACKUP_DEBOUNCE_MS = 2000;
+const BACKUP_PREFIX = 'snoozedTabs_backup_';
+let backupTimer = null;
+
 // Storage helper functions (exported for use by serviceWorker.js)
 export async function getSnoozedTabs() {
   const res = await chrome.storage.local.get("snoozedTabs");
@@ -16,6 +24,147 @@ export async function getSnoozedTabs() {
 
 export async function setSnoozedTabs(val) {
   await chrome.storage.local.set({ snoozedTabs: val });
+  // Schedule debounced backup rotation
+  scheduleBackupRotation(val);
+}
+
+/**
+ * Schedule a debounced backup rotation
+ */
+function scheduleBackupRotation(data) {
+  if (backupTimer) {
+    clearTimeout(backupTimer);
+  }
+  backupTimer = setTimeout(async () => {
+    backupTimer = null;
+    await rotateBackups(data);
+  }, BACKUP_DEBOUNCE_MS);
+}
+
+/**
+ * Rotate backups: keep only BACKUP_COUNT generations
+ */
+async function rotateBackups(data) {
+  // Only backup valid data
+  const validation = validateSnoozedTabs(data);
+  if (!validation.valid && !validation.repairable) {
+    return; // Don't backup invalid data
+  }
+
+  const dataToBackup = validation.valid ? data : sanitizeSnoozedTabs(data);
+
+  try {
+    // Get all backup keys
+    const allStorage = await chrome.storage.local.get(null);
+    const backupKeys = Object.keys(allStorage)
+      .filter(k => k.startsWith(BACKUP_PREFIX))
+      .sort((a, b) => {
+        const tsA = parseInt(a.replace(BACKUP_PREFIX, ''), 10);
+        const tsB = parseInt(b.replace(BACKUP_PREFIX, ''), 10);
+        return tsB - tsA; // Newest first
+      });
+
+    // Create new backup
+    const newBackupKey = `${BACKUP_PREFIX}${Date.now()}`;
+    await chrome.storage.local.set({ [newBackupKey]: dataToBackup });
+
+    // Delete old backups beyond BACKUP_COUNT
+    const keysToDelete = backupKeys.slice(BACKUP_COUNT - 1); // -1 because we just added one
+    if (keysToDelete.length > 0) {
+      await chrome.storage.local.remove(keysToDelete);
+    }
+  } catch (e) {
+    // Backup failed, but don't crash the extension
+    console.warn('Backup rotation failed:', e);
+  }
+}
+
+/**
+ * Get snoozed tabs with validation and auto-recovery
+ */
+export async function getValidatedSnoozedTabs() {
+  const data = await getSnoozedTabs();
+  const result = validateSnoozedTabs(data);
+
+  if (!result.valid) {
+    if (result.repairable) {
+      // Data can be repaired
+      const sanitized = sanitizeSnoozedTabs(data);
+      await setSnoozedTabs(sanitized);
+      return sanitized;
+    } else {
+      // Data is corrupted, try to recover from backup
+      return await recoverFromBackup();
+    }
+  }
+
+  return data;
+}
+
+/**
+ * Recover from backup if primary data is corrupted
+ * @returns {object} Recovered data or empty state
+ */
+export async function recoverFromBackup() {
+  const allStorage = await chrome.storage.local.get(null);
+  const backupKeys = Object.keys(allStorage)
+    .filter(k => k.startsWith(BACKUP_PREFIX))
+    .sort((a, b) => {
+      const tsA = parseInt(a.replace(BACKUP_PREFIX, ''), 10);
+      const tsB = parseInt(b.replace(BACKUP_PREFIX, ''), 10);
+      return tsB - tsA; // Newest first
+    });
+
+  // Try each backup in order
+  for (const key of backupKeys) {
+    const backupData = allStorage[key];
+    const validation = validateSnoozedTabs(backupData);
+
+    if (validation.valid || validation.repairable) {
+      const restoredData = validation.valid ? backupData : sanitizeSnoozedTabs(backupData);
+      await chrome.storage.local.set({ snoozedTabs: restoredData });
+
+      // Return info for notification
+      return {
+        data: restoredData,
+        recovered: true,
+        tabCount: restoredData.tabCount || 0
+      };
+    }
+  }
+
+  // No valid backups, reset to empty state
+  const emptyState = { tabCount: 0 };
+  await chrome.storage.local.set({ snoozedTabs: emptyState });
+  return {
+    data: emptyState,
+    recovered: false,
+    tabCount: 0
+  };
+}
+
+/**
+ * Create initial backup for existing users (migration)
+ * Only runs once when no backups exist but valid data exists
+ */
+async function createInitialBackupIfNeeded(snoozedTabs) {
+  if (!snoozedTabs || snoozedTabs.tabCount === 0) {
+    return; // No data to backup
+  }
+
+  // Check if any backups already exist
+  const allStorage = await chrome.storage.local.get(null);
+  const hasBackups = Object.keys(allStorage).some(k => k.startsWith(BACKUP_PREFIX));
+
+  if (!hasBackups) {
+    // Create initial backup
+    const validation = validateSnoozedTabs(snoozedTabs);
+    if (validation.valid || validation.repairable) {
+      const dataToBackup = validation.valid ? snoozedTabs : sanitizeSnoozedTabs(snoozedTabs);
+      const backupKey = `${BACKUP_PREFIX}${Date.now()}`;
+      await chrome.storage.local.set({ [backupKey]: dataToBackup });
+    }
+  }
 }
 
 export async function getSettings() {
@@ -29,11 +178,36 @@ export async function setSettings(val) {
 
 // Initialization
 export async function initStorage() {
-  let snoozedTabs = await getSnoozedTabs();
-  if (!snoozedTabs) {
+  // Get and validate snoozed tabs, recovering from backup if needed
+  const rawData = await getSnoozedTabs();
+  const validation = validateSnoozedTabs(rawData);
+  let snoozedTabs;
+
+  if (!rawData) {
+    // First install: no data exists
     snoozedTabs = { tabCount: 0 };
     await setSnoozedTabs(snoozedTabs);
+  } else if (!validation.valid) {
+    if (validation.repairable) {
+      // Repairable issues: sanitize and save
+      snoozedTabs = sanitizeSnoozedTabs(rawData);
+      await setSnoozedTabs(snoozedTabs);
+    } else {
+      // Corrupted data: recover from backup
+      const recovery = await recoverFromBackup();
+      snoozedTabs = recovery.data;
+      // Note: notification will be handled by serviceWorker if recovery.recovered is true
+      if (recovery.recovered) {
+        // Store recovery flag for notification (will be read by serviceWorker)
+        await chrome.storage.session.set({ pendingRecoveryNotification: recovery.tabCount });
+      }
+    }
+  } else {
+    snoozedTabs = rawData;
   }
+
+  // Migration: create initial backup for existing users
+  await createInitialBackupIfNeeded(snoozedTabs);
 
   let settings = await getSettings();
   if (!settings) {
