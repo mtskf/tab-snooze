@@ -11,5 +11,6 @@ Key insights and patterns learned during development. Read this before starting 
 - **Defensive Storage Access**: Never assume `getSnoozedTabs()` returns a valid object. Always check for `null`/`undefined` before accessing properties. Initialize to `{ tabCount: 0 }` when creating new entries.
 - **Centralize Validation**: Avoid duplicating validation logic (e.g., weak local validators in UI components). Use a shared utility (`src/utils/validation.js`) to ensure consistent schema enforcement across import, backup, and recovery.
 - **UI Tests Require DOM Setup**: Unit tests for React components (`Popup.jsx`, `Options.jsx`, `useKeyboardNavigation.js`) require `@testing-library/react` and `jsdom` environment. Vitest's default Node environment cannot render components.
-- **Badge Sync on Storage Changes**: Call `updateBadge()` from `setSnoozedTabs` and `setSettings` to ensure the badge always reflects the current state. Don't rely on separate message handlers for what should be automatic.
+- **Promise Chain Mutexes**: When implementing a mutex pattern with `p = p.then(...)`, ALWAYS `.catch()` errors inside the chain update to prevent the persistent `p` from becoming rejected. If `p` rejects, all subsequent tasks chained to it will immediately reject, permanently locking the system.
+
 - **Modal State & Global Shortcuts**: When a modal (calendar, dialog) is open, disable unrelated global keyboard handlers to prevent conflicts. Pass modal state as a prop to the keyboard hook and check it at the top of the handler.

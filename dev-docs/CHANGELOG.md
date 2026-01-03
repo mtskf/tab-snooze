@@ -9,21 +9,25 @@ All notable changes to this project will be documented in this file.
 ## v0.2.8
 
 ### Added
-- **Badge Text Update**: Badge now displays the current snoozed tab count, updated on every storage change and settings toggle.
-- **Safety Unit Tests**: New `snoozeLogic.safety.test.js` covering null storage handling, badge updates, and edge cases.
-
-### Fixed
-- **Critical: Storage Null Checks**: `addSnoozedTab`, `removeSnoozedTabWrapper`, `restoreWindowGroup`, and `removeWindowGroup` now safely handle missing or corrupted storage without crashing.
-- **High: Race Condition Guards**: `removeSnoozedTabWrapper` and `removeWindowGroup` are now wrapped in `storageLock` mutex to prevent concurrent storage mutations.
-- **Medium: Import Validation**: `Options.jsx` now uses the robust `validateSnoozedTabs` from `src/utils/validation.js` instead of a weak local validator.
-- **Medium: Search Filter Crash**: Added `Array.isArray` check in Options page search filter to prevent crashes from malformed storage data.
-- **Medium: Grouped Tab Scope**: Fixed "selected" scope with multiple tabs incorrectly assigning a `groupId`, causing restoration in a new window.
-- **Medium: Case-Insensitive Shortcuts**: Settings keyboard shortcut matching is now case-insensitive.
-- **Low: Calendar Keyboard Conflict**: Global keyboard shortcuts (arrows, Enter, snooze keys) are now disabled when the calendar picker is open.
-- **Low: Unsafe URL Parsing**: `SnoozedList.jsx` now wraps `new URL()` in try-catch to prevent rendering crashes from malformed URLs.
+- **Safety Tests**: Added `snoozeLogic.safety.test.js` covering storage persistence order, failure recovery, and restoration safety.
+- **Import Repair**: Added ability to "Sanitize & Import" partially valid backup files (e.g., mismatched tab counts).
 
 ### Changed
+- **Safe Snooze**: Changed operations order to save to storage *before* closing tabs. Ensures no data loss if storage write fails.
+- **Restoration Safety**: `popCheck` now tracks success per-tab. Only successfully restored tabs are removed from storage; failed tabs (e.g., invalid URLs) are preserved.
+- **Documentation**: Comprehensive updates to ADRs, Architecture, and Specs.
 - **Landing Page SEO**: Added `rel="noopener noreferrer"` to all external links, enhanced `og:image`/`twitter:image` meta tags, and added canonical link.
+
+### Removed
+- **Badge Feature**: Completely removed the experimental badge count (`updateBadge`) to simplify architecture and avoid unnecessary background wake-ups.
+- **Open in New Tab**: Removed the `openInNewWindow` setting. Restoration behavior is now strictly determined by the Snooze Scope (Selected Tabs vs. Window).
+
+### Fixed
+- **Storage Lock**: Fixed critical bug where a storage write failure could leave the mutex lock (`storageLock`) in a rejected state, blocking all future operations.
+- **Config**: Fixed duplicate `weekend-begin` key in default settings.
+- **Critical: Storage Null Checks**: `addSnoozedTab`, `removeSnoozedTabWrapper`, `restoreWindowGroup`, and `removeWindowGroup` now safely handle missing or corrupted storage.
+- **Search Filter**: Added `Array.isArray` check in Options page search filter to prevent crashes from malformed storage data.
+- **Calendar Keyboard**: Global shortcuts are now correctly disabled when the calendar picker is open.
 
 ## v0.2.7
 
