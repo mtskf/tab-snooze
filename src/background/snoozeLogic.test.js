@@ -39,8 +39,7 @@ const chromeMock = {
       setBadgeBackgroundColor: vi.fn()
   }
 };
-global.chrome = chromeMock;
-global.navigator = { onLine: true };
+
 
 // Helpers
 const MOCK_TIME = 1625097600000;
@@ -66,12 +65,17 @@ describe('snoozeLogic.js (V2)', () => {
         vi.useFakeTimers();
         vi.setSystemTime(MOCK_TIME);
 
+        // Setup globals
+        vi.stubGlobal('chrome', chromeMock);
+        vi.stubGlobal('navigator', { onLine: true });
+
         // Default empty storage
         chromeMock.storage.local.get.mockResolvedValue(createV2Data());
     });
 
     afterEach(() => {
         vi.useRealTimers();
+        vi.unstubAllGlobals();
     });
 
     test('initStorage - fresh install initializes empty V2', async () => {
