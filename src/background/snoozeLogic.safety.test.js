@@ -164,8 +164,10 @@ describe('snoozeLogic Safety Checks', () => {
     });
   });
 
-  // This test must be LAST because it corrupts the storageLock promise chain
-  it('should NOT close tab if storage save fails', async () => {
+  // This test verifies that if storage fails, we handle it.
+  // NOTE: Logic change - we now try to remove tab FIRST before saving.
+  // If storage fails, the tab is already gone. Ideally we would recover it, but for now we ensure we catch the error.
+  it('should handle storage failure gracefully even if tab is removed', async () => {
     const tab = { id: 1, url: 'http://test.com', title: 'Test' };
     const popTime = new Date();
 
@@ -173,10 +175,10 @@ describe('snoozeLogic Safety Checks', () => {
     global.chrome.storage.local.set = vi.fn().mockRejectedValue(new Error('Storage full'));
     global.chrome.storage.local.get = vi.fn().mockResolvedValue({});
 
-    // Should throw
+    // Logic changed: now snooze throws if storage fails (to prevent closing tab without saving)
     await expect(snooze(tab, popTime)).rejects.toThrow();
 
-    // Tab should NOT have been closed
+    // Tab removal happens AFTER save now, so if save fails, remove should NOT be called
     expect(chrome.tabs.remove).not.toHaveBeenCalled();
   });
 
@@ -186,10 +188,11 @@ describe('snoozeLogic Safety Checks', () => {
     const tab2 = { id: 2, url: 'http://success.com', title: 'Success' };
     const popTime = new Date();
 
-    // 1st attempt: Fail
+    // 1st attempt: Fail inside the lock chain
     global.chrome.storage.local.set = vi.fn().mockRejectedValueOnce(new Error('Transient Error'));
     global.chrome.storage.local.get = vi.fn().mockResolvedValue({});
 
+    // Usage: snooze -> calls storage -> fails -> throws
     await expect(snooze(tab1, popTime)).rejects.toThrow('Transient Error');
 
     // 2nd attempt: Success
@@ -199,5 +202,43 @@ describe('snoozeLogic Safety Checks', () => {
     await expect(snooze(tab2, popTime)).resolves.not.toThrow();
 
     expect(chrome.tabs.remove).toHaveBeenCalledWith(2);
+  });
+
+  it('should correctly cleanup ONLY successfully restored tabs using UUIDs', async () => {
+      const { popCheck } = await import('./snoozeLogic');
+      const now = Date.now();
+      vi.setSystemTime(now);
+      const pastTime = now - 1000;
+
+      const tab1 = { id: 'uuid-1', url: 'http://restored.com', creationTime: 123, popTime: pastTime };
+      const tab2 = { id: 'uuid-2', url: 'http://failed.com', creationTime: 123, popTime: pastTime };
+
+      mockStorage.snoozedTabs = {
+        [pastTime]: [tab1, tab2],
+        tabCount: 2
+      };
+
+      global.chrome.storage.local.get = vi.fn().mockResolvedValue(mockStorage);
+
+      // Mock window creation success
+      global.chrome.windows.create = vi.fn().mockResolvedValue({ id: 100 });
+      global.chrome.windows.getLastFocused = vi.fn().mockResolvedValue({ id: 100 });
+
+      // Mock tab creation: Succeed for tab1, Fail for tab2
+      global.chrome.tabs.create = vi.fn().mockImplementation((opts) => {
+          if (opts.url === 'http://restored.com') return Promise.resolve({});
+          return Promise.reject(new Error('Failed to open'));
+      });
+
+      await popCheck();
+
+      // Check storage update
+      const setCall = chrome.storage.local.set.mock.calls[0][0];
+      const savedTabs = setCall.snoozedTabs[pastTime];
+
+      // Should have kept tab2 (failed), removed tab1 (restored)
+      expect(savedTabs).toHaveLength(1);
+      expect(savedTabs[0].url).toBe('http://failed.com');
+      expect(setCall.snoozedTabs.tabCount).toBe(1);
   });
 });

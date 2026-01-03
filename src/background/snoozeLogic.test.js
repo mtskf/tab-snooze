@@ -72,6 +72,29 @@ describe('snoozeLogic', () => {
       expect(savedData[timeKey][0].url).toBe('https://example.com');
       expect(savedData.tabCount).toBe(1);
     });
+
+    it('should not remove tab if storage fails', async () => {
+      mockStorage.snoozedTabs = {};
+
+      const tab = {
+        id: 123,
+        url: 'https://example.com',
+        title: 'Example',
+        favIconUrl: 'https://example.com/favicon.ico',
+        index: 0
+      };
+
+      const popTime = new Date('2024-01-01T10:00:00Z');
+
+      // Mock storage.local.set to fail
+      global.chrome.storage.local.set = vi.fn().mockRejectedValue(new Error('Storage write failed'));
+
+      // Logic changed: now snooze throws if storage fails (to prevent closing tab without saving)
+      await expect(snooze(tab, popTime)).rejects.toThrow('Storage write failed');
+
+      // Tab removal happens AFTER save now, so if save fails, remove should NOT be called
+      expect(chrome.tabs.remove).not.toHaveBeenCalled();
+    });
   });
 
   describe('popCheck', () => {
@@ -106,47 +129,48 @@ describe('snoozeLogic', () => {
     });
 
     it('should not restore tabs if time is not up', async () => {
-        const now = new Date('2024-01-01T10:00:00Z').getTime();
-        vi.setSystemTime(now);
+      const now = new Date('2024-01-01T10:00:00Z').getTime();
+      vi.setSystemTime(now);
 
-        // Mock future tab
-        const futureTime = now + 10000;
-        mockStorage.snoozedTabs = {
-          [futureTime]: [
-            { url: 'https://future.com', title: 'Future' }
-          ],
-          tabCount: 1
-        };
+      // Mock future tab
+      const futureTime = now + 10000;
+      mockStorage.snoozedTabs = {
+        [futureTime]: [
+          { url: 'https://future.com', title: 'Future' }
+        ],
+        tabCount: 1
+      };
 
-        const result = await popCheck();
+      const result = await popCheck();
 
-        expect(result.count).toBe(0);
-        expect(chrome.tabs.create).not.toHaveBeenCalled();
+      expect(result.count).toBe(0);
+      expect(chrome.tabs.create).not.toHaveBeenCalled();
     });
   });
 
   describe('removeSnoozedTabWrapper', () => {
-      it('should remove a snoozed tab', async () => {
-          const creationTime = 123456789;
-          const popTime = 987654321;
+    it('should remove a snoozed tab', async () => {
+      const creationTime = 123456789;
+      const popTime = 987654321;
 
-          mockStorage.snoozedTabs = {
-              [popTime]: [
-                  { url: 'https://test.com', creationTime: creationTime }
-              ],
-              tabCount: 1
-          };
+      mockStorage.snoozedTabs = {
+        [popTime]: [
+          { url: 'https://test.com', creationTime: creationTime }
+        ],
+        tabCount: 1
+      };
 
-          const tabToRemove = {
-              popTime: new Date(popTime),
-              creationTime: creationTime
-          };
+      const tabToRemove = {
+        popTime: new Date(popTime),
+        creationTime: creationTime,
+        url: 'https://test.com'
+      };
 
-          await removeSnoozedTabWrapper(tabToRemove);
+      await removeSnoozedTabWrapper(tabToRemove);
 
-          expect(mockStorage.snoozedTabs[popTime]).toBeUndefined();
-          expect(mockStorage.snoozedTabs.tabCount).toBe(0);
-      });
+      expect(mockStorage.snoozedTabs[popTime]).toBeUndefined();
+      expect(mockStorage.snoozedTabs.tabCount).toBe(0);
+    });
   });
 
   describe('checkStorageSize', () => {
