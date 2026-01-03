@@ -106,6 +106,11 @@ async function handleMessage(request, sendResponse) {
  */
 async function checkPendingRecoveryNotification() {
   try {
+    // Firefox doesn't support chrome.storage.session
+    if (!chrome.storage.session) {
+      return;
+    }
+
     // Check if there's a pending notification from initStorage
     const session = await chrome.storage.session.get(['pendingRecoveryNotification', 'lastRecoveryNotifiedAt']);
 

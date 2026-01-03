@@ -4,9 +4,6 @@ import { validateSnoozedTabs, sanitizeSnoozedTabs, validateSnoozedTabsV2, saniti
 import { DEFAULT_SETTINGS, RESTRICTED_PROTOCOLS } from '../utils/constants.js';
 
 
-// Default settings (inlined to avoid chunk splitting issues with Service Worker)
-
-
 // Backup configuration
 const BACKUP_COUNT = 3;
 const BACKUP_DEBOUNCE_MS = 2000;
@@ -184,10 +181,18 @@ export async function recoverFromBackup() {
 
     for (const key of backupKeys) {
         const backupData = allStorage[key];
-        // Naive check: Does it have items/schedule?
+        // Validate backup data before restoring
         if (backupData && backupData.items && backupData.schedule) {
-             await chrome.storage.local.set({ snoooze_v2: backupData });
-             return { data: adapterV1(backupData), recovered: true, tabCount: Object.keys(backupData.items).length };
+             const validation = validateSnoozedTabsV2(backupData);
+             if (validation.valid) {
+                 await chrome.storage.local.set({ snoooze_v2: backupData });
+                 return { data: adapterV1(backupData), recovered: true, tabCount: Object.keys(backupData.items).length };
+             }
+             // If invalid, sanitize and use
+             console.warn('Backup data was invalid, using sanitized version. Some data may have been lost.');
+             const sanitized = sanitizeSnoozedTabsV2(backupData);
+             await chrome.storage.local.set({ snoooze_v2: sanitized });
+             return { data: adapterV1(sanitized), recovered: true, tabCount: Object.keys(sanitized.items).length, sanitized: true };
         }
     }
 
@@ -235,6 +240,7 @@ async function migrateStorageV2(legacyData) {
 
 export async function getSettings() {
   const res = await chrome.storage.local.get("settings");
+  // Return raw value; initStorage writes defaults if missing
   return res.settings;
 }
 
