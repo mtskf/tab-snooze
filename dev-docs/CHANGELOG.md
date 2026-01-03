@@ -23,7 +23,15 @@ All notable changes to this project will be documented in this file.
 - **Badge Feature**: Completely removed the experimental badge count (`updateBadge`) to simplify architecture and avoid unnecessary background wake-ups.
 - **Open in New Tab**: Removed the `openInNewWindow` setting. Restoration behavior is now strictly determined by the Snooze Scope (Selected Tabs vs. Window).
 
+### Refactored
+- **Storage V2**: Completely overhauled storage architecture from time-based arrays to a normalized relational model (`items` map + `schedule` index).
+  - Use of UUIDs for all tabs allows robust deduplication and ID-based operations.
+  - Automatic migration from legacy schema on startup.
+  - Includes backward-compatibility adapter for UI components.
+  - Significantly improved data integrity and safety.
+
 ### Fixed
+- **Bundle Loading**: Configured `"type": "module"` in `manifest.json` to correctly support split chunks (e.g., shared validation logic) in the background service worker, preventing potential loading failures.
 - **Restoration Race**: Fixed race condition in `restoreTabs` by properly chaining storage cleanup to the mutex `storageLock`.
 - **Storage Lock**: Fixed critical bug where a storage write failure could leave the mutex lock (`storageLock`) in a rejected state, blocking all future operations.
 - **Config**: Fixed duplicate `weekend-begin` key in default settings.

@@ -54,14 +54,25 @@ Snooooze/
 
 ## Data Storage
 
-### `snoozedTabs` (chrome.storage.local)
+### `snoooze_v2` (chrome.storage.local)
+**Normalized Relational Model**
 ```javascript
 {
-  "tabCount": 42,
-  "1702700400000": [  // timestamp as key
-    { url, title, favIconUrl, creationTime }
-  ]
+  "items": {
+    "uuid-1234": {
+      "id": "uuid-1234",
+      "url": "https://example.com",
+      "title": "Example",
+      "popTime": 1702700400000,
+      "creationTime": 1702700000000,
+      "groupId": "optional-group-id"
+    }
+  },
+  "schedule": {
+    "1702700400000": ["uuid-1234", "uuid-5678"] // time -> [uuid]
+  }
 }
+// Note: UI components use an adapter to read this as the legacy format.
 ```
 
 ### `settings` (chrome.storage.local)
