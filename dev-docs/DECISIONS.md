@@ -75,3 +75,11 @@ Documents significant architectural decisions made during development.
     - New `src/utils/validation.js` for data integrity checks.
     - `initStorage()` now validates and creates initial backup for existing users (migration).
     - Slight storage overhead (~3x for backups), acceptable for data safety.
+
+## ADR-013: Storage Size Warning & Hysteresis
+- **Context**: `chrome.storage.local` has a quota (5MB default, unnecessary to hit but implementations vary). If storage fills up, writes fail silently or with errors, causing data loss.
+- **Decision**: Monitor usage with `getBytesInUse(null)` against a 10MB baseline (safe upper bound for most contexts with `unlimitedStorage`).
+    - **Hysteresis**: Warn at 80%, only clear warning when usage drops below 70%. Prevents warning "flickering" if user deletes just one tab.
+    - **Throttling**: Notifications limited to once per 24 hours to avoid annoyance.
+    - **Firefox Handling**: `getBytesInUse` is missing in Firefox for local storage. We wrap calls in try-catch and silently disable the check features.
+- **Consequences**: Users get advanced warning before catastrophic failure. Options page banner provides persistent visual cue. Firefox users don't get warnings but also don't get crashes.

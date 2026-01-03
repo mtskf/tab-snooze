@@ -99,3 +99,16 @@ Defined in `src/utils/constants.js`.
 
 ### 6.3. Migration
 - On first run after update, if valid data exists but no backups, an initial backup is created.
+
+## 7. Storage & Limits
+
+### 7.1. Storage Size Warning
+- **Goal**: Prevent data loss by warning users when `chrome.storage.local` is nearing its quota (10MB in standard Chrome extensions, though `unlimitedStorage` permission usually raises this, purely local usage is monitored here against safe thresholds).
+- **Metric**: Uses `chrome.storage.local.getBytesInUse`.
+- **Thresholds**:
+    - **Warning Level**: > 80% (approx 8.3MB).
+    - **Clear Level**: < 70% (hysteresis to prevent flickering).
+- **Triggers**: Checks on **startup** and **after every snoozedTabs write** (debounced 2s).
+- **Notification**: Standard system notification (throttled to once every 24 hours). Clicking opens Options page.
+- **In-App Banner**: Options page shows a destructive-colored alert when warning is active.
+- **Firefox Compatibility**: Feature is disabled gracefully on Firefox as `getBytesInUse` is not supported for `local` storage in MV2/MV3 implementation contexts uniformly.
