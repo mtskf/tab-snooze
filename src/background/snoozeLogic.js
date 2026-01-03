@@ -1,6 +1,6 @@
 import { generateUUID } from '../utils/uuid.js';
 
-import { validateSnoozedTabs, sanitizeSnoozedTabs, validateSnoozedTabsV2 } from '../utils/validation.js';
+import { validateSnoozedTabs, sanitizeSnoozedTabs, validateSnoozedTabsV2, sanitizeSnoozedTabsV2 } from '../utils/validation.js';
 import { DEFAULT_SETTINGS, RESTRICTED_PROTOCOLS } from '../utils/constants.js';
 
 
@@ -162,11 +162,16 @@ async function rotateBackups(data) {
 }
 
 export async function getValidatedSnoozedTabs() {
-    // This is used by UI heavily.
-    // We return the V1-adapted data.
-    return await getSnoozedTabs();
-    // TODO: V2 Validation logic?
-    // For now we rely on internal consistency.
+    const v2Data = await getStorageV2();
+    const validation = validateSnoozedTabsV2(v2Data);
+
+    if (!validation.valid) {
+        console.warn('V2 validation errors during read, sanitizing:', validation.errors);
+        const sanitized = sanitizeSnoozedTabsV2(v2Data);
+        return adapterV1(sanitized);
+    }
+
+    return adapterV1(v2Data);
 }
 
 export async function recoverFromBackup() {

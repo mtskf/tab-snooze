@@ -217,3 +217,45 @@ export function validateSnoozedTabsV2(v2Data) {
 
   return { valid: errors.length === 0, errors };
 }
+
+/**
+ * Sanitizes V2 storage data by removing invalid items and orphaned schedule entries.
+ * @param {Object} v2Data - The V2 data to sanitize { items: {}, schedule: {} }
+ * @returns {Object} - Sanitized V2 data
+ */
+export function sanitizeSnoozedTabsV2(v2Data) {
+  if (!v2Data || typeof v2Data !== 'object') {
+    return { items: {}, schedule: {} };
+  }
+
+  const items = {};
+  const schedule = {};
+
+  // Copy valid items only
+  if (v2Data.items && typeof v2Data.items === 'object') {
+    for (const id in v2Data.items) {
+      const item = v2Data.items[id];
+      if (!item || typeof item !== 'object') continue;
+
+      const entryResult = validateTabEntry(item);
+      if (entryResult.valid && item.id === id) {
+        items[id] = item;
+      }
+    }
+  }
+
+  // Rebuild schedule with only valid item references
+  if (v2Data.schedule && typeof v2Data.schedule === 'object') {
+    for (const time in v2Data.schedule) {
+      const ids = v2Data.schedule[time];
+      if (!Array.isArray(ids)) continue;
+
+      const validIds = ids.filter(id => items[id]);
+      if (validIds.length > 0) {
+        schedule[time] = validIds;
+      }
+    }
+  }
+
+  return { items, schedule };
+}
