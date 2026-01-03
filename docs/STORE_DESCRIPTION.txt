@@ -52,9 +52,9 @@ All data is stored locally on your device. No cloud ☁️, no tracking 👀, co
 
 
 
-== 🆕 WHAT'S NEW (v0.2.6) ==
+== 🆕 WHAT'S NEW (v0.2.7) ==
 
-🛡️ Auto Backup: Your snoozed tabs are now automatically backed up locally in your browser. If data ever gets corrupted, Snooooze recovers from the latest backup automatically—no cloud, no tracking. ✅
+⚠️ Storage Warning: Snooooze now monitors your storage usage and warns you if you're approaching the limit, ensuring your tabs are always safe. 🛡️
 
 
 
