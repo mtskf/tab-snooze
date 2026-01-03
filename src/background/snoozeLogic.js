@@ -624,7 +624,7 @@ async function restoreTabs(tabs, timesToRemove) {
   }
 
   // Cleanup storage
-  await storageLock.then(async () => {
+  const cleanupTask = storageLock.then(async () => {
     const currentSnoozedTabs = await getSnoozedTabs();
     if (!currentSnoozedTabs) return;
 
@@ -656,7 +656,13 @@ async function restoreTabs(tabs, timesToRemove) {
     currentSnoozedTabs.tabCount = newCount;
 
     await setSnoozedTabs(currentSnoozedTabs);
-  }).catch(err => {
+  });
+
+  // Chain cleanup to global lock so subsequent operations wait for it
+  storageLock = cleanupTask.catch(() => {});
+
+  // Wait for cleanup to finish and log errors if any
+  await cleanupTask.catch(err => {
       console.error('Failed to cleanup storage after restore:', err);
   });
 
