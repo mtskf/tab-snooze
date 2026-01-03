@@ -5,12 +5,12 @@ import { vi } from 'vitest';
 const chromeMock = {
   storage: {
     local: {
-      get: vi.fn(),
-      set: vi.fn(),
+      get: vi.fn().mockResolvedValue({}),
+      set: vi.fn().mockResolvedValue(undefined),
     },
     sync: {
-        get: vi.fn(),
-        set: vi.fn(),
+        get: vi.fn().mockResolvedValue({}),
+        set: vi.fn().mockResolvedValue(undefined),
     }
   },
   runtime: {
@@ -20,7 +20,15 @@ const chromeMock = {
     query: vi.fn(),
     create: vi.fn(),
     remove: vi.fn(),
-  }
+  },
+  action: {
+    setBadgeText: vi.fn().mockResolvedValue(undefined),
+    setBadgeBackgroundColor: vi.fn().mockResolvedValue(undefined),
+  },
+  windows: {
+    getLastFocused: vi.fn(),
+    create: vi.fn(),
+  },
 };
 
 vi.stubGlobal('chrome', chromeMock);

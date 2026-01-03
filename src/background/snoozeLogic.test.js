@@ -34,7 +34,8 @@ describe('snoozeLogic', () => {
         }
       },
       action: {
-        setBadgeBackgroundColor: vi.fn()
+        setBadgeBackgroundColor: vi.fn().mockResolvedValue(undefined),
+        setBadgeText: vi.fn().mockResolvedValue(undefined),
       }
     };
   });

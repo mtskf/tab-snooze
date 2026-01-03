@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { removeSnoozedTabWrapper, removeWindowGroup, restoreWindowGroup, snooze, updateBadge } from './snoozeLogic';
+import { removeSnoozedTabWrapper, removeWindowGroup, restoreWindowGroup, snooze } from './snoozeLogic';
 
 describe('snoozeLogic Safety Checks', () => {
   let mockStorage = {};
@@ -82,17 +82,6 @@ describe('snoozeLogic Safety Checks', () => {
       expect(setCall.snoozedTabs).toBeDefined();
       expect(setCall.snoozedTabs.tabCount).toBe(1);
       expect(setCall.snoozedTabs[popTime.getTime()]).toHaveLength(1);
-    });
-  });
-
-  describe('updateBadge', () => {
-    it('should not throw if storage or settings are missing', async () => {
-       global.chrome.storage.local.get = vi.fn().mockResolvedValue({});
-       global.chrome.action = {
-         setBadgeText: vi.fn(),
-         setBadgeBackgroundColor: vi.fn(),
-       };
-       await expect(updateBadge()).resolves.not.toThrow();
     });
   });
 });

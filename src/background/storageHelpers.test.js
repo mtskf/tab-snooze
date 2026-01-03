@@ -14,9 +14,13 @@ describe('Storage Helpers', () => {
     global.chrome = {
       storage: {
         local: {
-          get: vi.fn(),
-          set: vi.fn(),
+          get: vi.fn().mockResolvedValue({}),
+          set: vi.fn().mockResolvedValue(undefined),
         },
+      },
+      action: {
+        setBadgeText: vi.fn().mockResolvedValue(undefined),
+        setBadgeBackgroundColor: vi.fn().mockResolvedValue(undefined),
       },
     };
   });

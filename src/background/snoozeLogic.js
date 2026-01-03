@@ -1,4 +1,95 @@
-import { validateSnoozedTabs, sanitizeSnoozedTabs } from '../utils/validation';
+// Validation utilities (inlined to avoid chunk splitting issues with Service Worker)
+const REQUIRED_TAB_FIELDS = ['url', 'creationTime', 'popTime'];
+
+function validateTabEntry(tab) {
+  const errors = [];
+  if (!tab || typeof tab !== 'object') {
+    return { valid: false, errors: ['Tab entry is not an object'] };
+  }
+  for (const field of REQUIRED_TAB_FIELDS) {
+    if (!(field in tab)) {
+      errors.push(`Missing required field: ${field}`);
+    }
+  }
+  if (tab.url && typeof tab.url !== 'string') {
+    errors.push('url must be a string');
+  }
+  if (tab.creationTime !== undefined && typeof tab.creationTime !== 'number') {
+    errors.push('creationTime must be a number');
+  }
+  if (tab.popTime !== undefined && typeof tab.popTime !== 'number') {
+    errors.push('popTime must be a number');
+  }
+  return { valid: errors.length === 0, errors };
+}
+
+function validateSnoozedTabs(data) {
+  const errors = [];
+  let repairable = true;
+  if (data === null || data === undefined) {
+    return { valid: false, errors: ['Data is null or undefined'], repairable: false };
+  }
+  if (typeof data !== 'object' || Array.isArray(data)) {
+    return { valid: false, errors: ['Data is not an object'], repairable: false };
+  }
+  if (!('tabCount' in data)) {
+    errors.push('Missing tabCount key');
+  } else if (typeof data.tabCount !== 'number' || data.tabCount < 0) {
+    errors.push('tabCount is not a valid non-negative number');
+  }
+  let actualTabCount = 0;
+  for (const key of Object.keys(data)) {
+    if (key === 'tabCount') continue;
+    const timestamp = parseInt(key, 10);
+    if (isNaN(timestamp) || String(timestamp) !== key) {
+      errors.push(`Invalid timestamp key: ${key}`);
+      continue;
+    }
+    const entries = data[key];
+    if (!Array.isArray(entries)) {
+      errors.push(`Value for timestamp ${key} is not an array`);
+      repairable = false;
+      continue;
+    }
+    for (let i = 0; i < entries.length; i++) {
+      const result = validateTabEntry(entries[i]);
+      if (result.valid) {
+        actualTabCount++;
+      } else {
+        errors.push(`Invalid tab at ${key}[${i}]: ${result.errors.join(', ')}`);
+      }
+    }
+  }
+  const hasCriticalErrors = errors.some(e =>
+    e.includes('not an object') || e.includes('not an array')
+  );
+  if (data.tabCount !== undefined && actualTabCount !== data.tabCount) {
+    errors.push(`tabCount mismatch: expected ${actualTabCount}, got ${data.tabCount}`);
+  }
+  return { valid: errors.length === 0, errors, repairable: repairable && !hasCriticalErrors };
+}
+
+function sanitizeSnoozedTabs(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return { tabCount: 0 };
+  }
+  const sanitized = {};
+  let tabCount = 0;
+  for (const key of Object.keys(data)) {
+    if (key === 'tabCount') continue;
+    const timestamp = parseInt(key, 10);
+    if (isNaN(timestamp) || String(timestamp) !== key) continue;
+    const entries = data[key];
+    if (!Array.isArray(entries)) continue;
+    const validEntries = entries.filter(entry => validateTabEntry(entry).valid);
+    if (validEntries.length > 0) {
+      sanitized[key] = validEntries;
+      tabCount += validEntries.length;
+    }
+  }
+  sanitized.tabCount = tabCount;
+  return sanitized;
+}
 
 // Default settings (inlined to avoid chunk splitting issues with Service Worker)
 const DEFAULT_SETTINGS = {
@@ -85,22 +176,6 @@ export async function setSnoozedTabs(val) {
   await chrome.storage.local.set({ snoozedTabs: val });
   // Schedule debounced backup rotation
   scheduleBackupRotation(val);
-  updateBadge();
-}
-
-/**
- * Update the extension badge with the current tab count
- */
-export async function updateBadge() {
-  const settings = await getSettings();
-  if (settings && settings.badge === "false") {
-    await chrome.action.setBadgeText({ text: "" });
-    return;
-  }
-  const snoozedTabs = await getSnoozedTabs();
-  const count = snoozedTabs && snoozedTabs.tabCount ? snoozedTabs.tabCount : 0;
-  await chrome.action.setBadgeText({ text: count > 0 ? count.toString() : "" });
-  await chrome.action.setBadgeBackgroundColor({ color: "#FED23B" });
 }
 
 /**
@@ -257,7 +332,6 @@ export async function getSettings() {
 
 export async function setSettings(val) {
   await chrome.storage.local.set({ settings: val });
-  updateBadge();
 }
 
 // Initialization
