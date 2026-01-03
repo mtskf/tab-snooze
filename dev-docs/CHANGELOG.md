@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **Schema Versioning**: Implemented schema versioning system with `version` field in V2 storage structure, migration registry (`SCHEMA_MIGRATIONS`), and unified entry point (`ensureValidStorage()`) for validation, migration, and repair.
 - **StorageService**: New `src/utils/StorageService.js` to centralize import/export parsing, validation, and merge behavior, with dedicated tests.
+- **JSDoc Type Definitions**: Added comprehensive JSDoc type definitions in `src/types.js` for core data structures (`SnoozedItemV2`, `StorageV2`, `Settings`, `ValidationResult`, etc.) and message passing contracts, with type annotations added to `snoozeLogic.js`, `validation.js`, and `schemaVersioning.js`.
 
 ### Fixed
 - **Defensive Storage Access**: `getStorageV2` now validates structure and ensures `items`/`schedule` are always valid objects, preventing crashes when storage is corrupted or partially missing.

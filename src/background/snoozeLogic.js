@@ -1,3 +1,11 @@
+/**
+ * @typedef {import('../types.js').SnoozedItemV2} SnoozedItemV2
+ * @typedef {import('../types.js').StorageV2} StorageV2
+ * @typedef {import('../types.js').Settings} Settings
+ * @typedef {import('../types.js').RecoveryResult} RecoveryResult
+ * @typedef {import('../types.js').ChromeTab} ChromeTab
+ */
+
 import { generateUUID } from '../utils/uuid.js';
 
 import { validateSnoozedTabs, sanitizeSnoozedTabs, validateSnoozedTabsV2, sanitizeSnoozedTabsV2 } from '../utils/validation.js';
@@ -62,6 +70,7 @@ export async function checkStorageSize() {
  * Ensures items and schedule are always valid plain objects (not arrays),
  * preventing crashes when storage is corrupted or partially missing.
  * Preserves version field if present.
+ * @returns {Promise<StorageV2>} V2 storage data
  */
 async function getStorageV2() {
     const res = await chrome.storage.local.get("snoooze_v2");
@@ -83,6 +92,11 @@ async function getStorageV2() {
     };
 }
 
+/**
+ * Saves V2 storage and schedules backup rotation
+ * @param {StorageV2} v2Data - V2 storage data to save
+ * @returns {Promise<void>}
+ */
 async function saveStorageV2(v2Data) {
     await chrome.storage.local.set({ snoooze_v2: v2Data });
     scheduleBackupRotation(v2Data);
@@ -92,6 +106,8 @@ async function saveStorageV2(v2Data) {
 
 /**
  * Adapts V2 structure to V1 format (Read Adapter)
+ * @param {StorageV2} v2Data - V2 storage data
+ * @returns {Object} V1 legacy format { tabCount: number, [timestamp]: SnoozedItemV2[] }
  */
 function adapterV1(v2Data) {
     if (!v2Data || !v2Data.items || !v2Data.schedule) return { tabCount: 0 };
@@ -110,6 +126,10 @@ function adapterV1(v2Data) {
     return legacy;
 }
 
+/**
+ * Gets all snoozed tabs in V1 legacy format (for backwards compatibility)
+ * @returns {Promise<Object>} V1 legacy format { tabCount: number, [timestamp]: SnoozedItemV2[] }
+ */
 export async function getSnoozedTabs() {
   const v2Data = await getStorageV2();
   return adapterV1(v2Data);
@@ -119,6 +139,9 @@ export async function getSnoozedTabs() {
  * Write Adapter (V1 -> V2)
  * Used if legacy code calls setSnoozedTabs. Converts structure and saves V2.
  * Overwrites any existing V2 data with the provided data.
+ * @param {Object} legacyData - V1 legacy format data or V2 data to import
+ * @returns {Promise<void>}
+ * @throws {Error} If data is from future schema version (cannot downgrade)
  */
 export async function setSnoozedTabs(legacyData) {
     const { detectSchemaVersion, runMigrations, CURRENT_SCHEMA_VERSION } = await import('./schemaVersioning.js');
@@ -200,6 +223,10 @@ async function rotateBackups(data) {
   }
 }
 
+/**
+ * Gets validated snoozed tabs, sanitizing if validation fails
+ * @returns {Promise<Object>} V1 legacy format { tabCount: number, [timestamp]: SnoozedItemV2[] }
+ */
 export async function getValidatedSnoozedTabs() {
     const v2Data = await getStorageV2();
     const validation = validateSnoozedTabsV2(v2Data);
@@ -214,6 +241,10 @@ export async function getValidatedSnoozedTabs() {
     return adapterV1(v2Data);
 }
 
+/**
+ * Recovers snoozed tabs from backup storage
+ * @returns {Promise<RecoveryResult>} Recovery result with data, success status, and tab count
+ */
 export async function recoverFromBackup() {
     // V2 Recovery logic: Try to find fully valid backup first, then fall back to sanitized
     const allStorage = await chrome.storage.local.get(null);
@@ -265,6 +296,10 @@ export async function recoverFromBackup() {
 
 // Migration logic moved to schemaVersioning.js for centralized version management
 
+/**
+ * Gets extension settings, merged with defaults
+ * @returns {Promise<Settings>} Settings object with defaults applied
+ */
 export async function getSettings() {
   const res = await chrome.storage.local.get("settings");
 
@@ -280,6 +315,11 @@ export async function getSettings() {
   return { ...defaults, ...res.settings };
 }
 
+/**
+ * Updates extension settings
+ * @param {Partial<Settings>} val - Settings to update
+ * @returns {Promise<void>}
+ */
 export async function setSettings(val) {
   await chrome.storage.local.set({ settings: val });
 }

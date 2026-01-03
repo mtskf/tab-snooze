@@ -1,5 +1,8 @@
 /**
  * Validation utilities for snoozedTabs storage
+ * @typedef {import('../types.js').SnoozedItemV2} SnoozedItemV2
+ * @typedef {import('../types.js').StorageV2} StorageV2
+ * @typedef {import('../types.js').ValidationResult} ValidationResult
  */
 
 /**
@@ -10,7 +13,7 @@ const REQUIRED_TAB_FIELDS = ['url', 'creationTime', 'popTime'];
 /**
  * Validates a single tab entry
  * @param {any} tab - Tab entry to validate
- * @returns {{ valid: boolean, errors: string[] }}
+ * @returns {ValidationResult} Validation result with valid flag and errors array
  */
 export function validateTabEntry(tab) {
   const errors = [];
@@ -41,9 +44,9 @@ export function validateTabEntry(tab) {
 }
 
 /**
- * Validates the snoozedTabs data structure
+ * Validates the snoozedTabs data structure (V1 legacy format)
  * @param {any} data - Data to validate
- * @returns {{ valid: boolean, errors: string[], repairable: boolean }}
+ * @returns {ValidationResult & {repairable: boolean}} Validation result with repairable flag
  */
 export function validateSnoozedTabs(data) {
   const errors = [];
@@ -121,12 +124,12 @@ export function validateSnoozedTabs(data) {
 }
 
 /**
- * Sanitizes snoozedTabs data by fixing minor issues
+ * Sanitizes snoozedTabs data by fixing minor issues (V1 legacy format)
  * - Recomputes tabCount if incorrect
  * - Drops invalid tab entries
  * - Removes invalid timestamp keys
  * @param {any} data - Data to sanitize
- * @returns {object} Sanitized copy of the data
+ * @returns {Object} Sanitized V1 legacy format { tabCount: number, [timestamp]: SnoozedItemV2[] }
  */
 export function sanitizeSnoozedTabs(data) {
   // If completely invalid, return empty state
@@ -169,8 +172,8 @@ export function sanitizeSnoozedTabs(data) {
 
 /**
  * Validates the V2 storage structure
- * @param {any} v2Data - Data to validate { items: {}, schedule: {} }
- * @returns {{ valid: boolean, errors: string[] }}
+ * @param {any} v2Data - Data to validate
+ * @returns {ValidationResult} Validation result with valid flag and errors array
  */
 export function validateSnoozedTabsV2(v2Data) {
   const errors = [];
@@ -219,9 +222,9 @@ export function validateSnoozedTabsV2(v2Data) {
 }
 
 /**
- * Sanitizes V2 storage data by removing invalid items and orphaned schedule entries.
- * @param {Object} v2Data - The V2 data to sanitize { items: {}, schedule: {} }
- * @returns {Object} - Sanitized V2 data
+ * Sanitizes V2 storage data by removing invalid items and orphaned schedule entries
+ * @param {any} v2Data - The V2 data to sanitize
+ * @returns {{ items: Record<string, SnoozedItemV2>, schedule: Record<number, string[]> }} Sanitized V2 data (without version field)
  */
 export function sanitizeSnoozedTabsV2(v2Data) {
   if (!v2Data || typeof v2Data !== 'object') {

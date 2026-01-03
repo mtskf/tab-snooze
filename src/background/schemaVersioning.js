@@ -3,6 +3,8 @@
  *
  * Manages storage schema versions and migrations.
  * Provides a unified entry point for validation, migration, and repair.
+ *
+ * @typedef {import('../types.js').StorageV2} StorageV2
  */
 
 import { generateUUID } from '../utils/uuid.js';
@@ -50,7 +52,7 @@ export function detectSchemaVersion(data) {
 /**
  * Migrates V1 legacy data to V2 normalized schema
  * @param {Object} v1Data - V1 legacy data
- * @returns {Object} V2 data with version field
+ * @returns {StorageV2} V2 data with version field
  */
 function migrateV1toV2(v1Data) {
   const items = {};
@@ -106,7 +108,7 @@ export const SCHEMA_MIGRATIONS = {
  * @param {Object} data - Data at source version
  * @param {number} sourceVersion - Starting version
  * @param {number} targetVersion - Target version
- * @returns {Promise<Object>} - Migrated data at target version
+ * @returns {Promise<StorageV2>} Migrated data at target version
  */
 export async function runMigrations(data, sourceVersion, targetVersion) {
   if (sourceVersion === targetVersion) {
@@ -142,7 +144,7 @@ export async function runMigrations(data, sourceVersion, targetVersion) {
  * 5. Sanitize if invalid
  * 6. Return valid V2 data with version field
  *
- * @returns {Promise<Object>} - Valid V2 data { version: 2, items: {}, schedule: {} }
+ * @returns {Promise<StorageV2>} Valid V2 data with version field
  */
 export async function ensureValidStorage() {
   // Load all storage data
