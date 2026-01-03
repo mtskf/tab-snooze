@@ -215,9 +215,13 @@ export default function Options() {
           });
           currentTabs.tabCount = totalCount;
 
-          chrome.storage.local.set({ snoozedTabs: currentTabs }, () => {
-            alert(`Imported ${importedCount} tabs successfully!`);
-          });
+          // Use background setSnoozedTabs to trigger backup rotation and size check
+          chrome.runtime.sendMessage(
+            { action: "setSnoozedTabs", data: currentTabs },
+            () => {
+              alert(`Imported ${importedCount} tabs successfully!`);
+            }
+          );
         });
       } catch (error) {
         console.error(error);

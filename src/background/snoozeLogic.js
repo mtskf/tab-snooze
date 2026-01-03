@@ -154,7 +154,12 @@ export async function getValidatedSnoozedTabs() {
       return sanitized;
     } else {
       // Data is corrupted, try to recover from backup
-      return await recoverFromBackup();
+      const recovery = await recoverFromBackup();
+      // Set session flag for notification (same as initStorage)
+      if (recovery.recovered) {
+        await chrome.storage.session.set({ pendingRecoveryNotification: recovery.tabCount });
+      }
+      return recovery.data;
     }
   }
 
