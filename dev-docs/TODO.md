@@ -16,4 +16,4 @@ None currently tracked.
 6. [ ] Low: データフローを`ARCHITECTURE.md`に明示セクション化。
 7. [ ] Low: エラーハンドリングの統一（ログレベル制御、通知の一元化）。
 8. [ ] Low: `snoozeLogic.js` の分割（スキーマ整理後に実施）。
-9. [ ] Low: `useKeyboardNavigation` と Popup/Options 表示ロジックのテストを追加してUI周辺の低カバレージを改善。
+9. [x] Low: `useKeyboardNavigation` と Popup/Options 表示ロジックのテストを追加してUI周辺の低カバレージを改善。 ✅

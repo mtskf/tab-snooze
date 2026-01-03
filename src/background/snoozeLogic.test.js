@@ -8,6 +8,7 @@ import {
   popCheck,
   removeSnoozedTabWrapper,
   removeWindowGroup,
+  getSettings,
 } from './snoozeLogic';
 
 // Mocks
@@ -196,6 +197,51 @@ describe('snoozeLogic.js (V2)', () => {
              await checkStorageSize();
 
              expect(chrome.notifications.create).toHaveBeenCalled();
+        });
+    });
+
+    describe('getSettings (V2)', () => {
+        test('merges default settings with saved settings', async () => {
+            // Mock saved settings having one key but missing others
+            chromeMock.storage.local.get.mockResolvedValue({
+                settings: { 'start-day': '9:00 AM' }
+            });
+
+            // Mock Intl for timezone
+            vi.stubGlobal('Intl', {
+                DateTimeFormat: () => ({
+                    resolvedOptions: () => ({ timeZone: 'Mock/Zone' })
+                })
+            });
+
+            const settings = await getSettings();
+
+            // Existing key preserved
+            expect(settings['start-day']).toBe('9:00 AM');
+            // Missing key filled from defaults (assuming 'end-day' is in DEFAULT_SETTINGS)
+            expect(settings['end-day']).toBe('5:00 PM');
+            // Timezone injected
+            expect(settings.timezone).toBe('Mock/Zone');
+
+            vi.unstubAllGlobals(); // Cleanup Intl
+        });
+
+        test('returns full defaults if settings is undefined', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({});
+
+             // Mock Intl for timezone
+            vi.stubGlobal('Intl', {
+                DateTimeFormat: () => ({
+                    resolvedOptions: () => ({ timeZone: 'Mock/Zone' })
+                })
+            });
+
+            const settings = await getSettings();
+
+            expect(settings['start-day']).toBe('8:00 AM'); // Default
+            expect(settings.timezone).toBe('Mock/Zone');
+
+            vi.unstubAllGlobals();
         });
     });
 });
