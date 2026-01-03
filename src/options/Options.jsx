@@ -234,7 +234,7 @@ export default function Options() {
       } catch (error) {
         console.error(error);
         alert(
-          `Failed to import: ${error.message === "Invalid data structure" ? "The file contains invalid data." : "Invalid JSON file."}`
+          `Failed to import: ${error.message === "Invalid data structure that cannot be repaired" ? "The file contains invalid data." : "Invalid JSON file."}`
         );
       }
     };

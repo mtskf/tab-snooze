@@ -166,3 +166,54 @@ export function sanitizeSnoozedTabs(data) {
   sanitized.tabCount = tabCount;
   return sanitized;
 }
+
+/**
+ * Validates the V2 storage structure
+ * @param {any} v2Data - Data to validate { items: {}, schedule: {} }
+ * @returns {{ valid: boolean, errors: string[] }}
+ */
+export function validateSnoozedTabsV2(v2Data) {
+  const errors = [];
+  if (!v2Data || typeof v2Data !== 'object') {
+     return { valid: false, errors: ['V2 Data is not an object'] };
+  }
+  if (!v2Data.items || typeof v2Data.items !== 'object') {
+      errors.push('Missing items object');
+  }
+  if (!v2Data.schedule || typeof v2Data.schedule !== 'object') {
+      errors.push('Missing schedule object');
+  }
+
+  if (errors.length > 0) return { valid: false, errors };
+
+  // Validate Items
+  for (const id in v2Data.items) {
+      if (!v2Data.items[id] || typeof v2Data.items[id] !== 'object') {
+          errors.push(`Invalid item at ${id}`);
+          continue;
+      }
+      const entryResult = validateTabEntry(v2Data.items[id]);
+      if (!entryResult.valid) {
+          errors.push(`Invalid item ${id}: ${entryResult.errors.join(', ')}`);
+      }
+      if (v2Data.items[id].id !== id) {
+          errors.push(`ID Validation Mismatch: key ${id} vs obj.id ${v2Data.items[id].id}`);
+      }
+  }
+
+  // Validate Schedule
+  for (const time in v2Data.schedule) {
+      const ids = v2Data.schedule[time];
+      if (!Array.isArray(ids)) {
+          errors.push(`Schedule at ${time} is not an array`);
+          continue;
+      }
+      ids.forEach(id => {
+          if (!v2Data.items[id]) {
+              errors.push(`Schedule references missing item ID: ${id} at time ${time}`);
+          }
+      });
+  }
+
+  return { valid: errors.length === 0, errors };
+}

@@ -54,10 +54,7 @@ async function handleMessage(request, sendResponse) {
       case "getSnoozedTabs":
         sendResponse(await getSnoozedTabs());
         break;
-      case "ensureSnoozedTabs":
-        // Validate and recover if needed, return post-recovery payload
-        sendResponse(await getValidatedSnoozedTabs());
-        break;
+
       case "setSnoozedTabs":
         await setSnoozedTabs(request.data);
         sendResponse({ success: true });

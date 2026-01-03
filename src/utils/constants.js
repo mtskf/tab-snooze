@@ -73,3 +73,12 @@ export const HEATMAP_COLORS = {
   "pick-date": "text-[#FF8C1A]/60",   // Neutral (Escape)
   "delete": "text-[#FF2F6D]",         // Critical
 };
+
+export const RESTRICTED_PROTOCOLS = [
+  'chrome:',
+  'edge:',
+  'brave:',
+  'about:',
+  'chrome-extension:',
+  'file:'
+];
