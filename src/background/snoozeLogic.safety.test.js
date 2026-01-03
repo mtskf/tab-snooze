@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { removeSnoozedTabWrapper, removeWindowGroup, restoreWindowGroup, snooze, popCheck, initStorage } from './snoozeLogic';
+import { removeSnoozedTabWrapper, removeWindowGroup, restoreWindowGroup, snooze, popCheck, initStorage, recoverFromBackup } from './snoozeLogic';
 
 // Helpers
 const MOCK_TIME = 1625097600000;
@@ -279,6 +279,66 @@ describe('snoozeLogic Safety Checks (V2)', () => {
           expect(savedV2.items['t1']).toBeDefined();
           expect(savedV2.items['t2']).toBeDefined();
       }
+  });
+
+  describe('recoverFromBackup', () => {
+      it('should prefer an older VALID backup over a newer INVALID backup', async () => {
+          const validOld = createV2Data({ 't1': createItem('t1', MOCK_TIME) }, { [MOCK_TIME]: ['t1'] }).snoooze_v2;
+          const invalidNew = { items: 'broken', schedule: {} };
+
+          mockStorage = {
+              'snoozedTabs_backup_100': validOld,  // Oldest
+              'snoozedTabs_backup_200': invalidNew // Newest
+          };
+          chrome.storage.local.get.mockResolvedValue(mockStorage);
+
+          const result = await recoverFromBackup();
+
+          expect(result.recovered).toBe(true);
+          expect(result.tabCount).toBe(1);
+          // Should save the valid old backup
+          expect(chrome.storage.local.set).toHaveBeenCalledWith(
+              expect.objectContaining({ snoooze_v2: validOld })
+          );
+      });
+
+      it('should prefer sanitized backup with MORE items over newer sanitized backup with FEWER items', async () => {
+          // Backup A (Newest): Invalid structure, sanitizes to 0 items
+          const backupA = { items: { 't1': { id: 't1' } }, schedule: {} }; // Missing required fields, sanitize clears it
+
+          // Backup B (Middle): Invalid structure (orphaned ID), sanitizes to 1 item
+          // Corrupt V2: schedule references t2, but t2 is valid. t3 is missing.
+          const item2 = createItem('t2', MOCK_TIME);
+          const backupB = {
+              items: { 't2': item2 },
+              schedule: { [MOCK_TIME]: ['t2', 'missing'] } // 'missing' dropped, t2 kept
+          };
+
+          // Backup C (Oldest): Invalid structure, sanitizes to 0 items
+          const backupC = { items: 'invalid', schedule: {} };
+
+          mockStorage = {
+              'snoozedTabs_backup_300': backupA,
+              'snoozedTabs_backup_200': backupB,
+              'snoozedTabs_backup_100': backupC
+          };
+          chrome.storage.local.get.mockResolvedValue(mockStorage);
+
+          const result = await recoverFromBackup();
+
+          expect(result.recovered).toBe(true);
+          expect(result.sanitized).toBe(true);
+          expect(result.tabCount).toBe(1); // Should pick Backup B
+
+          // Should save the sanitized version of B
+          const expectedSaved = {
+              items: { 't2': item2 },
+              schedule: { [MOCK_TIME]: ['t2'] }
+          };
+          expect(chrome.storage.local.set).toHaveBeenCalledWith(
+              expect.objectContaining({ snoooze_v2: expectedSaved })
+          );
+      });
   });
 
 });

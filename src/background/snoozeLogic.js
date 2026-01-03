@@ -191,17 +191,28 @@ export async function recoverFromBackup() {
         }
     }
 
-    // Second pass: No valid backup found, try sanitizing newest backup with items/schedule
+    // Second pass: No valid backup found, try finding the BEST sanitized backup (most items)
+    let bestCandidate = null;
+    let maxItems = -1;
+
     for (const key of backupKeys) {
         const backupData = allStorage[key];
         if (backupData && backupData.items && backupData.schedule) {
-            console.warn('No fully valid backup found, using sanitized version. Some data may have been lost.');
             const sanitized = sanitizeSnoozedTabsV2(backupData);
-            if (Object.keys(sanitized.items).length > 0) {
-                await chrome.storage.local.set({ snoooze_v2: sanitized });
-                return { data: adapterV1(sanitized), recovered: true, tabCount: Object.keys(sanitized.items).length, sanitized: true };
+            const itemCount = Object.keys(sanitized.items).length;
+
+            // Prefer backup with more items. If equal, prefer newer (already sorted desc)
+            if (itemCount > maxItems) {
+                maxItems = itemCount;
+                bestCandidate = sanitized;
             }
         }
+    }
+
+    if (bestCandidate && maxItems > 0) {
+        console.warn('No fully valid backup found. Recovered best available sanitized backup.');
+        await chrome.storage.local.set({ snoooze_v2: bestCandidate });
+        return { data: adapterV1(bestCandidate), recovered: true, tabCount: maxItems, sanitized: true };
     }
 
     // Reset
