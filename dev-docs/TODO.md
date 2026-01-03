@@ -1,21 +1,19 @@
 # TODO
 
-## Resolved Issues
+## Refactoring & Maintenance (Priority Order)
 
-- [x] Popupで`getSettings`が取得できない場合、`start-day/end-day`のフォールバックが`DEFAULT_SETTINGS`と不一致（UI表示と実際のsnooze時刻がズレる可能性）。`src/popup/Popup.jsx` ✅
-
-## Refactoring Opportunities (Priority Order)
-
-1. [x] Medium: 設定取得の経路を統一（Popup/Optionsともに背景API経由でデフォルトをマージした設定を受け取る）。 ✅
-2. [ ] Medium: V2スキーマのバージョン定義とマイグレーション表を追加し、検証/修復の入口を単一化。
-3. [ ] Medium: JSDoc型定義（`SnoozedItemV2`, `ScheduleV2`, `Settings`等）を追加。
-4. [ ] Medium: `chrome.*` APIラッパー（`ChromeApi.js`）に集約。エラーハンドリング・テストモックを一元化。
-5. [ ] Medium: ロジックの分離と共通化。
+1. [ ] Medium: V2ストレージ取得時に常にバリデーション/サニタイズする入口を用意（`getStorageV2` or shared accessor）。破損データで`items`/`schedule`が欠落した場合のクラッシュを防ぐ。
+2. [ ] Medium: `DEFAULT_SETTINGS`準拠のフォールバックに統一（`timeUtils.getSettingsTime`の`9`、`Popup.parseTimeHour`の`8`を排除）。
+3. [ ] Medium: デバッグ用の隠しコマンド（`jjj` 1分スヌーズ）を削除、または開発ビルド限定にする。
+4. [ ] Medium: V2スキーマのバージョン定義とマイグレーション表を追加し、検証/修復の入口を単一化。
+5. [ ] Medium: JSDoc型定義（`SnoozedItemV2`, `ScheduleV2`, `Settings`等）を追加。
+6. [ ] Medium: `chrome.*` APIラッパー（`ChromeApi.js`）に集約。エラーハンドリング・テストモックを一元化。
+7. [ ] Medium: ロジックの分離と共通化。
     - `Popup.jsx` の `parseTimeHour` を `timeUtils.js` へ移動。
     - `Popup` ロジックを `useSnooze` フックへ分離。
     - `timeUtils.getSettings()` を直接storage読取から排除し、呼び出し元から設定を注入する。
-6. [ ] Low: メッセージ契約の集約（`action`名とrequest/responseを`messages.js`等に）。
-7. [ ] Low: データフローを`ARCHITECTURE.md`に明示セクション化。
-8. [ ] Low: エラーハンドリングの統一（ログレベル制御、通知の一元化）。
-9. [ ] Low: `snoozeLogic.js` の分割（スキーマ整理後に実施）。
-10. [ ] Low: 未使用importの整理（Options/Popupなど）。
+8. [ ] Low: メッセージ契約の集約（`action`名とrequest/responseを`messages.js`等に）。
+9. [ ] Low: データフローを`ARCHITECTURE.md`に明示セクション化。
+10. [ ] Low: エラーハンドリングの統一（ログレベル制御、通知の一元化）。
+11. [ ] Low: `snoozeLogic.js` の分割（スキーマ整理後に実施）。
+12. [ ] Low: 未使用importの整理（Options/Popupなど）。
