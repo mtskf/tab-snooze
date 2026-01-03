@@ -52,9 +52,11 @@ All data is stored locally on your device. No cloud ☁️, no tracking 👀, co
 
 
 
-== 🆕 WHAT'S NEW (v0.2.7) ==
+== 🆕 WHAT'S NEW ==
 
-⚠️ Storage Warning: Snooooze now monitors your storage usage and warns you if you're approaching the limit, ensuring your tabs are always safe. 🛡️
+v0.2.7 ⚠️ Storage Warning: Snooooze now monitors your storage usage and warns you if you're approaching the limit, ensuring your tabs are always safe.
+
+v0.2.6 🛡️ Auto Backup: Your snoozed tabs are automatically backed up locally. Snooooze recovers from backups if data gets corrupted—no cloud, no tracking.
 
 
 
