@@ -2,14 +2,12 @@
 
 ## Commits to review
 
-- [ ] 0e5b3fdbb4299b70534696e5bf3259daa7830ea9
+- [ ] af322355f627c17b63eeb317eab91cdc17394bc5
+- [x] 0e5b3fdbb4299b70534696e5bf3259daa7830ea9 ✅
 
 ## Known Issues
 
-- [x] Medium: `recoverFromBackup` は最新バックアップが不正な場合にサニタイズして即復旧するため、より古い正常バックアップを探索しない。結果的に欠損が増える可能性がある。
-    - Resolved: `recoverFromBackup` now iterates through all backups to find a fully valid one first.
-- [x] Low: Popupの`getSettings`はデフォルトマージを行わないため、新規設定キー追加時にデフォルトが反映されない可能性がある。
-    - Resolved: Popup now imports `DEFAULT_SETTINGS` and merges it with fetched settings.
+None currently tracked.
 
 ## Refactoring Opportunities
 
