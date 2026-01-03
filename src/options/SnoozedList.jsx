@@ -219,7 +219,13 @@ const SnoozedList = React.memo(
                           </a>
                           <span className="text-xs text-muted-foreground flex gap-2">
                             <span>
-                              {tab.url ? new URL(tab.url).hostname : "Unknown"}
+                              {(() => {
+                                try {
+                                  return tab.url ? new URL(tab.url).hostname : "Unknown";
+                                } catch (e) {
+                                  return "Unknown";
+                                }
+                              })()}
                             </span>
                             <span>•</span>
                             <span>{formatTime(tab.popTime)}</span>

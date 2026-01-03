@@ -213,7 +213,7 @@ export default function Popup() {
       // Generate groupId if multiple tabs or window scope
       // We use a simple timestamp + random suffix for unique ID
       const groupId =
-        tabs.length > 1 || targetScope === "window"
+        targetScope === "window"
           ? `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
           : null;
 

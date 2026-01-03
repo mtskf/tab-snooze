@@ -122,7 +122,7 @@ export function useKeyboardNavigation({
       }
 
       // Settings shortcut
-      if (settingsShortcut && e.key === settingsShortcut) {
+      if (settingsShortcut && e.key.toUpperCase() === settingsShortcut.toUpperCase()) {
         chrome.tabs.create({
           url: chrome.runtime.getURL("options/index.html#settings"),
         });

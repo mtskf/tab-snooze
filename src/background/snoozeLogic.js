@@ -442,7 +442,10 @@ async function addSnoozedTab(tab, popTime, openInNewWindow, groupId = null) {
   // Wrap the logic in the lock
   storageLock = storageLock
     .then(async () => {
-      const snoozedTabs = await getSnoozedTabs();
+      let snoozedTabs = await getSnoozedTabs();
+      if (!snoozedTabs) {
+        snoozedTabs = { tabCount: 0 };
+      }
       const fullTime = popTime.getTime();
 
       if (!snoozedTabs[fullTime]) {
@@ -490,6 +493,7 @@ function getTabsByGroupId(snoozedTabs, groupId) {
 
 export async function restoreWindowGroup(groupId) {
   const snoozedTabs = await getSnoozedTabs();
+  if (!snoozedTabs) return;
 
   // 1. Gather Tabs using helper
   const groupTabs = getTabsByGroupId(snoozedTabs, groupId);
@@ -508,10 +512,19 @@ export async function restoreWindowGroup(groupId) {
 }
 
 export async function removeSnoozedTabWrapper(tab) {
-  const snoozedTabs = await getSnoozedTabs();
-  removeSnoozedTab(tab, snoozedTabs);
-  // removeSnoozedTab modifies object, we need to save it.
-  await setSnoozedTabs(snoozedTabs);
+  storageLock = storageLock
+    .then(async () => {
+      const snoozedTabs = await getSnoozedTabs();
+      if (!snoozedTabs) return;
+
+      removeSnoozedTab(tab, snoozedTabs);
+      // removeSnoozedTab modifies object, we need to save it.
+      await setSnoozedTabs(snoozedTabs);
+    })
+    .catch((err) => {
+      console.warn("Error removing snoozed tab:", err);
+    });
+  return storageLock;
 }
 
 // Inner helper that modifies the object reference (synchronous)
@@ -551,32 +564,41 @@ function removeSnoozedTab(tab, snoozedTabs) {
 }
 
 export async function removeWindowGroup(groupId) {
-  const snoozedTabs = await getSnoozedTabs();
-  const timestamps = Object.keys(snoozedTabs);
-  let removedCount = 0;
+  storageLock = storageLock
+    .then(async () => {
+      const snoozedTabs = await getSnoozedTabs();
+      if (!snoozedTabs) return;
 
-  for (const ts of timestamps) {
-    if (ts === "tabCount") continue;
-    const tabs = snoozedTabs[ts];
-    if (!Array.isArray(tabs)) continue;
+      const timestamps = Object.keys(snoozedTabs);
+      let removedCount = 0;
 
-    const originalLength = tabs.length;
-    // Filter out tabs with the matching groupId
-    const newTabs = tabs.filter((t) => t.groupId !== groupId);
+      for (const ts of timestamps) {
+        if (ts === "tabCount") continue;
+        const tabs = snoozedTabs[ts];
+        if (!Array.isArray(tabs)) continue;
 
-    if (newTabs.length !== originalLength) {
-      removedCount += originalLength - newTabs.length;
-      if (newTabs.length === 0) {
-        delete snoozedTabs[ts];
-      } else {
-        snoozedTabs[ts] = newTabs;
+        const originalLength = tabs.length;
+        // Filter out tabs with the matching groupId
+        const newTabs = tabs.filter((t) => t.groupId !== groupId);
+
+        if (newTabs.length !== originalLength) {
+          removedCount += originalLength - newTabs.length;
+          if (newTabs.length === 0) {
+            delete snoozedTabs[ts];
+          } else {
+            snoozedTabs[ts] = newTabs;
+          }
+        }
       }
-    }
-  }
 
-  snoozedTabs["tabCount"] = Math.max(
-    0,
-    (snoozedTabs["tabCount"] || 0) - removedCount
-  );
-  await setSnoozedTabs(snoozedTabs);
+      snoozedTabs["tabCount"] = Math.max(
+        0,
+        (snoozedTabs["tabCount"] || 0) - removedCount
+      );
+      await setSnoozedTabs(snoozedTabs);
+    })
+    .catch((err) => {
+      console.warn("Error removing window group:", err);
+    });
+  return storageLock;
 }
