@@ -258,4 +258,46 @@ describe('snoozeLogic Safety Checks', () => {
       expect(savedTabs[0].url).toBe('http://failed.com');
       expect(setCall.snoozedTabs.tabCount).toBe(1);
   });
+
+  it('should NOT remove tabs from storage if window creation partially fails (tab count mismatch)', async () => {
+      const { popCheck } = await import('./snoozeLogic');
+      const now = Date.now();
+      vi.setSystemTime(now);
+      const pastTime = now - 1000;
+
+      const tab1 = { id: 'uuid-1', url: 'http://valid.com', groupId: 'g1', index: 0, creationTime: 123, popTime: pastTime };
+      const tab2 = { id: 'uuid-2', url: 'http://ignored.com', groupId: 'g1', index: 1, creationTime: 123, popTime: pastTime };
+
+      mockStorage.snoozedTabs = {
+        [pastTime]: [tab1, tab2],
+        tabCount: 2
+      };
+
+      global.chrome.storage.local.get = vi.fn().mockResolvedValue(mockStorage);
+
+      // Mock window creation partial success (only 1 tab created)
+      global.chrome.windows.create = vi.fn().mockResolvedValue({
+          id: 100,
+          tabs: [{ id: 101, url: 'http://valid.com' }] // Only 1 tab!
+      });
+
+      await popCheck();
+
+      // Check storage
+      // Should preserve BOTH tabs because the group failed validation
+      // But verify if logic calls setSnoozedTabs at all if nothing removed?
+      // Logic: loop timesToRemove -> filter remaining.
+      // If nothing restored, remaining = all.
+      // setSnoozedTabs IS called because we rewrite the object (cleanup logic touches it)
+
+      if (chrome.storage.local.set.mock.calls.length > 0) {
+          const setCall = chrome.storage.local.set.mock.calls[0][0];
+          const savedTabs = setCall.snoozedTabs[pastTime];
+          expect(savedTabs).toHaveLength(2); // Preserved
+          expect(setCall.snoozedTabs.tabCount).toBe(2);
+      } else {
+          // If not called, it means no changes, which is also correct preservation
+          expect(true).toBe(true);
+      }
+  });
 });

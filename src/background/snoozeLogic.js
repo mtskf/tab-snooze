@@ -604,8 +604,16 @@ async function restoreTabs(tabs, timesToRemove) {
       groupTabs.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
       const urls = groupTabs.map((t) => t.url);
       try {
-        await chrome.windows.create({ url: urls, focused: true });
-        restoredTabs.push(...groupTabs);
+        const createdWindow = await chrome.windows.create({ url: urls, focused: true });
+        // Partial Failure Detection:
+        // If some URLs were ignored (e.g. invalid), chrome creates a window with fewer tabs.
+        // We verify the count to ensure all were restored.
+        if (createdWindow && createdWindow.tabs && createdWindow.tabs.length === urls.length) {
+            restoredTabs.push(...groupTabs);
+        } else {
+            console.warn(`Partial restore detected for group ${groupId}. Preserving tabs in storage.`);
+            // Do NOT add to restoredTabs -> They will remain in storage (safety duplicate)
+        }
       } catch (e) {
         console.error("Failed to restore group:", groupId, e);
         failedTabs.push(...groupTabs);
