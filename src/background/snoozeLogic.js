@@ -2,6 +2,7 @@ import { generateUUID } from '../utils/uuid.js';
 
 import { validateSnoozedTabs, sanitizeSnoozedTabs, validateSnoozedTabsV2, sanitizeSnoozedTabsV2 } from '../utils/validation.js';
 import { DEFAULT_SETTINGS, RESTRICTED_PROTOCOLS, BACKUP_COUNT, BACKUP_DEBOUNCE_MS, BACKUP_PREFIX, STORAGE_LIMIT, WARNING_THRESHOLD, CLEAR_THRESHOLD, THROTTLE_MS } from '../utils/constants.js';
+import { ensureValidStorage } from './schemaVersioning.js';
 
 
 
@@ -60,6 +61,7 @@ export async function checkStorageSize() {
  * Retrieves V2 storage with defensive structure validation.
  * Ensures items and schedule are always valid plain objects (not arrays),
  * preventing crashes when storage is corrupted or partially missing.
+ * Preserves version field if present.
  */
 async function getStorageV2() {
     const res = await chrome.storage.local.get("snoooze_v2");
@@ -70,11 +72,12 @@ async function getStorageV2() {
 
     // Handle completely missing or invalid data
     if (!isPlainObject(data)) {
-        return { items: {}, schedule: {} };
+        return { version: 2, items: {}, schedule: {} };
     }
 
     // Ensure items and schedule are valid plain objects
     return {
+        version: data.version || 2, // Preserve version if exists, default to 2
         items: isPlainObject(data.items) ? data.items : {},
         schedule: isPlainObject(data.schedule) ? data.schedule : {}
     };
@@ -117,8 +120,11 @@ export async function getSnoozedTabs() {
  * Used if legacy code calls setSnoozedTabs. Converts structure and saves V2.
  */
 export async function setSnoozedTabs(legacyData) {
-    // Treat as migration
-    await migrateStorageV2(legacyData);
+    // Save legacy data temporarily, then use unified entry point to migrate
+    await chrome.storage.local.set({ snoozedTabs: legacyData });
+    const validData = await ensureValidStorage();
+    await chrome.storage.local.set({ snoooze_v2: validData });
+    await chrome.storage.local.remove('snoozedTabs');
 }
 
 // --- Backup & Rotation ---
@@ -234,44 +240,7 @@ export async function recoverFromBackup() {
     return { data: { tabCount: 0 }, recovered: false, tabCount: 0 };
 }
 
-// --- Migration ---
-
-async function migrateStorageV2(legacyData) {
-    if (!legacyData || !Object.keys(legacyData).length) return;
-
-    const items = {};
-    const schedule = {};
-
-    for (const key of Object.keys(legacyData)) {
-        if (key === 'tabCount') continue;
-        const time = parseInt(key, 10);
-        if (isNaN(time)) continue;
-
-        const tabs = legacyData[key];
-        if (!Array.isArray(tabs)) continue;
-
-        if (!schedule[time]) schedule[time] = [];
-
-        for (const tab of tabs) {
-            let id = tab.id || generateUUID();
-            while (items[id]) {
-                id = generateUUID();
-            }
-            const entry = { ...tab, id };
-            items[id] = entry;
-            schedule[time].push(id);
-        }
-    }
-
-    await chrome.storage.local.set({
-        snoooze_v2: { items, schedule },
-    });
-    // We don't verify here, just create. Backups of old data should be handled by caller if needed
-    // But initStorage handles initial migration.
-
-    // Log
-    // console.log('Migrated data to V2');
-}
+// Migration logic moved to schemaVersioning.js for centralized version management
 
 export async function getSettings() {
   const res = await chrome.storage.local.get("settings");
@@ -297,6 +266,7 @@ export async function setSettings(val) {
 export async function initStorage() {
   const all = await chrome.storage.local.get(null);
 
+  // Check if V2 data exists but is invalid - trigger recovery if needed
   const validation = validateSnoozedTabsV2(all.snoooze_v2);
   if (all.snoooze_v2 && !validation.valid) {
       const recovery = await recoverFromBackup();
@@ -307,17 +277,20 @@ export async function initStorage() {
       }
   }
 
-  // Clean start or Migration
+  // Use unified entry point for storage validation, migration, and repair
+  const validData = await ensureValidStorage();
+
+  // Save the validated data with version field
+  await chrome.storage.local.set({ snoooze_v2: validData });
+
+  // Check if we migrated from legacy (backup if needed)
   if (all.snoozedTabs && !all.snoooze_v2) {
-      console.log('Migrating Legacy -> V2');
-      await migrateStorageV2(all.snoozedTabs);
-      // Keep a backup of legacy just in case
+      console.log('Detected legacy data - creating backup');
       await chrome.storage.local.set({ snoozedTabs_legacy_backup: all.snoozedTabs });
       await chrome.storage.local.remove('snoozedTabs');
-  } else if (!all.snoooze_v2) {
-      await chrome.storage.local.set({ snoooze_v2: { items: {}, schedule: {} } });
   }
 
+  // Initialize settings if missing
   let settings = await getSettings();
   if (!settings) {
     await setSettings({ ...DEFAULT_SETTINGS });

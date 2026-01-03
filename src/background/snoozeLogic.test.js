@@ -95,7 +95,7 @@ describe('snoozeLogic.js (V2)', () => {
         await initStorage();
         expect(chromeMock.storage.local.set).toHaveBeenCalledWith(
             expect.objectContaining({
-                snoooze_v2: { items: {}, schedule: {} }
+                snoooze_v2: { version: 2, items: {}, schedule: {} }
             })
         );
     });
