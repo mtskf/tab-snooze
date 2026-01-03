@@ -218,7 +218,7 @@ export default function Popup() {
           : null;
 
       const promises = tabs.map((tab) => {
-        return performSnooze(tab, time, targetScope === "window", groupId);
+        return performSnooze(tab, time, groupId);
       });
 
       await Promise.all(promises);
@@ -226,7 +226,7 @@ export default function Popup() {
     });
   };
 
-  const performSnooze = (tab, time, openInNewWindow, groupId = null) => {
+  const performSnooze = (tab, time, groupId = null) => {
     return new Promise((resolve) => {
       const tabToSend = {
         id: tab.id,
@@ -241,7 +241,6 @@ export default function Popup() {
           action: "snooze",
           tab: tabToSend,
           popTime: time.getTime(),
-          openInNewWindow: openInNewWindow,
           groupId: groupId,
         },
         () => {

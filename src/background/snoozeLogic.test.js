@@ -59,7 +59,7 @@ describe('snoozeLogic', () => {
 
       const popTime = new Date('2024-01-01T10:00:00Z');
 
-      await snooze(tab, popTime, false);
+      await snooze(tab, popTime);
 
       // Verify tab removal
       expect(chrome.tabs.remove).toHaveBeenCalledWith(123);

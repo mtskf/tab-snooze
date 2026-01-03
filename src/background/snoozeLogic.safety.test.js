@@ -84,7 +84,7 @@ describe('snoozeLogic Safety Checks', () => {
       });
       global.chrome.storage.local.get = vi.fn().mockResolvedValue({});
 
-      await snooze(tab, popTime, false);
+      await snooze(tab, popTime);
 
       // Storage should be called BEFORE tabs.remove
       expect(callOrder).toEqual(['storage.set', 'tabs.remove']);
@@ -101,7 +101,7 @@ describe('snoozeLogic Safety Checks', () => {
         return Promise.resolve();
       });
 
-      await snooze(tab, popTime, false);
+      await snooze(tab, popTime);
 
       expect(chrome.storage.local.set).toHaveBeenCalledTimes(1);
       // Check that it initialized and added the tab
@@ -121,7 +121,7 @@ describe('snoozeLogic Safety Checks', () => {
       global.chrome.storage.local.get = vi.fn().mockResolvedValue({});
 
       // Should throw
-      await expect(snooze(tab, popTime, false)).rejects.toThrow();
+      await expect(snooze(tab, popTime)).rejects.toThrow();
 
       // Tab should NOT have been closed
       expect(chrome.tabs.remove).not.toHaveBeenCalled();

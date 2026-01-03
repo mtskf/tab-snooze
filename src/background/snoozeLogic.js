@@ -97,7 +97,6 @@ const DEFAULT_SETTINGS = {
   "end-day": "5:00 PM",
   "week-begin": 1,
   "weekend-begin": 6,
-  "open-new-tab": "true",
   badge: "true",
 };
 
@@ -382,7 +381,7 @@ export async function initStorage() {
 
 // Logic Functions
 
-export async function snooze(tab, popTime, openInNewWindow, groupId = null) {
+export async function snooze(tab, popTime, groupId = null) {
   // Note: tab is passed from popup, might not be full Tab object but has necessary props
   // popTime comes as string or timestamp from message usually
 
@@ -392,7 +391,7 @@ export async function snooze(tab, popTime, openInNewWindow, groupId = null) {
   // CRITICAL: Save to storage FIRST before closing tab
   // If storage fails, tab is preserved (user can retry)
   try {
-    await addSnoozedTab(tab, popTimeObj, openInNewWindow, groupId);
+    await addSnoozedTab(tab, popTimeObj, groupId);
   } catch (e) {
     console.error("Failed to save snoozed tab:", e);
     throw e; // Propagate error - don't close tab if save failed
@@ -581,7 +580,7 @@ async function createTab(tab, w) {
 // Promise-chain mutex for storage operations
 let storageLock = Promise.resolve();
 
-async function addSnoozedTab(tab, popTime, openInNewWindow, groupId = null) {
+async function addSnoozedTab(tab, popTime, groupId = null) {
   // Wrap the logic in the lock
   storageLock = storageLock
     .then(async () => {
@@ -601,7 +600,6 @@ async function addSnoozedTab(tab, popTime, openInNewWindow, groupId = null) {
         favicon: tab.favIconUrl || tab.favicon,
         creationTime: new Date().getTime(),
         popTime: popTime.getTime(),
-        openInNewWindow: !!openInNewWindow,
         groupId: groupId,
         index: tab.index,
       });

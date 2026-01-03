@@ -73,7 +73,6 @@ async function handleMessage(request, sendResponse) {
         await snooze(
           request.tab,
           request.popTime,
-          request.openInNewWindow,
           request.groupId
         );
         sendResponse({ success: true });

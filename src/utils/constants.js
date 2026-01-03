@@ -17,7 +17,6 @@ export const DEFAULT_SETTINGS = {
   "end-day": "5:00 PM",
   "week-begin": 1,
   "weekend-begin": 6,
-  "open-new-tab": "true",
   badge: "true",
 };
 
