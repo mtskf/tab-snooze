@@ -82,3 +82,14 @@ export const RESTRICTED_PROTOCOLS = [
   'chrome-extension:',
   'file:'
 ];
+
+// Backup configuration
+export const BACKUP_COUNT = 3;
+export const BACKUP_DEBOUNCE_MS = 2000;
+export const BACKUP_PREFIX = 'snoozedTabs_backup_';
+
+// Storage size warning configuration
+export const STORAGE_LIMIT = 10 * 1024 * 1024;          // 10MB
+export const WARNING_THRESHOLD = 0.8 * STORAGE_LIMIT;   // 80% = 8MB
+export const CLEAR_THRESHOLD = 0.7 * STORAGE_LIMIT;     // 70% = 7MB
+export const THROTTLE_MS = 24 * 60 * 60 * 1000;         // 24 hours

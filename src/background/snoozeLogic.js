@@ -1,20 +1,14 @@
 import { generateUUID } from '../utils/uuid.js';
 
 import { validateSnoozedTabs, sanitizeSnoozedTabs, validateSnoozedTabsV2, sanitizeSnoozedTabsV2 } from '../utils/validation.js';
-import { DEFAULT_SETTINGS, RESTRICTED_PROTOCOLS } from '../utils/constants.js';
+import { DEFAULT_SETTINGS, RESTRICTED_PROTOCOLS, BACKUP_COUNT, BACKUP_DEBOUNCE_MS, BACKUP_PREFIX, STORAGE_LIMIT, WARNING_THRESHOLD, CLEAR_THRESHOLD, THROTTLE_MS } from '../utils/constants.js';
+
 
 
 // Backup configuration
-const BACKUP_COUNT = 3;
-const BACKUP_DEBOUNCE_MS = 2000;
-const BACKUP_PREFIX = 'snoozedTabs_backup_';
 let backupTimer = null;
 
 // Storage size warning configuration
-const STORAGE_LIMIT = 10 * 1024 * 1024;          // 10MB
-const WARNING_THRESHOLD = 0.8 * STORAGE_LIMIT;   // 80% = 8MB
-const CLEAR_THRESHOLD = 0.7 * STORAGE_LIMIT;     // 70% = 7MB
-const THROTTLE_MS = 24 * 60 * 60 * 1000;         // 24 hours
 
 /**
  * Check storage size and warn user if approaching limit.
