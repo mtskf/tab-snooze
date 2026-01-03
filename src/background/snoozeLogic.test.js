@@ -322,4 +322,72 @@ describe('snoozeLogic.js (V2)', () => {
             expect(result[popTime]).toHaveLength(1);
         });
     });
+
+    describe('getStorageV2 defensive handling', () => {
+        test('getSnoozedTabs handles missing items property', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: { schedule: { '123456': ['id-1'] } }
+            });
+
+            const result = await getSnoozedTabs();
+
+            expect(result).toEqual({ tabCount: 0 });
+        });
+
+        test('getSnoozedTabs handles missing schedule property', async () => {
+            const popTime = MOCK_TIME + 1000;
+            const id = 'tab-1';
+            const item = createItem(id, popTime);
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: { items: { [id]: item } }
+            });
+
+            const result = await getSnoozedTabs();
+
+            expect(result).toEqual({ tabCount: 0 });
+        });
+
+        test('getSnoozedTabs handles both items and schedule missing', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: {}
+            });
+
+            const result = await getSnoozedTabs();
+
+            expect(result).toEqual({ tabCount: 0 });
+        });
+
+        test('getSnoozedTabs handles null items', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: { items: null, schedule: {} }
+            });
+
+            const result = await getSnoozedTabs();
+
+            expect(result).toEqual({ tabCount: 0 });
+        });
+
+        test('getSnoozedTabs handles null schedule', async () => {
+            const popTime = MOCK_TIME + 1000;
+            const id = 'tab-1';
+            const item = createItem(id, popTime);
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: { items: { [id]: item }, schedule: null }
+            });
+
+            const result = await getSnoozedTabs();
+
+            expect(result).toEqual({ tabCount: 0 });
+        });
+
+        test('popCheck handles corrupted storage without crashing', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: { items: null, schedule: undefined }
+            });
+
+            const result = await popCheck();
+
+            expect(result).toEqual({ count: 0 });
+        });
+    });
 });
