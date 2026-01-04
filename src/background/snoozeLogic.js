@@ -9,7 +9,7 @@
 import { generateUUID } from '../utils/uuid.js';
 import { storage, tabs, windows, notifications } from '../utils/ChromeApi.js';
 
-import { validateSnoozedTabs, sanitizeSnoozedTabs, validateSnoozedTabsV2, sanitizeSnoozedTabsV2 } from '../utils/validation.js';
+import { validateSnoozedTabsV2, sanitizeSnoozedTabsV2 } from '../utils/validation.js';
 import { DEFAULT_SETTINGS, RESTRICTED_PROTOCOLS, BACKUP_COUNT, BACKUP_DEBOUNCE_MS, BACKUP_PREFIX, WARNING_THRESHOLD, CLEAR_THRESHOLD, THROTTLE_MS } from '../utils/constants.js';
 import { getSettingsWithDefaults } from '../utils/settingsHelper.js';
 import { ensureValidStorage } from './schemaVersioning.js';
@@ -350,9 +350,9 @@ export async function initStorage() {
       await storage.removeLocal('snoozedTabs');
   }
 
-  // Initialize settings if missing
-  let settings = await getSettings();
-  if (!settings) {
+  // Initialize settings if missing from storage
+  const storedSettings = await storage.getLocal('settings');
+  if (!storedSettings.settings) {
     await setSettings({ ...DEFAULT_SETTINGS });
   }
 
