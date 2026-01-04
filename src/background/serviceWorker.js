@@ -16,6 +16,7 @@ import {
   setSettings,
   getValidatedSnoozedTabs,
 } from "./snoozeLogic";
+import { dispatchMessage } from "../messages";
 
 // Initialize extension
 chrome.runtime.onInstalled.addListener(async () => {
@@ -50,51 +51,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 async function handleMessage(request, sendResponse) {
   try {
-    switch (request.action) {
-      case "getSnoozedTabs":
-        sendResponse(await getValidatedSnoozedTabs());
-        break;
+    // Create services object with all dependencies needed by message handlers
+    const services = {
+      getValidatedSnoozedTabs,
+      setSnoozedTabs,
+      getSettings,
+      setSettings,
+      snooze,
+      removeSnoozedTabWrapper,
+      removeWindowGroup,
+      restoreWindowGroup,
+    };
 
-      case "setSnoozedTabs":
-        await setSnoozedTabs(request.data);
-        sendResponse({ success: true });
-        break;
-      case "getSettings":
-        sendResponse(await getSettings());
-        break;
-      case "setSettings":
-        await setSettings(request.data);
-        sendResponse({ success: true });
-        break;
-      case "snooze":
-        await snooze(
-          request.tab,
-          request.popTime,
-          request.groupId
-        );
-        sendResponse({ success: true });
-        break;
-      case "removeSnoozedTab":
-        await removeSnoozedTabWrapper(request.tab);
-        sendResponse({ success: true });
-        break;
-      case "clearAllSnoozedTabs":
-        await setSnoozedTabs({ tabCount: 0 });
-        sendResponse({ success: true });
-        break;
-      case "removeWindowGroup":
-        await removeWindowGroup(request.groupId);
-        sendResponse({ success: true });
-        break;
-      case "restoreWindowGroup":
-        await restoreWindowGroup(request.groupId);
-        sendResponse({ success: true });
-        break;
-
-      default:
-        // console.warn("Unknown message action:", request.action);
-        sendResponse({ error: "Unknown action" });
-    }
+    // Dispatch to appropriate handler using message contract
+    const response = await dispatchMessage(request, services);
+    sendResponse(response);
   } catch (error) {
     // console.error("Error handling message:", error);
     sendResponse({ error: error.message });

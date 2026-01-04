@@ -1,6 +1,7 @@
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { addMonths } from "date-fns";
 import { DEFAULT_SETTINGS } from "./constants";
+import { getSettings } from "../background/snoozeLogic";
 
 export async function getTime(timeName) {
   const settings = await getSettings();
@@ -149,19 +150,4 @@ function setSettingsTime(result, settingsTime) {
   result.setHours(hour, minute, 0, 0);
 
   return result;
-}
-
-export async function getSettings() {
-  const res = await chrome.storage.local.get("settings");
-  // Merge with defaults (timezone is dynamic, so added here)
-  const defaults = {
-    ...DEFAULT_SETTINGS,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  };
-
-  if (!res.settings) {
-    return defaults;
-  }
-  // Merge with defaults to ensure new keys exist
-  return { ...defaults, ...res.settings };
 }

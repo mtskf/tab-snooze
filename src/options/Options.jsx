@@ -56,6 +56,7 @@ import SnoozeActionSettings from "./SnoozeActionSettings";
 import AppearanceSettings from "./AppearanceSettings";
 import { Kbd } from "@/components/ui/kbd";
 import { StorageService } from "@/utils/StorageService";
+import { sendMessage, MESSAGE_ACTIONS } from "@/messages";
 
 export default function Options() {
   const [snoozedTabs, setSnoozedTabs] = useState({});
@@ -71,22 +72,29 @@ export default function Options() {
 
   const fileInputRef = React.useRef(null);
 
-  const fetchSnoozedTabs = useCallback(() => {
-    chrome.runtime.sendMessage({ action: "getSnoozedTabs" }, (response) => {
-      if (!response || response.error) {
-        setSnoozedTabs({ tabCount: 0 });
-        return;
-      }
-      setSnoozedTabs(response);
-    });
+  const fetchSnoozedTabs = useCallback(async () => {
+    try {
+      const response = await sendMessage(MESSAGE_ACTIONS.GET_SNOOZED_TABS);
+      setSnoozedTabs(response || { tabCount: 0 });
+    } catch (error) {
+      console.error('Failed to fetch snoozed tabs:', error);
+      setSnoozedTabs({ tabCount: 0 });
+    }
   }, []);
 
   useEffect(() => {
     // Initial load via Background API to ensure consistent defaults
-    chrome.runtime.sendMessage({ action: "getSettings" }, (response) => {
+    const loadInitialData = async () => {
+      try {
+        const response = await sendMessage(MESSAGE_ACTIONS.GET_SETTINGS);
         setSettings(response || {});
-    });
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+        setSettings({});
+      }
+    };
 
+    loadInitialData();
     fetchSnoozedTabs();
 
     chrome.commands.getAll((commands) => {
@@ -122,36 +130,38 @@ export default function Options() {
   const updateSetting = (key, value) => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
-    chrome.runtime.sendMessage({ action: 'setSettings', data: newSettings });
-  };
-
-  const clearTab = (tab) => {
-    chrome.runtime.sendMessage({ action: "removeSnoozedTab", tab: tab });
-  };
-
-  const clearGroup = (groupId) => {
-    chrome.runtime.sendMessage({
-      action: "removeWindowGroup",
-      groupId: groupId,
+    sendMessage(MESSAGE_ACTIONS.SET_SETTINGS, { data: newSettings }).catch(error => {
+      console.error('Failed to update settings:', error);
     });
   };
 
-  const restoreGroup = (groupId) => {
-    chrome.runtime.sendMessage(
-      {
-        action: "restoreWindowGroup",
-        groupId: groupId,
-      },
-      () => {
-        // Manual refresh to ensure UI sync
-        fetchSnoozedTabs();
-      }
-    );
+  const clearTab = (tab) => {
+    sendMessage(MESSAGE_ACTIONS.REMOVE_SNOOZED_TAB, { tab }).catch(error => {
+      console.error('Failed to clear tab:', error);
+    });
+  };
+
+  const clearGroup = (groupId) => {
+    sendMessage(MESSAGE_ACTIONS.REMOVE_WINDOW_GROUP, { groupId }).catch(error => {
+      console.error('Failed to clear group:', error);
+    });
+  };
+
+  const restoreGroup = async (groupId) => {
+    try {
+      await sendMessage(MESSAGE_ACTIONS.RESTORE_WINDOW_GROUP, { groupId });
+      // Manual refresh to ensure UI sync
+      fetchSnoozedTabs();
+    } catch (error) {
+      console.error('Failed to restore group:', error);
+    }
   };
 
   const clearAll = () => {
     if (confirm("Are you sure you want to clear all snoozed tabs?")) {
-      chrome.runtime.sendMessage({ action: "clearAllSnoozedTabs" });
+      sendMessage(MESSAGE_ACTIONS.CLEAR_ALL_SNOOZED_TABS).catch(error => {
+        console.error('Failed to clear all tabs:', error);
+      });
     }
   };
 
@@ -171,22 +181,16 @@ export default function Options() {
 
     try {
       const importedTabs = await StorageService.parseImportFile(file);
+      const currentTabs = await sendMessage(MESSAGE_ACTIONS.GET_SNOOZED_TABS);
 
-      chrome.runtime.sendMessage({ action: "getSnoozedTabs" }, (res) => {
-        const currentTabs = res && !res.error ? res : { tabCount: 0 };
-        const { mergedData, addedCount } = StorageService.mergeTabs(
-          currentTabs,
-          importedTabs
-        );
+      const { mergedData, addedCount } = StorageService.mergeTabs(
+        currentTabs || { tabCount: 0 },
+        importedTabs
+      );
 
-        // Use background setSnoozedTabs to trigger backup rotation and size check
-        chrome.runtime.sendMessage(
-          { action: "setSnoozedTabs", data: mergedData },
-          () => {
-            alert(`Imported ${addedCount} tabs successfully!`);
-          }
-        );
-      });
+      // Use background setSnoozedTabs to trigger backup rotation and size check
+      await sendMessage(MESSAGE_ACTIONS.SET_SNOOZED_TABS, { data: mergedData });
+      alert(`Imported ${addedCount} tabs successfully!`);
     } catch (error) {
       console.error(error);
       alert(
