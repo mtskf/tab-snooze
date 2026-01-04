@@ -10,26 +10,28 @@
 ### 🟡 Important
 1. [ ] V2サニタイズ時のversion保持（`getValidatedSnoozedTabs`/`recoverFromBackup` の保存前に `version` を付与）。
 2. [ ] schemaVersioningの配列検出（`detectSchemaVersion` は配列を無効扱いにする）。
-3. [ ] メッセージ契約の接続（`messages.js` の `MESSAGE_ACTIONS`/`dispatchMessage`/`sendMessage` を service worker / UI に適用）。
-4. [ ] `chrome.*` APIラッパーの接続（`ChromeApi.js` を使うよう直呼びを置換）。
-5. [ ] Popupのロジック分離と共通化。
-   - `Popup` ロジックを `useSnooze` フックへ分離。
-   - `timeUtils.getSettings()` を直接storage読取から排除し、呼び出し元から設定を注入する。
-6. [ ] UIはV2直表示へ移行（selector層を作り、V1アダプタは import/export のみに限定）。
+3. [ ] 重複した`getSettings`の統合 - `snoozeLogic.js` と `timeUtils.js` に同一の関数が存在。`snoozeLogic.js`のものを正とし、`timeUtils.js`はimportに変更する。
+4. [ ] `Options.jsx`の設定書き込みが背景APIをバイパス - `updateSetting`が`chrome.storage.local.set`を直接呼び出しており、`setSettings`メッセージを経由していない。
+5. [ ] メッセージ契約の接続（`messages.js` の `MESSAGE_ACTIONS`/`dispatchMessage`/`sendMessage` を service worker / UI に適用）。
+6. [ ] `chrome.*` APIラッパーの接続（`ChromeApi.js` を使うよう直呼びを置換）。
 7. [ ] `snoozeLogic.js`のタブ復元失敗時、リトライを繰り返すのではなく、ユーザーが手動で確認できる隔離リストに移動する。
 
 ### 🟢 Nice to Have
 1. [ ] Functional Core / Imperative Shell に分離（純粋ロジックと `chrome` I/O を分けてテスト容易性を上げる）。
    - Clock/Now の依存注入（`Date.now()` 直呼び排除でテスト性/再現性を向上）。
-2. [ ] データフローを`ARCHITECTURE.md`に明示セクション化。
-3. [ ] エラーハンドリングの統一（ログレベル制御、通知の一元化）※`ChromeApi`導入後に実施。
+2. [ ] Popupのロジック分離と共通化。
+   - `Popup` ロジックを `useSnooze` フックへ分離。
+   - `timeUtils.getSettings()` を直接storage読取から排除し、呼び出し元から設定を注入する。
+3. [ ] UIはV2直表示へ移行（selector層を作り、V1アダプタは import/export のみに限定）。
 4. [ ] `snoozeLogic.js` の分割（スキーマ整理後に実施）。
-5. [ ] 未使用importの整理（Options/Popupなど）。
-6. [ ] `serviceWorker.js`の`clearAllSnoozedTabs`アクションで、専用の`clearAll`メッセージハンドラを使い、V2ストアを直接クリアするようリファクタリングする。
-7. [ ] `timeUtils.js`のテストカバレッジを向上させる。特に、`later-today`の日付またぎ、タイムゾーンまたぎ（DST）、不正な入力形式など、エッジケースを網羅する。
-8. [ ] Reactコンポーネント（`Popup.jsx`, `Options.jsx`, `SnoozedList.jsx`）のパフォーマンス/アクセシビリティ/ベストプラクティスを、具体的観点（再レンダリングの原因、focus管理、ARIA）でレビューする。
-9. [ ] ユーティリティ（`timeUtils.js`, `uuid.js`）の改善余地を観点ベースでレビューする（API表面、境界値、テスト欠落）。
-10. [ ] Claude CodeのコミットをCodexで自動レビューするよう導線を整備（post-commitフック + `tools/codex-review.sh` でレビュー生成→クリップボード送信）。
+5. [ ] データフローを`ARCHITECTURE.md`に明示セクション化。
+6. [ ] エラーハンドリングの統一（ログレベル制御、通知の一元化）※`ChromeApi`導入後に実施。
+7. [ ] 未使用importの整理 - `serviceWorker.js`の`getSnoozedTabs`（`getValidatedSnoozedTabs`のみ使用）、Options/Popupなど。
+8. [ ] `serviceWorker.js`の`clearAllSnoozedTabs`アクションで、専用の`clearAll`メッセージハンドラを使い、V2ストアを直接クリアするようリファクタリングする。
+9. [ ] `timeUtils.js`のテストカバレッジを向上させる。特に、`later-today`の日付またぎ、タイムゾーンまたぎ（DST）、不正な入力形式など、エッジケースを網羅する。
+10. [ ] Reactコンポーネント（`Popup.jsx`, `Options.jsx`, `SnoozedList.jsx`）のパフォーマンス/アクセシビリティ/ベストプラクティスを、具体的観点（再レンダリングの原因、focus管理、ARIA）でレビューする。
+11. [ ] ユーティリティ（`timeUtils.js`, `uuid.js`）の改善余地を観点ベースでレビューする（API表面、境界値、テスト欠落）。
+12. [ ] Claude CodeのコミットをCodexで自動レビューするよう導線を整備（post-commitフック + `tools/codex-review.sh` でレビュー生成→クリップボード送信）。
 
 ### Done
 1. [x] JSDoc型定義（`SnoozedItemV2`, `ScheduleV2`, `Settings`等）を追加。
