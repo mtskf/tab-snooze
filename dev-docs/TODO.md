@@ -13,7 +13,7 @@
 
 - [x] 🧹 `timeUtils.js`の`getTime()`にエラーハンドリングを追加し、取得失敗時は`DEFAULT_SETTINGS`へ安全にフォールバックする。
 
-- [x] 🧹 `timeUtils.js`の`getSettings`依存を`snoozeLogic.js`から切り離す（`ChromeApi`を直接使用）。
+- [ ] 🧹 `timeUtils.js`の`getSettings`依存を`snoozeLogic.js`から切り離す（`ChromeApi`を直接使用）。
 
 - [ ] 🪲 `snoozeLogic.js`のタブ復元失敗時のロジック改善
   1. `restoreTabs`内でリトライを行う（`setTimeout`で200ms程度の間隔を空けて3回程度）。

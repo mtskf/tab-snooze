@@ -10,8 +10,7 @@ import { generateUUID } from '../utils/uuid.js';
 import { storage, tabs, windows, notifications } from '../utils/ChromeApi.js';
 
 import { validateSnoozedTabs, sanitizeSnoozedTabs, validateSnoozedTabsV2, sanitizeSnoozedTabsV2 } from '../utils/validation.js';
-import { RESTRICTED_PROTOCOLS, BACKUP_COUNT, BACKUP_DEBOUNCE_MS, BACKUP_PREFIX, WARNING_THRESHOLD, CLEAR_THRESHOLD, THROTTLE_MS } from '../utils/constants.js';
-import { getSettingsWithDefaults } from '../utils/settingsHelper.js';
+import { DEFAULT_SETTINGS, RESTRICTED_PROTOCOLS, BACKUP_COUNT, BACKUP_DEBOUNCE_MS, BACKUP_PREFIX, STORAGE_LIMIT, WARNING_THRESHOLD, CLEAR_THRESHOLD, THROTTLE_MS } from '../utils/constants.js';
 import { ensureValidStorage } from './schemaVersioning.js';
 
 
@@ -311,7 +310,18 @@ export async function recoverFromBackup() {
  * @returns {Promise<Settings>} Settings object with defaults applied
  */
 export async function getSettings() {
-  return getSettingsWithDefaults();
+  const res = await storage.getLocal("settings");
+
+  const defaults = {
+    ...DEFAULT_SETTINGS,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  };
+
+  if (!res.settings) {
+    return defaults;
+  }
+  // Merge with defaults to ensure new keys exist
+  return { ...defaults, ...res.settings };
 }
 
 /**
