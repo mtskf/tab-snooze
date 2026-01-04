@@ -21,11 +21,19 @@
   3. ✨ 復元失敗時の通知から`Dialog`で失敗タブ一覧を表示する（shadcn/ui + スクロールリスト）。
 
 ### 🟢 Nice to Have
+
+#### V2移行（順序依存: StorageService → UI → 一本化）
 - [ ] 🧹 `StorageService`のV2対応 - 現在V1フォーマットのみ対応。UIがV2に移行する際に更新が必要。
 
 - [ ] 🧹 UIはV2直表示へ移行（selector層を作り、V1アダプタは import/export のみに限定）。
 
 - [ ] 🧹 `Options.jsx`のImport/Exportロジックをバックグラウンドへ移動 - 現在UIメインスレッドで処理しており、`setSnoozedTabs`メッセージで巨大なデータを送っている。`StorageService`をバックグラウンド側（`serviceWorker` or `snoozeLogic`）に移動すべき。
+
+- [ ] 🧹 V2一本化の完了 - V1アダプタ/バリデーション/StorageService(V1)の撤去まで含めて完了させる。
+
+- [ ] 🧹 ストレージ取得の一本化（`getStorageV2` / `ensureValidStorage` / `getValidatedSnoozedTabs` を統合）。
+
+- [ ] 🧹 メッセージ送信の一本化（`messages.js`に統一し、`ChromeApi`側の`sendMessage`を削除）。
 
 - [ ] ✨ インポート時に重複タブをデデュープする方針を決めて実装する（キー設計: `url`+`popTime`など）。
 
@@ -48,6 +56,11 @@
 - [ ] 🪲 キーボードショートカットの無効化対象を`input`以外（`textarea`/`select`/`contenteditable`）にも拡張する。
 
 - [ ] 🧹 未使用importの整理 - `serviceWorker.js`の`getSnoozedTabs`（`getValidatedSnoozedTabs`のみ使用）、Options/Popupなど。
+
+#### 低リスク簡素化（Phase 1）
+- [ ] 🧹 `uuid.js`の削除 - `crypto.randomUUID()`へ置換（Chrome 92+/Firefox 95+対応済み）。
+
+- [ ] 🧹 V1バリデーション死コードの削除 - `validateSnoozedTabs`/`sanitizeSnoozedTabs`は未使用（V2のみ使用中）。
 
 - [ ] 🧹 `ACTION_ICONS`マッピングの統合 - `ShortcutEditor.jsx` と `Popup.jsx` で重複定義。`constants.js`に移動。
 
