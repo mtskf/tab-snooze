@@ -330,14 +330,41 @@ describe('snoozeLogic Safety Checks (V2)', () => {
           expect(result.sanitized).toBe(true);
           expect(result.tabCount).toBe(1); // Should pick Backup B
 
-          // Should save the sanitized version of B
+          // Should save the sanitized version of B with version field
           const expectedSaved = {
+              version: 2,
               items: { 't2': item2 },
               schedule: { [MOCK_TIME]: ['t2'] }
           };
           expect(chrome.storage.local.set).toHaveBeenCalledWith(
               expect.objectContaining({ snoooze_v2: expectedSaved })
           );
+      });
+
+      it('should add version field when recovering from sanitized backup', async () => {
+          const item = createItem('t1', MOCK_TIME);
+          // Mock backup without version field (will need sanitization due to orphaned reference)
+          const backupWithoutVersion = {
+              items: { 't1': item },
+              schedule: { [MOCK_TIME]: ['t1', 'orphaned-id'] } // Has orphaned reference, needs sanitization
+          };
+
+          mockStorage = {
+              snoooze_v2: null, // Corrupted main storage
+              snoozedTabs_backup_1234567890: backupWithoutVersion
+          };
+          chrome.storage.local.get.mockResolvedValue(mockStorage);
+
+          await recoverFromBackup();
+
+          // Check that set was called with version: 2
+          expect(chrome.storage.local.set).toHaveBeenCalledWith({
+              snoooze_v2: expect.objectContaining({
+                  version: 2,
+                  items: expect.any(Object),
+                  schedule: expect.any(Object)
+              })
+          });
       });
   });
 

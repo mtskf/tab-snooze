@@ -321,6 +321,33 @@ describe('snoozeLogic.js (V2)', () => {
             expect(result.tabCount).toBe(1);
             expect(result[popTime]).toHaveLength(1);
         });
+
+        test('should add version field when sanitizing invalid data', async () => {
+            const popTime = MOCK_TIME + 1000;
+            const id = 'uuid-1';
+            const item = createItem(id, popTime);
+            // Mock corrupted V2 data (valid items but missing version)
+            const corruptedData = {
+                snoooze_v2: {
+                    items: { [id]: item },
+                    schedule: { [popTime]: [id, 'missing-id'] } // Invalid: has orphaned reference
+                    // No version field
+                }
+            };
+
+            chromeMock.storage.local.get.mockResolvedValue(corruptedData);
+
+            await getValidatedSnoozedTabs();
+
+            // Check that set was called with version: 2
+            expect(chromeMock.storage.local.set).toHaveBeenCalledWith({
+                snoooze_v2: expect.objectContaining({
+                    version: 2,
+                    items: expect.any(Object),
+                    schedule: expect.any(Object)
+                })
+            });
+        });
     });
 
     describe('getStorageV2 defensive handling', () => {

@@ -14,6 +14,8 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - **Defensive Storage Access**: `getStorageV2` now validates structure and ensures `items`/`schedule` are always valid objects, preventing crashes when storage is corrupted or partially missing.
 - **Unified Default Fallbacks**: Replaced hardcoded fallback values (`9` in `timeUtils.getSettingsTime`, `8` in `Popup.parseTimeHour`) with `DEFAULT_SETTINGS`-derived values via new shared `parseTimeString` utility.
+- **Array Detection in Schema Versioning**: `detectSchemaVersion` now correctly rejects array inputs (returns `null`), preventing arrays from being misidentified as V1 legacy data.
+- **Version Field Preservation**: `getValidatedSnoozedTabs` and `recoverFromBackup` now add `version: 2` field when saving sanitized data, ensuring consistent schema versioning after repair operations.
 
 ### Changed
 - **Debug Command**: Limited `jjj` debug command (1-minute snooze) to development builds only via `import.meta.env.DEV` check.

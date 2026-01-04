@@ -19,7 +19,8 @@ export const CURRENT_SCHEMA_VERSION = 2;
  * @returns {number|null} - Version number (1, 2, ...) or null if empty/invalid
  */
 export function detectSchemaVersion(data) {
-  if (!data || typeof data !== 'object') {
+  // Reject null, non-objects, and arrays
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
     return null;
   }
 

@@ -14,6 +14,12 @@ describe('Schema Versioning', () => {
       expect(detectSchemaVersion(undefined)).toBe(null);
     });
 
+    it('returns null for array input', () => {
+      expect(detectSchemaVersion([])).toBe(null);
+      expect(detectSchemaVersion([1, 2, 3])).toBe(null);
+      expect(detectSchemaVersion([{ url: "test" }])).toBe(null);
+    });
+
     it('returns 1 for V1 legacy data (has tabCount)', () => {
       const v1Data = { tabCount: 0 };
       expect(detectSchemaVersion(v1Data)).toBe(1);
