@@ -1,12 +1,17 @@
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { addMonths } from "date-fns";
 import { DEFAULT_SETTINGS } from "./constants";
-import { getSettings } from "../background/snoozeLogic";
+import { storage } from "./ChromeApi";
 
 export async function getTime(timeName) {
   let settings;
   try {
-    settings = await getSettings();
+    const res = await storage.getLocal("settings");
+    const defaults = {
+      ...DEFAULT_SETTINGS,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
+    settings = res.settings ? { ...defaults, ...res.settings } : defaults;
   } catch (error) {
     console.warn('Failed to fetch settings, using defaults:', error);
     settings = {
