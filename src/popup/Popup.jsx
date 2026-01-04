@@ -220,19 +220,38 @@ export default function Popup() {
         : { currentWindow: true };
 
     chrome.tabs.query(query, async (tabs) => {
-      // Generate groupId if multiple tabs or window scope
-      // We use a simple timestamp + random suffix for unique ID
-      const groupId =
-        targetScope === "window"
-          ? `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-          : null;
+      try {
+        // Generate groupId if multiple tabs or window scope
+        // We use a simple timestamp + random suffix for unique ID
+        const groupId =
+          targetScope === "window"
+            ? `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+            : null;
 
-      const promises = tabs.map((tab) => {
-        return performSnooze(tab, time, groupId);
-      });
+        const promises = tabs.map((tab) => {
+          return performSnooze(tab, time, groupId);
+        });
 
-      await Promise.all(promises);
-      window.close();
+        // Use allSettled to handle partial failures gracefully
+        const results = await Promise.allSettled(promises);
+
+        // Check for failures
+        const failures = results.filter(r => r.status === 'rejected');
+
+        if (failures.length > 0) {
+          console.error(`Failed to snooze ${failures.length} of ${tabs.length} tabs:`, failures);
+          // Note: Successfully snoozed tabs are already closed by the background script
+          // Failed tabs remain open for user to retry
+        }
+
+        // Always close popup, even if some tabs failed
+        // (successfully snoozed tabs are already handled)
+        window.close();
+      } catch (error) {
+        console.error('Unexpected error during snooze:', error);
+        setIsSnoozing(false); // Reset loading state
+        // Keep popup open so user can retry
+      }
     });
   };
 
