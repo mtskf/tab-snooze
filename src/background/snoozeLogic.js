@@ -7,6 +7,7 @@
  */
 
 import { generateUUID } from '../utils/uuid.js';
+import { storage, tabs, windows, notifications } from '../utils/ChromeApi.js';
 
 import { validateSnoozedTabs, sanitizeSnoozedTabs, validateSnoozedTabsV2, sanitizeSnoozedTabsV2 } from '../utils/validation.js';
 import { DEFAULT_SETTINGS, RESTRICTED_PROTOCOLS, BACKUP_COUNT, BACKUP_DEBOUNCE_MS, BACKUP_PREFIX, STORAGE_LIMIT, WARNING_THRESHOLD, CLEAR_THRESHOLD, THROTTLE_MS } from '../utils/constants.js';
@@ -24,13 +25,19 @@ let backupTimer = null;
  */
 export async function checkStorageSize() {
   try {
-    if (typeof chrome.storage.local.getBytesInUse !== 'function') {
+    const bytesUsed = await storage.getBytesInUse(null);
+    const storageData = await storage.getLocal(['sizeWarningActive', 'lastSizeWarningAt']);
+    const wasActive = storageData.sizeWarningActive || false;
+
+    // If API is unsupported (returns 0), clear any existing warning and skip check
+    if (bytesUsed === 0) {
+      if (wasActive) {
+        await storage.setLocal({ sizeWarningActive: false });
+      }
       return;
     }
-    const bytesUsed = await chrome.storage.local.getBytesInUse(null);
-    const storage = await chrome.storage.local.get(['sizeWarningActive', 'lastSizeWarningAt']);
-    const wasActive = storage.sizeWarningActive || false;
-    const lastWarningAt = storage.lastSizeWarningAt;
+
+    const lastWarningAt = storageData.lastSizeWarningAt;
     const now = Date.now();
 
     let shouldBeActive = wasActive;
@@ -42,20 +49,20 @@ export async function checkStorageSize() {
     }
 
     if (shouldBeActive !== wasActive) {
-      await chrome.storage.local.set({ sizeWarningActive: shouldBeActive });
+      await storage.setLocal({ sizeWarningActive: shouldBeActive });
     }
 
     if (shouldBeActive && !wasActive) {
       const shouldNotify = !lastWarningAt || (now - lastWarningAt) > THROTTLE_MS;
       if (shouldNotify) {
-        await chrome.notifications.create('storage-warning', {
+        await notifications.create('storage-warning', {
           type: 'basic',
           iconUrl: 'assets/icon128.png',
           title: 'Snooooze storage is almost full',
           message: 'Open Snoozed list to delete or restore old tabs.',
           priority: 1
         });
-        await chrome.storage.local.set({ lastSizeWarningAt: now });
+        await storage.setLocal({ lastSizeWarningAt: now });
       }
     }
   } catch (e) {
@@ -73,7 +80,7 @@ export async function checkStorageSize() {
  * @returns {Promise<StorageV2>} V2 storage data
  */
 async function getStorageV2() {
-    const res = await chrome.storage.local.get("snoooze_v2");
+    const res = await storage.getLocal("snoooze_v2");
     const data = res.snoooze_v2;
 
     // Helper to validate plain object (not null, not array)
@@ -98,7 +105,7 @@ async function getStorageV2() {
  * @returns {Promise<void>}
  */
 async function saveStorageV2(v2Data) {
-    await chrome.storage.local.set({ snoooze_v2: v2Data });
+    await storage.setLocal({ snoooze_v2: v2Data });
     scheduleBackupRotation(v2Data);
 }
 
@@ -151,7 +158,7 @@ export async function setSnoozedTabs(legacyData) {
 
     if (sourceVersion === null) {
         // Empty/invalid data - save empty V2
-        await chrome.storage.local.set({
+        await storage.setLocal({
             snoooze_v2: { version: CURRENT_SCHEMA_VERSION, items: {}, schedule: {} }
         });
         return;
@@ -170,7 +177,7 @@ export async function setSnoozedTabs(legacyData) {
         v2Data = { ...v2Data, version: CURRENT_SCHEMA_VERSION };
     }
 
-    await chrome.storage.local.set({ snoooze_v2: v2Data });
+    await storage.setLocal({ snoooze_v2: v2Data });
 }
 
 // --- Backup & Rotation ---
@@ -199,7 +206,7 @@ async function rotateBackups(data) {
 
   try {
     // Get all backup keys
-    const allStorage = await chrome.storage.local.get(null);
+    const allStorage = await storage.getLocal(null);
     const backupKeys = Object.keys(allStorage)
       .filter(k => k.startsWith(BACKUP_PREFIX))
       .sort((a, b) => {
@@ -210,12 +217,12 @@ async function rotateBackups(data) {
 
     // Create new backup
     const newBackupKey = `${BACKUP_PREFIX}${Date.now()}`;
-    await chrome.storage.local.set({ [newBackupKey]: dataToBackup });
+    await storage.setLocal({ [newBackupKey]: dataToBackup });
 
     // Delete old backups beyond BACKUP_COUNT
     const keysToDelete = backupKeys.slice(BACKUP_COUNT - 1); // -1 because we just added one
     if (keysToDelete.length > 0) {
-      await chrome.storage.local.remove(keysToDelete);
+      await storage.removeLocal(keysToDelete);
     }
   } catch (e) {
     // Backup failed, but don't crash the extension
@@ -248,7 +255,7 @@ export async function getValidatedSnoozedTabs() {
  */
 export async function recoverFromBackup() {
     // V2 Recovery logic: Try to find fully valid backup first, then fall back to sanitized
-    const allStorage = await chrome.storage.local.get(null);
+    const allStorage = await storage.getLocal(null);
     const backupKeys = Object.keys(allStorage)
         .filter(k => k.startsWith(BACKUP_PREFIX))
         .sort((a, b) => parseInt(b.replace(BACKUP_PREFIX, '')) - parseInt(a.replace(BACKUP_PREFIX, '')));
@@ -259,7 +266,7 @@ export async function recoverFromBackup() {
         if (backupData && backupData.items && backupData.schedule) {
             const validation = validateSnoozedTabsV2(backupData);
             if (validation.valid) {
-                await chrome.storage.local.set({ snoooze_v2: backupData });
+                await storage.setLocal({ snoooze_v2: backupData });
                 return { data: adapterV1(backupData), recovered: true, tabCount: Object.keys(backupData.items).length };
             }
         }
@@ -286,13 +293,13 @@ export async function recoverFromBackup() {
     if (bestCandidate && maxItems > 0) {
         console.warn('No fully valid backup found. Recovered best available sanitized backup.');
         // Add version field after sanitization (force v2, override any existing version)
-        await chrome.storage.local.set({ snoooze_v2: { ...bestCandidate, version: 2 } });
+        await storage.setLocal({ snoooze_v2: { ...bestCandidate, version: 2 } });
         return { data: adapterV1(bestCandidate), recovered: true, tabCount: maxItems, sanitized: true };
     }
 
     // Reset
     const empty = { items: {}, schedule: {} };
-    await chrome.storage.local.set({ snoooze_v2: empty });
+    await storage.setLocal({ snoooze_v2: empty });
     return { data: { tabCount: 0 }, recovered: false, tabCount: 0 };
 }
 
@@ -303,7 +310,7 @@ export async function recoverFromBackup() {
  * @returns {Promise<Settings>} Settings object with defaults applied
  */
 export async function getSettings() {
-  const res = await chrome.storage.local.get("settings");
+  const res = await storage.getLocal("settings");
 
   const defaults = {
     ...DEFAULT_SETTINGS,
@@ -323,36 +330,34 @@ export async function getSettings() {
  * @returns {Promise<void>}
  */
 export async function setSettings(val) {
-  await chrome.storage.local.set({ settings: val });
+  await storage.setLocal({ settings: val });
 }
 
 // --- Initialization ---
 
 export async function initStorage() {
-  const all = await chrome.storage.local.get(null);
+  const all = await storage.getLocal(null);
 
   // Check if V2 data exists but is invalid - trigger recovery if needed
   const validation = validateSnoozedTabsV2(all.snoooze_v2);
   if (all.snoooze_v2 && !validation.valid) {
       const recovery = await recoverFromBackup();
-      if (chrome.storage?.session?.set) {
-          await chrome.storage.session.set({
-              pendingRecoveryNotification: recovery.tabCount
-          });
-      }
+      await storage.setSession({
+          pendingRecoveryNotification: recovery.tabCount
+      });
   }
 
   // Use unified entry point for storage validation, migration, and repair
   const validData = await ensureValidStorage();
 
   // Save the validated data with version field
-  await chrome.storage.local.set({ snoooze_v2: validData });
+  await storage.setLocal({ snoooze_v2: validData });
 
   // Check if we migrated from legacy (backup if needed)
   if (all.snoozedTabs && !all.snoooze_v2) {
       console.log('Detected legacy data - creating backup');
-      await chrome.storage.local.set({ snoozedTabs_legacy_backup: all.snoozedTabs });
-      await chrome.storage.local.remove('snoozedTabs');
+      await storage.setLocal({ snoozedTabs_legacy_backup: all.snoozedTabs });
+      await storage.removeLocal('snoozedTabs');
   }
 
   // Initialize settings if missing
@@ -442,7 +447,7 @@ export async function snooze(tab, popTime, groupId = null) {
   }
 
   try {
-    await chrome.tabs.remove(tab.id);
+    await tabs.remove(tab.id);
   } catch (e) {
     // Tab likely closed
   }
@@ -511,11 +516,11 @@ async function restoreTabs(tabs) {
       groupTabs.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
       const urls = groupTabs.map((t) => t.url);
       try {
-        let createdWindow = await chrome.windows.create({ url: urls, focused: true });
+        let createdWindow = await windows.create({ url: urls, focused: true });
 
         if (createdWindow && !createdWindow.tabs) {
              try {
-                 createdWindow = await chrome.windows.get(createdWindow.id, { populate: true });
+                 createdWindow = await windows.get(createdWindow.id, { populate: true });
              } catch (e) {}
         }
 
@@ -536,10 +541,10 @@ async function restoreTabs(tabs) {
   if (ungrouped.length > 0) {
     let targetWindow;
     try {
-      targetWindow = await chrome.windows.getLastFocused();
+      targetWindow = await windows.getLastFocused();
     } catch (e) {
       try {
-        targetWindow = await chrome.windows.create({});
+        targetWindow = await windows.create({});
       } catch (e2) {
         targetWindow = null;
       }
@@ -581,7 +586,7 @@ async function createTabsInWindow(tabs, w) {
 
 async function createTab(tab, w) {
   try {
-    await chrome.tabs.create({
+    await tabs.create({
       windowId: w.id,
       url: tab.url,
       active: false,
@@ -608,11 +613,11 @@ export async function restoreWindowGroup(groupId) {
   groupTabs.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
   const urls = groupTabs.map((t) => t.url);
 
-  let createdWindow = await chrome.windows.create({ url: urls, focused: true });
+  let createdWindow = await windows.create({ url: urls, focused: true });
 
   if (createdWindow && !createdWindow.tabs) {
        try {
-           createdWindow = await chrome.windows.get(createdWindow.id, { populate: true });
+           createdWindow = await windows.get(createdWindow.id, { populate: true });
        } catch (e) {}
   }
 

@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Keyboard, Settings } from "lucide-react";
+import { tabs } from "@/utils/ChromeApi";
 
 // Detect Firefox browser
 // const isFirefox = typeof navigator !== 'undefined' && navigator.userAgent.includes('Firefox');
@@ -14,9 +15,13 @@ export default function GlobalShortcutSettings({ extensionShortcut }) {
     if (isFirefox) {
       // Firefox uses about:addons for extension management
       // But shortcuts are in the extension's own settings, so we show a message
-      chrome.tabs.create({ url: "about:addons" });
+      tabs.create({ url: "about:addons" }).catch((error) => {
+        console.error('Failed to open addons page:', error);
+      });
     } else {
-      chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+      tabs.create({ url: "chrome://extensions/shortcuts" }).catch((error) => {
+        console.error('Failed to open shortcuts page:', error);
+      });
     }
   };
 

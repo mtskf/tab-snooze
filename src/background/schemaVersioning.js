@@ -9,6 +9,7 @@
 
 import { generateUUID } from '../utils/uuid.js';
 import { validateSnoozedTabsV2, sanitizeSnoozedTabsV2 } from '../utils/validation.js';
+import { storage } from '../utils/ChromeApi.js';
 
 // Current schema version
 export const CURRENT_SCHEMA_VERSION = 2;
@@ -149,7 +150,7 @@ export async function runMigrations(data, sourceVersion, targetVersion) {
  */
 export async function ensureValidStorage() {
   // Load all storage data
-  const all = await chrome.storage.local.get(null);
+  const all = await storage.getLocal(null);
 
   // Try V2 data first
   let data = all.snoooze_v2;

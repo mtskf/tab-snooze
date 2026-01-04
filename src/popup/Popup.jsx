@@ -31,6 +31,7 @@ import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation";
 import { sendMessage, MESSAGE_ACTIONS } from "@/messages";
 import { ScopeSelector } from "./components/ScopeSelector";
 import { SnoozeItem } from "./components/SnoozeItem";
+import { tabs, runtime } from "@/utils/ChromeApi";
 
 export default function Popup() {
   const [date, setDate] = useState();
@@ -210,7 +211,7 @@ export default function Popup() {
     snoozeTabsWithScope(time, scope);
   };
 
-  const snoozeTabsWithScope = (time, targetScope) => {
+  const snoozeTabsWithScope = async (time, targetScope) => {
     if (!time) return; // Safety check
     setIsSnoozing(true); // Show loading state
 
@@ -219,40 +220,40 @@ export default function Popup() {
         ? { currentWindow: true, highlighted: true }
         : { currentWindow: true };
 
-    chrome.tabs.query(query, async (tabs) => {
-      try {
-        // Generate groupId if multiple tabs or window scope
-        // We use a simple timestamp + random suffix for unique ID
-        const groupId =
-          targetScope === "window"
-            ? `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-            : null;
+    try {
+      const tabsResult = await tabs.query(query);
 
-        const promises = tabs.map((tab) => {
-          return performSnooze(tab, time, groupId);
-        });
+      // Generate groupId if multiple tabs or window scope
+      // We use a simple timestamp + random suffix for unique ID
+      const groupId =
+        targetScope === "window"
+          ? `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          : null;
 
-        // Use allSettled to handle partial failures gracefully
-        const results = await Promise.allSettled(promises);
+      const promises = tabsResult.map((tab) => {
+        return performSnooze(tab, time, groupId);
+      });
 
-        // Check for failures
-        const failures = results.filter(r => r.status === 'rejected');
+      // Use allSettled to handle partial failures gracefully
+      const results = await Promise.allSettled(promises);
 
-        if (failures.length > 0) {
-          console.error(`Failed to snooze ${failures.length} of ${tabs.length} tabs:`, failures);
-          // Note: Successfully snoozed tabs are already closed by the background script
-          // Failed tabs remain open for user to retry
-        }
+      // Check for failures
+      const failures = results.filter(r => r.status === 'rejected');
 
-        // Always close popup, even if some tabs failed
-        // (successfully snoozed tabs are already handled)
-        window.close();
-      } catch (error) {
-        console.error('Unexpected error during snooze:', error);
-        setIsSnoozing(false); // Reset loading state
-        // Keep popup open so user can retry
+      if (failures.length > 0) {
+        console.error(`Failed to snooze ${failures.length} of ${tabsResult.length} tabs:`, failures);
+        // Note: Successfully snoozed tabs are already closed by the background script
+        // Failed tabs remain open for user to retry
       }
-    });
+
+      // Always close popup, even if some tabs failed
+      // (successfully snoozed tabs are already handled)
+      window.close();
+    } catch (error) {
+      console.error('Unexpected error during snooze:', error);
+      setIsSnoozing(false); // Reset loading state
+      // Keep popup open so user can retry
+    }
   };
 
   const performSnooze = async (tab, time, groupId = null) => {
@@ -314,7 +315,9 @@ export default function Popup() {
               variant="ghost"
               size="icon"
               className="text-muted-foreground h-8 w-8"
-              onClick={() => chrome.runtime.openOptionsPage()}
+              onClick={() => runtime.openOptionsPage().catch((error) => {
+                console.error('Failed to open options page:', error);
+              })}
             >
               <Inbox className="h-4 w-4" />
             </Button>
@@ -323,8 +326,10 @@ export default function Popup() {
               size="icon"
               className="text-muted-foreground h-8 w-8"
               onClick={() =>
-                chrome.tabs.create({
-                  url: chrome.runtime.getURL("options/index.html#settings"),
+                tabs.create({
+                  url: runtime.getURL("options/index.html#settings"),
+                }).catch((error) => {
+                  console.error('Failed to open settings:', error);
                 })
               }
             >

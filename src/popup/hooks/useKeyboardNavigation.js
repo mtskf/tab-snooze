@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { runtime, tabs } from "@/utils/ChromeApi";
 
 export function useKeyboardNavigation({
   items,
@@ -119,14 +120,18 @@ export function useKeyboardNavigation({
         snoozedItemsShortcut &&
         key === snoozedItemsShortcut.toUpperCase()
       ) {
-        chrome.runtime.openOptionsPage();
+        runtime.openOptionsPage().catch((error) => {
+          console.error('Failed to open options page:', error);
+        });
         return;
       }
 
       // Settings shortcut
       if (settingsShortcut && e.key.toUpperCase() === settingsShortcut.toUpperCase()) {
-        chrome.tabs.create({
-          url: chrome.runtime.getURL("options/index.html#settings"),
+        tabs.create({
+          url: runtime.getURL("options/index.html#settings"),
+        }).catch((error) => {
+          console.error('Failed to open settings:', error);
         });
         return;
       }

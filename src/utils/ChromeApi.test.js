@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import ChromeApi, { storage, tabs, windows, notifications, alarms, runtime } from './ChromeApi.js';
+import ChromeApi, { storage, tabs, windows, notifications, alarms, runtime, commands } from './ChromeApi.js';
 
 describe('ChromeApi', () => {
   beforeEach(() => {
@@ -27,6 +27,7 @@ describe('ChromeApi', () => {
       windows: {
         create: vi.fn(),
         get: vi.fn(),
+        getLastFocused: vi.fn(),
       },
       notifications: {
         create: vi.fn(),
@@ -40,7 +41,11 @@ describe('ChromeApi', () => {
       runtime: {
         sendMessage: vi.fn(),
         getURL: vi.fn(),
+        openOptionsPage: vi.fn(),
         lastError: null,
+      },
+      commands: {
+        getAll: vi.fn(),
       },
     };
   });
@@ -220,6 +225,24 @@ describe('ChromeApi', () => {
     });
   });
 
+  describe('windows.getLastFocused', () => {
+    it('calls chrome.windows.getLastFocused and returns window', async () => {
+      const mockWindow = { id: 1, focused: true };
+      chrome.windows.getLastFocused.mockResolvedValue(mockWindow);
+
+      const result = await windows.getLastFocused({ populate: true });
+
+      expect(chrome.windows.getLastFocused).toHaveBeenCalledWith({ populate: true });
+      expect(result).toEqual(mockWindow);
+    });
+
+    it('throws error on failure', async () => {
+      chrome.windows.getLastFocused.mockRejectedValue(new Error('Window error'));
+
+      await expect(windows.getLastFocused()).rejects.toThrow('Failed to get last focused window');
+    });
+  });
+
   describe('notifications.create', () => {
     it('calls chrome.notifications.create', async () => {
       chrome.notifications.create.mockResolvedValue('notification-id');
@@ -331,6 +354,56 @@ describe('ChromeApi', () => {
     });
   });
 
+  describe('runtime.openOptionsPage', () => {
+    it('promisifies chrome.runtime.openOptionsPage', async () => {
+      chrome.runtime.openOptionsPage.mockImplementation((callback) => {
+        callback();
+      });
+
+      await runtime.openOptionsPage();
+
+      expect(chrome.runtime.openOptionsPage).toHaveBeenCalled();
+    });
+
+    it('rejects on chrome.runtime.lastError', async () => {
+      chrome.runtime.lastError = { message: 'Options page error' };
+      chrome.runtime.openOptionsPage.mockImplementation((callback) => {
+        callback();
+      });
+
+      await expect(runtime.openOptionsPage()).rejects.toThrow('Options page error');
+
+      chrome.runtime.lastError = null;
+    });
+  });
+
+  describe('commands', () => {
+    describe('getAll', () => {
+      it('promisifies chrome.commands.getAll and returns commands', async () => {
+        const mockCommands = [{ name: '_execute_action', shortcut: 'Alt+Shift+S' }];
+        chrome.commands.getAll.mockImplementation((callback) => {
+          callback(mockCommands);
+        });
+
+        const result = await commands.getAll();
+
+        expect(chrome.commands.getAll).toHaveBeenCalled();
+        expect(result).toEqual(mockCommands);
+      });
+
+      it('rejects on chrome.runtime.lastError', async () => {
+        chrome.runtime.lastError = { message: 'Commands error' };
+        chrome.commands.getAll.mockImplementation((callback) => {
+          callback([]);
+        });
+
+        await expect(commands.getAll()).rejects.toThrow('Commands error');
+
+        chrome.runtime.lastError = null;
+      });
+    });
+  });
+
   describe('ChromeApi default export', () => {
     it('exports all API modules', () => {
       expect(ChromeApi.storage).toBe(storage);
@@ -339,6 +412,7 @@ describe('ChromeApi', () => {
       expect(ChromeApi.notifications).toBe(notifications);
       expect(ChromeApi.alarms).toBe(alarms);
       expect(ChromeApi.runtime).toBe(runtime);
+      expect(ChromeApi.commands).toBe(commands);
     });
   });
 });
