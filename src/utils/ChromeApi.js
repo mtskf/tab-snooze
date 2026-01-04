@@ -220,6 +220,20 @@ export const windows = {
       throw new Error(`Failed to get window: ${error.message}`);
     }
   },
+
+  /**
+   * Gets the last focused window
+   * @param {Object} [getInfo] - Optional query info
+   * @returns {Promise<Object>} Window info
+   */
+  async getLastFocused(getInfo) {
+    try {
+      return await chrome.windows.getLastFocused(getInfo);
+    } catch (error) {
+      console.error('Windows.getLastFocused failed:', error);
+      throw new Error(`Failed to get last focused window: ${error.message}`);
+    }
+  },
 };
 
 /**
@@ -338,6 +352,43 @@ export const runtime = {
       return '';
     }
   },
+
+  /**
+   * Opens the extension's options page
+   * @returns {Promise<void>}
+   */
+  async openOptionsPage() {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.openOptionsPage(() => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+          return;
+        }
+        resolve();
+      });
+    });
+  },
+};
+
+/**
+ * Commands API wrapper
+ */
+export const commands = {
+  /**
+   * Gets all extension commands with shortcuts
+   * @returns {Promise<Object[]>} Array of command objects
+   */
+  async getAll() {
+    return new Promise((resolve, reject) => {
+      chrome.commands.getAll((commands) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+          return;
+        }
+        resolve(commands);
+      });
+    });
+  },
 };
 
 /**
@@ -350,6 +401,7 @@ export const ChromeApi = {
   notifications,
   alarms,
   runtime,
+  commands,
 };
 
 export default ChromeApi;
