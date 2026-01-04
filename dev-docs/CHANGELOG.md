@@ -4,38 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## v0.3.0 - 2026-01-04
 
-### Refactored
-- **Codebase Deep Review**: Comprehensive review and cleanup of `snoozeLogic.js`, `messages.js`, and `ChromeApi.js`.
-- **Error Handling**: Enhanced `timeUtils.js` to gracefully fallback to defaults when storage access fails.
-- **Chrome API**: Fully integrated `ChromeApi` wrapper across all logic and UI components, replacing direct `chrome.*` calls for better stability and testability.
-- **Type Definitions**: Consolidated `types.js` to import and use shared types throughout the app.
-
-### Fixed
-- **Settings Fallback**: Fixed potential crash in `getTime` when `getSettings` fails by adding robust error handling.
-
-
-
 ### Added
-- **Message Passing Contracts**: New `src/messages.js` centralizes all message passing with `MESSAGE_ACTIONS` constants, `validateMessageRequest()`, `MESSAGE_HANDLERS` registry with dependency injection, and promise-based `sendMessage()` helper. Prevents typos, enables IDE autocomplete, and improves testability.
-- **Chrome API Wrapper**: New `src/utils/ChromeApi.js` provides unified abstraction layer for all chrome.* APIs (storage, tabs, windows, notifications, alarms, runtime, commands) with consistent error handling, Firefox compatibility (graceful fallbacks for session storage and getBytesInUse), promise-based interfaces for async/await support, and callback-to-Promise conversion for legacy APIs (commands.getAll, runtime.openOptionsPage).
-- **Schema Versioning**: Implemented schema versioning system with `version` field in V2 storage structure, migration registry (`SCHEMA_MIGRATIONS`), and unified entry point (`ensureValidStorage()`) for validation, migration, and repair.
-- **StorageService**: New `src/utils/StorageService.js` to centralize import/export parsing, validation, and merge behavior, with dedicated tests.
-- **JSDoc Type Definitions**: Added comprehensive JSDoc type definitions in `src/types.js` for core data structures (`SnoozedItemV2`, `StorageV2`, `Settings`, `ValidationResult`, etc.) and message passing contracts, with type annotations added to `snoozeLogic.js`, `validation.js`, and `schemaVersioning.js`.
-
-### Fixed
-- **Error Handling in timeUtils**: `getTime()` now handles `getSettings()` failures gracefully with try-catch, falling back to `DEFAULT_SETTINGS` and system timezone when chrome.storage API is unavailable. Prevents crashes in test environments or during API failures.
-- **Defensive Storage Access**: `getStorageV2` now validates structure and ensures `items`/`schedule` are always valid objects, preventing crashes when storage is corrupted or partially missing.
-- **Unified Default Fallbacks**: Replaced hardcoded fallback values (`9` in `timeUtils.getSettingsTime`, `8` in `Popup.parseTimeHour`) with `DEFAULT_SETTINGS`-derived values via new shared `parseTimeString` utility.
-- **Array Detection in Schema Versioning**: `detectSchemaVersion` now correctly rejects array inputs (returns `null`), preventing arrays from being misidentified as V1 legacy data.
-- **Version Field Preservation**: `getValidatedSnoozedTabs` and `recoverFromBackup` now add `version: 2` field when saving sanitized data, ensuring consistent schema versioning after repair operations.
+- **Message Passing Contracts**: New `src/messages.js` centralizes message actions, request validation, handler registry, and `sendMessage()` helper for typed UI/background communication.
+- **Chrome API Wrapper**: New `src/utils/ChromeApi.js` provides promise-based wrappers for storage, tabs, windows, notifications, alarms, runtime, and commands with Firefox fallbacks.
+- **Schema Versioning**: V2 schema versioning with `SCHEMA_MIGRATIONS` and `ensureValidStorage()` for validation, migration, and repair.
+- **StorageService**: Centralized import/export parsing, validation, sanitization, and merge via `src/utils/StorageService.js`, with tests.
+- **JSDoc Types**: Core data structures and message contracts documented in `src/types.js` with annotations across logic files.
 
 ### Changed
-- **Chrome API Migration**: Migrated all direct `chrome.*` API calls across 7 files to use `ChromeApi` wrappers (snoozeLogic.js, serviceWorker.js, schemaVersioning.js, Options.jsx, GlobalShortcutSettings.jsx, useKeyboardNavigation.js, Popup.jsx). Event listeners preserved as direct calls. Added comprehensive error handling with `.catch()` handlers on all Promise-based wrapper calls in UI components.
-- **Debug Command**: Limited `jjj` debug command (1-minute snooze) to development builds only via `import.meta.env.DEV` check.
-- **Options Import/Export**: Options page now delegates import/export to `StorageService`, simplifying UI logic and ensuring consistent validation/sanitization.
-- **Popup Settings Fetch**: Popup now requests settings via background messaging instead of direct storage reads.
-- **Import Merge Source**: Import merges against background `getSnoozedTabs` data to avoid overwriting V2 state.
-- **Startup Recovery**: Invalid `snoooze_v2` triggers backup recovery and queues a pending notification on startup.
+- **Chrome API Adoption**: Background/UI logic now uses `ChromeApi` wrappers for most `chrome.*` calls; event listeners remain direct.
+- **Settings/Tab Fetching**: Popup and Options fetch settings and snoozed tabs via background messaging.
+- **Import/Export Flow**: Options delegates import/export to `StorageService` and merges against current background data.
+- **Startup Recovery**: Invalid V2 storage triggers backup recovery and queues a recovery notification.
+- **Time Parsing**: Unified time parsing/fallbacks via `parseTimeString` using `DEFAULT_SETTINGS`.
+
+### Fixed
+- **Settings Fallback**: `getTime()` falls back to `DEFAULT_SETTINGS` when `getSettings()` fails.
+- **Defensive Storage Access**: `getStorageV2()` always returns safe `items`/`schedule` objects.
+- **Schema Detection**: `detectSchemaVersion()` rejects arrays to avoid false V1 detection.
+- **Version Preservation**: Sanitization/repair writes preserve the V2 `version` field.
 
 ## v0.2.8
 
