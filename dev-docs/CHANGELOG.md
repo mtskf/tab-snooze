@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Message Passing Contracts**: New `src/messages.js` centralizes all message passing with `MESSAGE_ACTIONS` constants, `validateMessageRequest()`, `MESSAGE_HANDLERS` registry with dependency injection, and promise-based `sendMessage()` helper. Prevents typos, enables IDE autocomplete, and improves testability.
+- **Chrome API Wrapper**: New `src/utils/ChromeApi.js` provides unified abstraction layer for all chrome.* APIs (storage, tabs, windows, notifications, alarms, runtime) with consistent error handling, Firefox compatibility (graceful fallbacks for session storage and getBytesInUse), and promise-based interfaces for async/await support.
 - **Schema Versioning**: Implemented schema versioning system with `version` field in V2 storage structure, migration registry (`SCHEMA_MIGRATIONS`), and unified entry point (`ensureValidStorage()`) for validation, migration, and repair.
 - **StorageService**: New `src/utils/StorageService.js` to centralize import/export parsing, validation, and merge behavior, with dedicated tests.
 - **JSDoc Type Definitions**: Added comprehensive JSDoc type definitions in `src/types.js` for core data structures (`SnoozedItemV2`, `StorageV2`, `Settings`, `ValidationResult`, etc.) and message passing contracts, with type annotations added to `snoozeLogic.js`, `validation.js`, and `schemaVersioning.js`.
