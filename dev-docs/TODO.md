@@ -8,10 +8,10 @@
 ## Refactoring & Maintenance
 
 ### 🟡 Important
-1. [ ] 重複した`getSettings`の統合 - `snoozeLogic.js` と `timeUtils.js` に同一の関数が存在。`snoozeLogic.js`のものを正とし、`timeUtils.js`はimportに変更する。
-2. [ ] `Options.jsx`の設定書き込みが背景APIをバイパス - `updateSetting`が`chrome.storage.local.set`を直接呼び出しており、`setSettings`メッセージを経由していない。
-3. [ ] メッセージ契約の接続（`messages.js` の `MESSAGE_ACTIONS`/`dispatchMessage`/`sendMessage` を service worker / UI に適用）。
-4. [ ] `chrome.*` APIラッパーの接続（`ChromeApi.js` を使うよう直呼びを置換）。
+1. [ ] `Options.jsx`の設定書き込みが背景APIをバイパス - `updateSetting`が`chrome.storage.local.set`を直接呼び出しており、`setSettings`メッセージを経由していない。
+2. [ ] メッセージ契約の接続（`messages.js` の `MESSAGE_ACTIONS`/`dispatchMessage`/`sendMessage` を service worker / UI に適用）。
+3. [ ] `chrome.*` APIラッパーの接続（`ChromeApi.js` を使うよう直呼びを置換）。
+4. [ ] 重複した`getSettings`の統合 - `snoozeLogic.js` と `timeUtils.js` に同一の関数が存在。`snoozeLogic.js`のものを正とし、`timeUtils.js`はimportに変更する。
 5. [ ] `snoozeLogic.js`のタブ復元失敗時、リトライを繰り返すのではなく、ユーザーが手動で確認できる隔離リストに移動する。
 
 ### 🟢 Nice to Have
