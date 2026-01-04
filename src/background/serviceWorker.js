@@ -17,11 +17,12 @@ import {
   getValidatedSnoozedTabs,
 } from "./snoozeLogic";
 import { dispatchMessage } from "../messages";
+import { storage, tabs, notifications, alarms, runtime } from "../utils/ChromeApi";
 
 // Initialize extension
 chrome.runtime.onInstalled.addListener(async () => {
   await initStorage();
-  chrome.alarms.create("popCheck", { periodInMinutes: 1 });
+  await alarms.create("popCheck", { periodInMinutes: 1 });
   // Check for overdue tabs immediately
   setTimeout(() => popCheck(), 1000);
   // Check for pending recovery notification
@@ -77,13 +78,8 @@ async function handleMessage(request, sendResponse) {
  */
 async function checkPendingRecoveryNotification() {
   try {
-    // Firefox doesn't support chrome.storage.session
-    if (!chrome.storage.session) {
-      return;
-    }
-
     // Check if there's a pending notification from initStorage
-    const session = await chrome.storage.session.get(['pendingRecoveryNotification', 'lastRecoveryNotifiedAt']);
+    const session = await storage.getSession(['pendingRecoveryNotification', 'lastRecoveryNotifiedAt']);
 
     if (session.pendingRecoveryNotification !== undefined) {
       const tabCount = session.pendingRecoveryNotification;
@@ -93,7 +89,7 @@ async function checkPendingRecoveryNotification() {
       // Check if we recently showed a notification
       if (!session.lastRecoveryNotifiedAt || (now - session.lastRecoveryNotifiedAt) > NOTIFICATION_COOLDOWN) {
         // Show notification
-        await chrome.notifications.create('recovery-notification', {
+        await notifications.create('recovery-notification', {
           type: 'basic',
           iconUrl: 'assets/icon128.png',
           title: 'Snooooze Data Recovered',
@@ -104,11 +100,11 @@ async function checkPendingRecoveryNotification() {
         });
 
         // Update timestamp
-        await chrome.storage.session.set({ lastRecoveryNotifiedAt: now });
+        await storage.setSession({ lastRecoveryNotifiedAt: now });
       }
 
       // Clear the pending flag
-      await chrome.storage.session.remove('pendingRecoveryNotification');
+      await storage.removeSession('pendingRecoveryNotification');
     }
   } catch (e) {
     // Notification failed, but don't crash
@@ -119,6 +115,6 @@ async function checkPendingRecoveryNotification() {
 // Notification click handler - open Options page
 chrome.notifications.onClicked.addListener((notificationId) => {
   if (notificationId === 'storage-warning' || notificationId === 'recovery-notification') {
-    chrome.tabs.create({ url: chrome.runtime.getURL('options/index.html') });
+    tabs.create({ url: runtime.getURL('options/index.html') });
   }
 });
