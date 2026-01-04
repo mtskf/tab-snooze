@@ -1,24 +1,10 @@
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { addMonths } from "date-fns";
 import { DEFAULT_SETTINGS } from "./constants";
-import { storage } from "./ChromeApi";
+import { getSettingsWithDefaults } from "./settingsHelper";
 
 export async function getTime(timeName) {
-  let settings;
-  try {
-    const res = await storage.getLocal("settings");
-    const defaults = {
-      ...DEFAULT_SETTINGS,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    };
-    settings = res.settings ? { ...defaults, ...res.settings } : defaults;
-  } catch (error) {
-    console.warn('Failed to fetch settings, using defaults:', error);
-    settings = {
-      ...DEFAULT_SETTINGS,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    };
-  }
+  const settings = await getSettingsWithDefaults();
   const timezone =
     settings.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
