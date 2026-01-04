@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getTime, getSettings, parseTimeString } from './timeUtils';
+import { getTime, parseTimeString } from './timeUtils';
 import { DEFAULT_SETTINGS } from './constants';
 
 const originalIntl = global.Intl;
@@ -121,40 +121,6 @@ describe('timeUtils', () => {
     it('returns undefined for pick-date', async () => {
         const result = await getTime('pick-date');
         expect(result).toBeUndefined();
-    });
-  });
-
-  describe('getSettings', () => {
-    it('merges defaults with stored settings', async () => {
-      global.Intl = {
-        DateTimeFormat: () => ({
-          resolvedOptions: () => ({ timeZone: 'Mock/Zone' }),
-        }),
-      };
-      chrome.storage.local.get.mockResolvedValue({
-        settings: { 'start-day': '9:00 AM' },
-      });
-
-      const settings = await getSettings();
-      expect(settings['start-day']).toBe('9:00 AM');
-      expect(settings['end-day']).toBe('5:00 PM');
-      expect(settings.timezone).toBe('Mock/Zone');
-      global.Intl = originalIntl;
-    });
-
-    it('returns defaults when no settings are stored', async () => {
-      global.Intl = {
-        DateTimeFormat: () => ({
-          resolvedOptions: () => ({ timeZone: 'Mock/Zone' }),
-        }),
-      };
-      chrome.storage.local.get.mockResolvedValue({});
-
-      const settings = await getSettings();
-      expect(settings['start-day']).toBe('8:00 AM');
-      expect(settings['end-day']).toBe('5:00 PM');
-      expect(settings.timezone).toBe('Mock/Zone');
-      global.Intl = originalIntl;
     });
   });
 

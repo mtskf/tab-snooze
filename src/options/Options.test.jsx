@@ -251,13 +251,15 @@ describe('Options', () => {
 
     fireEvent.click(screen.getByText('Delete All'));
     expect(global.chrome.runtime.sendMessage).not.toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'clearAllSnoozedTabs' })
+      expect.objectContaining({ action: 'clearAllSnoozedTabs' }),
+      expect.any(Function)
     );
 
     global.confirm.mockReturnValue(true);
     fireEvent.click(screen.getByText('Delete All'));
     expect(global.chrome.runtime.sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'clearAllSnoozedTabs' })
+      expect.objectContaining({ action: 'clearAllSnoozedTabs' }),
+      expect.any(Function)
     );
   });
 
@@ -314,7 +316,8 @@ describe('Options', () => {
       expect.objectContaining({
         action: 'setSettings',
         data: expect.objectContaining({ 'start-day': '9:00 AM' })
-      })
+      }),
+      expect.any(Function)
     );
 
     // Should NOT call chrome.storage.local.set directly

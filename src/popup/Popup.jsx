@@ -28,6 +28,7 @@ import {
   DEFAULT_SETTINGS,
 } from "@/utils/constants";
 import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation";
+import { sendMessage, MESSAGE_ACTIONS } from "@/messages";
 import { ScopeSelector } from "./components/ScopeSelector";
 import { SnoozeItem } from "./components/SnoozeItem";
 
@@ -100,43 +101,55 @@ export default function Popup() {
 
   useEffect(() => {
     // Fetch settings and apply shortcuts/colors
-    chrome.runtime.sendMessage({ action: "getSettings" }, (result) => {
-      // Background now handles defaults merging
-      const settings = result && !result.error ? result : DEFAULT_SETTINGS;
+    const loadSettings = async () => {
+      try {
+        const result = await sendMessage(MESSAGE_ACTIONS.GET_SETTINGS);
+        // Background now handles defaults merging
+        const settings = result || DEFAULT_SETTINGS;
 
-      // Merge shortcuts
-      const userShortcuts = settings.shortcuts || {};
-      const finalShortcuts = { ...DEFAULT_SHORTCUTS, ...userShortcuts };
+        // Merge shortcuts
+        const userShortcuts = settings.shortcuts || {};
+        const finalShortcuts = { ...DEFAULT_SHORTCUTS, ...userShortcuts };
 
-      setItems((prevItems) =>
-        prevItems.map((item) => {
-          let colorScheme = DEFAULT_COLORS;
-          const appSetting = settings.appearance;
-          if (appSetting === "vivid") colorScheme = VIVID_COLORS;
-          if (appSetting === "heatmap") colorScheme = HEATMAP_COLORS;
-          return {
-            ...item,
-            shortcuts: finalShortcuts[item.id] || [],
-            color: colorScheme[item.id] || item.color,
-          };
-        }),
-      );
+        setItems((prevItems) =>
+          prevItems.map((item) => {
+            let colorScheme = DEFAULT_COLORS;
+            const appSetting = settings.appearance;
+            if (appSetting === "vivid") colorScheme = VIVID_COLORS;
+            if (appSetting === "heatmap") colorScheme = HEATMAP_COLORS;
+            return {
+              ...item,
+              shortcuts: finalShortcuts[item.id] || [],
+              color: colorScheme[item.id] || item.color,
+            };
+          }),
+        );
 
-      // Set appearance
-      setAppearance(settings.appearance || "default");
+        // Set appearance
+        setAppearance(settings.appearance || "default");
 
-      // Set pick-date shortcut (empty string if not set)
-      const pdShortcut = finalShortcuts["pick-date"]?.[0] || "";
-      setPickDateShortcut(pdShortcut);
+        // Set pick-date shortcut (empty string if not set)
+        const pdShortcut = finalShortcuts["pick-date"]?.[0] || "";
+        setPickDateShortcut(pdShortcut);
 
-      // Set snoozed-items and settings shortcuts
-      setSnoozedItemsShortcut(finalShortcuts["snoozed-items"]?.[0] || "I");
-      setSettingsShortcut(finalShortcuts["settings"]?.[0] || ",");
+        // Set snoozed-items and settings shortcuts
+        setSnoozedItemsShortcut(finalShortcuts["snoozed-items"]?.[0] || "I");
+        setSettingsShortcut(finalShortcuts["settings"]?.[0] || ",");
 
-      // Parse start-day and end-day hours for visibility logic
-      setStartDayHour(parseTimeString(settings["start-day"]));
-      setEndDayHour(parseTimeString(settings["end-day"]));
-    });
+        // Parse start-day and end-day hours for visibility logic
+        setStartDayHour(parseTimeString(settings["start-day"]));
+        setEndDayHour(parseTimeString(settings["end-day"]));
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+        // Use defaults on error
+        setAppearance("default");
+        setPickDateShortcut("");
+        setSnoozedItemsShortcut("I");
+        setSettingsShortcut(",");
+      }
+    };
+
+    loadSettings();
   }, []);
 
 
@@ -207,43 +220,54 @@ export default function Popup() {
         : { currentWindow: true };
 
     chrome.tabs.query(query, async (tabs) => {
-      // Generate groupId if multiple tabs or window scope
-      // We use a simple timestamp + random suffix for unique ID
-      const groupId =
-        targetScope === "window"
-          ? `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-          : null;
+      try {
+        // Generate groupId if multiple tabs or window scope
+        // We use a simple timestamp + random suffix for unique ID
+        const groupId =
+          targetScope === "window"
+            ? `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+            : null;
 
-      const promises = tabs.map((tab) => {
-        return performSnooze(tab, time, groupId);
-      });
+        const promises = tabs.map((tab) => {
+          return performSnooze(tab, time, groupId);
+        });
 
-      await Promise.all(promises);
-      window.close();
+        // Use allSettled to handle partial failures gracefully
+        const results = await Promise.allSettled(promises);
+
+        // Check for failures
+        const failures = results.filter(r => r.status === 'rejected');
+
+        if (failures.length > 0) {
+          console.error(`Failed to snooze ${failures.length} of ${tabs.length} tabs:`, failures);
+          // Note: Successfully snoozed tabs are already closed by the background script
+          // Failed tabs remain open for user to retry
+        }
+
+        // Always close popup, even if some tabs failed
+        // (successfully snoozed tabs are already handled)
+        window.close();
+      } catch (error) {
+        console.error('Unexpected error during snooze:', error);
+        setIsSnoozing(false); // Reset loading state
+        // Keep popup open so user can retry
+      }
     });
   };
 
-  const performSnooze = (tab, time, groupId = null) => {
-    return new Promise((resolve) => {
-      const tabToSend = {
-        id: tab.id,
-        url: tab.url,
-        title: tab.title,
-        favIconUrl: tab.favIconUrl,
-        index: tab.index,
-      };
+  const performSnooze = async (tab, time, groupId = null) => {
+    const tabToSend = {
+      id: tab.id,
+      url: tab.url,
+      title: tab.title,
+      favIconUrl: tab.favIconUrl,
+      index: tab.index,
+    };
 
-      chrome.runtime.sendMessage(
-        {
-          action: "snooze",
-          tab: tabToSend,
-          popTime: time.getTime(),
-          groupId: groupId,
-        },
-        () => {
-          resolve();
-        }
-      );
+    await sendMessage(MESSAGE_ACTIONS.SNOOZE, {
+      tab: tabToSend,
+      popTime: time.getTime(),
+      groupId,
     });
   };
 

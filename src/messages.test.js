@@ -178,6 +178,20 @@ describe('messages', () => {
       expect(result).toEqual({ success: true });
     });
 
+    it('dispatches setSnoozedTabs to the handler with payload', async () => {
+      const mockService = {
+        setSnoozedTabs: vi.fn().mockResolvedValue(undefined),
+      };
+
+      const payload = { tabCount: 0 };
+      const request = { action: MESSAGE_ACTIONS.SET_SNOOZED_TABS, data: payload };
+
+      const result = await dispatchMessage(request, mockService);
+
+      expect(mockService.setSnoozedTabs).toHaveBeenCalledWith(payload);
+      expect(result).toEqual({ success: true });
+    });
+
     it('throws error for invalid request', async () => {
       await expect(
         dispatchMessage({ action: 'invalid' }, {})
