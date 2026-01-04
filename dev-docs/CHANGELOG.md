@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - **JSDoc Type Definitions**: Added comprehensive JSDoc type definitions in `src/types.js` for core data structures (`SnoozedItemV2`, `StorageV2`, `Settings`, `ValidationResult`, etc.) and message passing contracts, with type annotations added to `snoozeLogic.js`, `validation.js`, and `schemaVersioning.js`.
 
 ### Fixed
+- **Error Handling in timeUtils**: `getTime()` now handles `getSettings()` failures gracefully with try-catch, falling back to `DEFAULT_SETTINGS` and system timezone when chrome.storage API is unavailable. Prevents crashes in test environments or during API failures.
 - **Defensive Storage Access**: `getStorageV2` now validates structure and ensures `items`/`schedule` are always valid objects, preventing crashes when storage is corrupted or partially missing.
 - **Unified Default Fallbacks**: Replaced hardcoded fallback values (`9` in `timeUtils.getSettingsTime`, `8` in `Popup.parseTimeHour`) with `DEFAULT_SETTINGS`-derived values via new shared `parseTimeString` utility.
 - **Array Detection in Schema Versioning**: `detectSchemaVersion` now correctly rejects array inputs (returns `null`), preventing arrays from being misidentified as V1 legacy data.

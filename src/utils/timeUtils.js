@@ -4,7 +4,16 @@ import { DEFAULT_SETTINGS } from "./constants";
 import { getSettings } from "../background/snoozeLogic";
 
 export async function getTime(timeName) {
-  const settings = await getSettings();
+  let settings;
+  try {
+    settings = await getSettings();
+  } catch (error) {
+    console.warn('Failed to fetch settings, using defaults:', error);
+    settings = {
+      ...DEFAULT_SETTINGS,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
+  }
   const timezone =
     settings.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 

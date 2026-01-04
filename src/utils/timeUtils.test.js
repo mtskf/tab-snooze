@@ -122,6 +122,29 @@ describe('timeUtils', () => {
         const result = await getTime('pick-date');
         expect(result).toBeUndefined();
     });
+
+    it('should fallback to DEFAULT_SETTINGS when getSettings fails', async () => {
+      // Mock chrome.storage.local.get to reject (simulating API failure)
+      chrome.storage.local.get.mockRejectedValue(new Error('Storage API failed'));
+
+      // Should still work and use DEFAULT_SETTINGS
+      const result = await getTime('tomorrow');
+
+      // Should use default start-day (8:00 AM) from DEFAULT_SETTINGS
+      expect(result.getHours()).toBe(8);
+      expect(result.getDate()).toBe(16); // tomorrow
+    });
+
+    it('should use system timezone when getSettings fails', async () => {
+      // Mock chrome.storage.local.get to reject
+      chrome.storage.local.get.mockRejectedValue(new Error('Storage API failed'));
+
+      // Should still calculate time correctly using system timezone
+      const result = await getTime('later-today');
+
+      // Should be +1 hour from current time (10:00 -> 11:00)
+      expect(result.getHours()).toBe(11);
+    });
   });
 
   describe('parseTimeString', () => {
