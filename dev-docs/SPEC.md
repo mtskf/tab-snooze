@@ -120,7 +120,7 @@ Defined in `src/utils/constants.js`.
 - **In-App Banner**: Options page shows a destructive-colored alert when warning is active.
 - **Firefox Compatibility**: Feature is disabled gracefully on Firefox as `getBytesInUse` is not supported for `local` storage in MV2/MV3 implementation contexts uniformly.
 
-### 4.3. Fail-Safe Restoration & Retry
+### 4.3. Fail-Safe Restoration & Retry (Planned)
 - **Retry Logic:** If restoration fails (e.g., chrome.tabs.create fails), the system retries 3 times with a 200ms delay.
 - **Final Failure:** If all retries fail, the tab remains in storage but is flagged to prevent infinite loops.
 - **User Notification:** An error notification is shown, prompting the user to open a Dialog to manually handle failed tabs.

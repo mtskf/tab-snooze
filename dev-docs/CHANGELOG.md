@@ -12,7 +12,6 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - **Settings Fallback**: Fixed potential crash in `getTime` when `getSettings` fails by adding robust error handling.
-- **Restoration Logic**: (Planned) Improved failure handling with retries and error dialogs.
 
 
 

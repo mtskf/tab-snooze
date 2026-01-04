@@ -183,7 +183,7 @@ Documents significant architectural decisions made during development.
     - **Maintainability**: Easier to add retry logic, rate limiting, or API pattern updates in one place
     - **Code Quality**: Reduced code duplication and improved readability with consistent async/await patterns
 
-## ADR-029: Restoration Failure Handling (Retry & Dialog)
+## ADR-029: Restoration Failure Handling (Retry & Dialog) [Planned]
 - **Context**: Only relying on "Leave in storage" for failed tabs caused infinite loops where the system tried to restore the same broken tab every minute.
 - **Decision**: Implement an immediate retry loop (3x with 200ms delay) followed by a user-facing Error Dialog.
     - **Quarantine Rejected**: We considered a separate "quarantine" list but decided it was too complex. Keeping it simple: Retry -> Fail -> Notify User Immediately.
