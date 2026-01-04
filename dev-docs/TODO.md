@@ -1,32 +1,56 @@
-# TODO
+# TODO & Refactoring Roadmap
 
-## Priority
+This document outlines the roadmap for refactoring and maintenance, organized by strategic epics.
+
+## Priority Legend
 - 🚨: Critical / blocks release
 - 🟡: Important / should fix soon
 - 🟢: Nice to have / cleanup
 
-## Refactoring & Maintenance
+---
 
-### 🟡 Important
-1. [ ] メッセージ契約の集約（`messages.js` に `action` 定数/バリデーション/ハンドラ紐付けを定義。型は `src/types.js` を参照）。
-2. [ ] `chrome.*` APIラッパー（`ChromeApi.js`）に集約。エラーハンドリング・テストモックを一元化。
-3. [ ] Functional Core / Imperative Shell に分離（純粋ロジックと `chrome` I/O を分けてテスト容易性を上げる）。
-4. [ ] UIはV2直表示へ移行（selector層を作り、V1アダプタは import/export のみに限定）。
-5. [ ] Clock/Now の依存注入（`Date.now()` 直呼び排除でテスト性/再現性を向上）。
-6. [ ] Popupのロジック分離と共通化。
-   - `Popup` ロジックを `useSnooze` フックへ分離。
-   - `timeUtils.getSettings()` を直接storage読取から排除し、呼び出し元から設定を注入する。
-7. [ ] `snoozeLogic.js`のタブ復元失敗時、リトライを繰り返すのではなく、ユーザーが手動で確認できる隔離リストに移動する。
-8. [ ] Reactコンポーネント（`Popup.jsx`, `Options.jsx`, `SnoozedList.jsx`）のパフォーマンス/アクセシビリティ/ベストプラクティスを、具体的観点（再レンダリングの原因、focus管理、ARIA）でレビューする。
-9. [ ] ユーティリティ（`timeUtils.js`, `uuid.js`）の改善余地を観点ベースでレビューする（API表面、境界値、テスト欠落）。
-10. [ ] Claude CodeのコミットをCodexで自動レビューするよう導線を整備（post-commitフック + `tools/codex-review.sh` でレビュー生成→クリップボード送信）。
+### **エピック1: 基盤整備 (アーキテクチャ分離とテスト容易性向上)**
+This epic is the most critical foundation for improving the application's robustness and testability. Many subsequent tasks depend on its completion.
 
-### 🟢 Nice to Have
-1. [ ] データフローを`ARCHITECTURE.md`に明示セクション化。
-2. [ ] エラーハンドリングの統一（ログレベル制御、通知の一元化）※`ChromeApi`導入後に実施。
-3. [ ] `snoozeLogic.js` の分割（スキーマ整理後に実施）。
-4. [ ] 未使用importの整理（Options/Popupなど）。
-5. [ ] `serviceWorker.js`の`clearAllSnoozedTabs`アクションで、専用の`clearAll`メッセージハンドラを使い、V2ストアを直接クリアするようリファクタリングする。
+1.  [ ] 🟡 **`chrome.*` APIラッパーの接続:** 既存の `ChromeApi.js` を実運用に接続し、`chrome` 直呼びを段階的に置換する。
+2.  [ ] 🟡 **Clock/Nowの依存性注入:** `Date.now()` の直接呼び出しを排除し、時刻を外部から注入可能にすることで、テストの再現性を確保する。
+3.  [ ] 🟡 **Functional Core / Imperative Shellへの分離:** 上記2点を包含する設計思想。純粋なビジネスロジックと、API呼び出しのような副作用を持つ部分を明確に分離する。
+4.  [ ] 🟡 **メッセージ契約の接続:** 既存の `messages.js`（`MESSAGE_ACTIONS`/`dispatchMessage`/`sendMessage`）を service worker / UI に適用し、手書き switch と直送信を置換する。
+5.  [ ] 🟢 **エラーハンドリングの統一:** APIラッパー導入後、ログレベル制御や通知を一元的に管理する。
 
-### Done
-1. [x] JSDoc型定義（`SnoozedItemV2`, `ScheduleV2`, `Settings`等）を追加。
+---
+
+### **エピック2: UIリファクタリング**
+This epic focuses on clarifying the responsibilities of UI components and aligning them with the modern V2 data structure.
+
+6.  [ ] 🟡 **Popupロジックの分離:** `Popup.jsx` の複雑なロジックを `useSnooze` のようなカスタムフックに分離し、UIとロジックを分離する。
+7.  [ ] 🟡 **UIのV2ネイティブ化:** `useSnooze`フック分離後、UIが直接 `V2` データ形式を扱えるように修正し、バックグラウンドの `adapterV1` 層を撤廃する。
+8.  [ ] 🟡 **コンポーネントレビュー:** パフォーマンス（再レンダリング）、アクセシビリティ（Focus管理, ARIA）の観点で主要コンポーネントをレビューする。
+
+---
+
+### **エピック3: バックグラウンド処理の改善**
+This epic aims to make the background logic safer and more maintainable.
+
+9.  [ ] 🟢 **`snoozeLogic.js`の分割:** 責務が肥大化した `snoozeLogic.js` を、機能ごと（ストレージ、バックアップ、復元など）に分割する。
+10. [ ] 🟡 **V2サニタイズ時のversion保持:** `getValidatedSnoozedTabs`/`recoverFromBackup` のサニタイズ保存で `version` が消えるため、保存前に必ず付与する。
+11. [ ] 🟡 **schemaVersioningの配列検出:** `detectSchemaVersion` が配列をV1扱いするため、配列は無効として弾く。
+12. [ ] 🟡 **タブ復元失敗時の処理改善:** 復元に失敗したタブを隔離リストに移動し、無限リトライを防ぐ。
+13. [ ] 🟢 **`clearAll`アクションの明確化:** 全件削除のアクションを、より直接的で分かりやすい実装に修正する。
+
+---
+
+### **エピック4: ドキュメントと開発ツール**
+Tasks to improve the developer experience.
+
+14. [ ] 🟢 **データフローのドキュメント化:** `ARCHITECTURE.md` にデータフロー図を追加する。
+15. [ ] 🟢 **未使用importの整理:** リンターを活用して不要なimportを削除する。
+16. [ ] 🟡 **ユーティリティのレビュー:** `timeUtils.js` などをレビューし、API設計や境界値テストの改善点を探す。
+17. [ ] 🟡 **自動レビューツールの整備:** post-commitフックなどを活用した開発フローを整備する。
+
+---
+
+### **長期的刷新案 (Future Vision)**
+A major architectural shift to consider for the long term.
+
+18. [ ] 🟢 **中央集権的な状態管理の導入:** 将来的な選択肢として、Zustand等を導入し、UI-バックグラウンド間の手動メッセージングを撤廃する。
