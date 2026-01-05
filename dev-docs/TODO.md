@@ -44,7 +44,13 @@
 
 - [ ] 🐛 キーボードショートカットの無効化対象を`input`以外（`textarea`/`select`/`contenteditable`）にも拡張する。
 
+- [ ] 🔧 `serviceWorker.js`の再整理 - `setTimeout`のマジックナンバー排除、`checkPendingRecoveryNotification`のロジック分離。
+
+- [ ] 🧪 統合テスト(E2E)の導入調査 - モックに頼らない実際のブラウザ挙動(Playwright等)での復元テスト。
+
 - [ ] 🔧 未使用importの整理 - `serviceWorker.js`の`getSnoozedTabs`（`getValidatedSnoozedTabs`のみ使用）、Options/Popupなど。
+
+- [ ] 🧪 OptionsのFailedTabsDialog統合テストで`window.location`再定義を避け、`history.pushState`を使ったより堅牢なURL制御に置き換える（低優先）。
 
 ---
 
