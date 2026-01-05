@@ -11,10 +11,6 @@
 
 ### 🟡 Important
 
-- [x] 🧹 `timeUtils.js`の`getTime()`にエラーハンドリングを追加し、取得失敗時は`DEFAULT_SETTINGS`へ安全にフォールバックする。
-
-- [x] 🧹 `timeUtils.js`の`getSettings`依存を`snoozeLogic.js`から切り離す（`ChromeApi`を直接使用）。
-
 - [ ] 🪲 `snoozeLogic.js`のタブ復元失敗時のロジック改善
   1. `restoreTabs`内でリトライを行う（`setTimeout`で200ms程度の間隔を空けて3回程度）。
   2. 最終的に失敗したタブは、自動的な再ループ防止のため一時的に保留状態（または未来時刻へシフト）にし、即座にエラー通知/Dialogを表示してユーザーに手動復元を促す。
@@ -87,3 +83,7 @@
 - [x] 🧹 メッセージ契約の接続（`messages.js` の `MESSAGE_ACTIONS`/`dispatchMessage`/`sendMessage` を service worker / UI に適用）。
 
 - [x] 🧹 重複した`getSettings`の統合 - `snoozeLogic.js` と `timeUtils.js` に同一の関数が存在。`snoozeLogic.js`のものを正とし、`timeUtils.js`はimportに変更する。
+
+- [x] 🧹 `timeUtils.js`の`getTime()`にエラーハンドリングを追加し、取得失敗時は`DEFAULT_SETTINGS`へ安全にフォールバックする。
+
+- [x] 🧹 `timeUtils.js`の`getSettings`依存を`snoozeLogic.js`から切り離す（`ChromeApi`を直接使用）。
