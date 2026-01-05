@@ -1022,6 +1022,50 @@ describe('snoozeLogic.js (V2)', () => {
             expect(result.success).toBe(false);
             expect(result.error).toBeDefined();
         });
+
+        test('rejects future schema version', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: { version: 2, items: {}, schedule: {} }
+            });
+
+            // Data with a future version
+            const futureData = {
+                version: 99,
+                items: { 'tab-1': createItem('tab-1', MOCK_TIME + 1000) },
+                schedule: { [MOCK_TIME + 1000]: ['tab-1'] }
+            };
+
+            const result = await importTabs(futureData);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('future schema version');
+        });
+
+        test('handles null input gracefully', async () => {
+            const result = await importTabs(null);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Invalid data structure');
+        });
+
+        test('handles undefined input gracefully', async () => {
+            const result = await importTabs(undefined);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Invalid data structure');
+        });
+
+        test('returns success with zero count for null version detection', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: { version: 2, items: {}, schedule: {} }
+            });
+
+            // Empty object that has no recognizable schema
+            const result = await importTabs({});
+
+            expect(result.success).toBe(true);
+            expect(result.addedCount).toBe(0);
+        });
     });
 
     describe('getExportData', () => {
