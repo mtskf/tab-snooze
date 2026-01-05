@@ -28,6 +28,7 @@ describe('ChromeApi', () => {
         create: vi.fn(),
         get: vi.fn(),
         getLastFocused: vi.fn(),
+        remove: vi.fn(),
       },
       notifications: {
         create: vi.fn(),
@@ -240,6 +241,22 @@ describe('ChromeApi', () => {
       chrome.windows.getLastFocused.mockRejectedValue(new Error('Window error'));
 
       await expect(windows.getLastFocused()).rejects.toThrow('Failed to get last focused window');
+    });
+  });
+
+  describe('windows.remove', () => {
+    it('calls chrome.windows.remove with windowId', async () => {
+      chrome.windows.remove.mockResolvedValue(undefined);
+
+      await windows.remove(123);
+
+      expect(chrome.windows.remove).toHaveBeenCalledWith(123);
+    });
+
+    it('throws error on failure', async () => {
+      chrome.windows.remove.mockRejectedValue(new Error('Remove error'));
+
+      await expect(windows.remove(123)).rejects.toThrow('Failed to remove window');
     });
   });
 

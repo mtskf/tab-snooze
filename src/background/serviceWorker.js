@@ -116,5 +116,8 @@ async function checkPendingRecoveryNotification() {
 chrome.notifications.onClicked.addListener((notificationId) => {
   if (notificationId === 'storage-warning' || notificationId === 'recovery-notification') {
     tabs.create({ url: runtime.getURL('options/index.html') });
+  } else if (notificationId === 'restore-failed') {
+    // Open Options with showFailedTabs query param to trigger Dialog
+    tabs.create({ url: runtime.getURL('options/index.html?showFailedTabs=true') });
   }
 });

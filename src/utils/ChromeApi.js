@@ -234,6 +234,20 @@ export const windows = {
       throw new Error(`Failed to get last focused window: ${error.message}`);
     }
   },
+
+  /**
+   * Removes (closes) a window
+   * @param {number} windowId - Window ID to close
+   * @returns {Promise<void>}
+   */
+  async remove(windowId) {
+    try {
+      return await chrome.windows.remove(windowId);
+    } catch (error) {
+      console.error('Windows.remove failed:', error);
+      throw new Error(`Failed to remove window: ${error.message}`);
+    }
+  },
 };
 
 /**
