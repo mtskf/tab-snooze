@@ -58,6 +58,7 @@ import { Kbd } from "@/components/ui/kbd";
 import { StorageService } from "@/utils/StorageService";
 import { sendMessage, MESSAGE_ACTIONS } from "@/messages";
 import { storage, commands } from "@/utils/ChromeApi";
+import FailedTabsDialog from "./FailedTabsDialog";
 
 export default function Options() {
   const [snoozedTabs, setSnoozedTabs] = useState({});
@@ -65,6 +66,8 @@ export default function Options() {
   const [settings, setSettings] = useState({});
   const [extensionShortcut, setExtensionShortcut] = useState(null);
   const [sizeWarningActive, setSizeWarningActive] = useState(false);
+  const [failedTabsDialogOpen, setFailedTabsDialogOpen] = useState(false);
+  const [failedTabs, setFailedTabs] = useState([]);
   const [activeTab, setActiveTab] = useState(() => {
     // Check URL hash for initial tab
     const hash = window.location.hash.slice(1);
@@ -130,6 +133,25 @@ export default function Options() {
       console.error('Failed to load size warning state:', error);
       // Warning state defaults to false
     });
+
+    // Check for failed tabs dialog trigger from URL query param
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('showFailedTabs') === 'true') {
+      // Load failed tabs from session storage
+      storage.getSession(['failedRestoreTabs']).then((res) => {
+        if (res.failedRestoreTabs && res.failedRestoreTabs.length > 0) {
+          setFailedTabs(res.failedRestoreTabs);
+          setFailedTabsDialogOpen(true);
+          // Clear the session storage and URL param
+          storage.removeSession('failedRestoreTabs');
+          // Remove query param from URL without reload
+          const newUrl = window.location.pathname + window.location.hash;
+          window.history.replaceState({}, '', newUrl);
+        }
+      }).catch((error) => {
+        console.error('Failed to load failed tabs:', error);
+      });
+    }
 
     return () => chrome.storage.onChanged.removeListener(listener);
   }, [fetchSnoozedTabs]);
@@ -459,6 +481,11 @@ export default function Options() {
           <span>Buy me a coffee</span>
         </a>
       </div>
+      <FailedTabsDialog
+        open={failedTabsDialogOpen}
+        onOpenChange={setFailedTabsDialogOpen}
+        failedTabs={failedTabs}
+      />
       <Toaster position="top-center" />
     </div>
   );

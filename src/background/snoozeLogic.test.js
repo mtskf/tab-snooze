@@ -448,6 +448,197 @@ describe('snoozeLogic.js (V2)', () => {
         });
     });
 
+    describe('restoreTabs retry logic', () => {
+        const RETRY_DELAY_MS = 200;
+        const MAX_RETRIES = 3;
+        const RESCHEDULE_DELAY_MS = 5 * 60 * 1000; // 5 minutes
+
+        // Helper to run popCheck with timer advancement
+        async function runPopCheckWithTimers(totalDelayMs = RETRY_DELAY_MS * MAX_RETRIES) {
+            const popCheckPromise = popCheck();
+            // Advance time in small increments to allow async operations to interleave
+            for (let elapsed = 0; elapsed < totalDelayMs; elapsed += 50) {
+                await vi.advanceTimersByTimeAsync(50);
+            }
+            await vi.runAllTimersAsync();
+            return popCheckPromise;
+        }
+
+        test('should retry tab creation up to 3 times on failure', async () => {
+            const popTime = MOCK_TIME - 1000;
+            const id = 'retry-tab';
+            const item = createItem(id, popTime);
+
+            chromeMock.storage.local.get.mockResolvedValue(createV2Data(
+                { [id]: item },
+                { [popTime]: [id] }
+            ));
+
+            chromeMock.windows.getLastFocused.mockResolvedValue({ id: 999 });
+            // Fail twice, succeed on third attempt
+            chromeMock.tabs.create
+                .mockRejectedValueOnce(new Error('Tab creation failed'))
+                .mockRejectedValueOnce(new Error('Tab creation failed'))
+                .mockResolvedValueOnce({ id: 1 });
+
+            await runPopCheckWithTimers();
+
+            // Should have been called 3 times total
+            expect(chromeMock.tabs.create).toHaveBeenCalledTimes(3);
+        });
+
+        test('should wait 200ms between retries', async () => {
+            const popTime = MOCK_TIME - 1000;
+            const id = 'retry-delay-tab';
+            const item = createItem(id, popTime);
+
+            chromeMock.storage.local.get.mockResolvedValue(createV2Data(
+                { [id]: item },
+                { [popTime]: [id] }
+            ));
+
+            chromeMock.windows.getLastFocused.mockResolvedValue({ id: 999 });
+            chromeMock.tabs.create
+                .mockRejectedValueOnce(new Error('Failed'))
+                .mockResolvedValueOnce({ id: 1 });
+
+            await runPopCheckWithTimers(RETRY_DELAY_MS * 2);
+
+            expect(chromeMock.tabs.create).toHaveBeenCalledTimes(2);
+        });
+
+        test('should remove tab from storage after successful retry', async () => {
+            const popTime = MOCK_TIME - 1000;
+            const id = 'retry-success-tab';
+            const item = createItem(id, popTime);
+
+            chromeMock.storage.local.get.mockResolvedValue(createV2Data(
+                { [id]: item },
+                { [popTime]: [id] }
+            ));
+
+            chromeMock.windows.getLastFocused.mockResolvedValue({ id: 999 });
+            chromeMock.tabs.create
+                .mockRejectedValueOnce(new Error('Failed'))
+                .mockResolvedValueOnce({ id: 1 });
+
+            await runPopCheckWithTimers(RETRY_DELAY_MS * 2);
+
+            // Find the call that saved snoooze_v2
+            const v2SetCall = chromeMock.storage.local.set.mock.calls.find(
+                call => call[0].snoooze_v2
+            );
+            expect(v2SetCall).toBeDefined();
+            expect(v2SetCall[0].snoooze_v2.items[id]).toBeUndefined();
+            expect(v2SetCall[0].snoooze_v2.schedule[popTime]).toBeUndefined();
+        });
+
+        test('should reschedule tab to future time after all retries fail', async () => {
+            const popTime = MOCK_TIME - 1000;
+            const id = 'all-retries-fail-tab';
+            const item = createItem(id, popTime);
+
+            chromeMock.storage.local.get.mockResolvedValue(createV2Data(
+                { [id]: item },
+                { [popTime]: [id] }
+            ));
+
+            chromeMock.windows.getLastFocused.mockResolvedValue({ id: 999 });
+            chromeMock.tabs.create.mockRejectedValue(new Error('Permanent failure'));
+
+            await runPopCheckWithTimers();
+
+            // Find the last call that saved snoooze_v2 (reschedule happens after cleanup)
+            const v2SetCalls = chromeMock.storage.local.set.mock.calls.filter(
+                call => call[0].snoooze_v2
+            );
+            expect(v2SetCalls.length).toBeGreaterThan(0);
+            const lastV2Call = v2SetCalls[v2SetCalls.length - 1][0];
+
+            // Tab should be rescheduled approximately 5 minutes from current time
+            // Allow for timer drift during test execution
+            expect(lastV2Call.snoooze_v2.items[id]).toBeDefined();
+            const actualNewPopTime = lastV2Call.snoooze_v2.items[id].popTime;
+            expect(actualNewPopTime).toBeGreaterThanOrEqual(MOCK_TIME + RESCHEDULE_DELAY_MS);
+            expect(actualNewPopTime).toBeLessThan(MOCK_TIME + RESCHEDULE_DELAY_MS + 1000);
+            expect(lastV2Call.snoooze_v2.schedule[actualNewPopTime]).toContain(id);
+            // Old schedule entry should be removed
+            expect(lastV2Call.snoooze_v2.schedule[popTime]).toBeUndefined();
+        });
+
+        test('should show notification when tabs fail to restore after all retries', async () => {
+            const popTime = MOCK_TIME - 1000;
+            const id = 'notify-fail-tab';
+            const item = createItem(id, popTime);
+
+            chromeMock.storage.local.get.mockResolvedValue(createV2Data(
+                { [id]: item },
+                { [popTime]: [id] }
+            ));
+
+            chromeMock.windows.getLastFocused.mockResolvedValue({ id: 999 });
+            chromeMock.tabs.create.mockRejectedValue(new Error('Permanent failure'));
+
+            await runPopCheckWithTimers();
+
+            expect(chromeMock.notifications.create).toHaveBeenCalledWith(
+                'restore-failed',
+                expect.objectContaining({
+                    type: 'basic',
+                    title: expect.stringContaining('restore'),
+                    message: expect.any(String)
+                })
+            );
+        });
+
+        test('should store failed tab info for Dialog display', async () => {
+            const popTime = MOCK_TIME - 1000;
+            const id = 'store-fail-info-tab';
+            const item = createItem(id, popTime, { title: 'Failed Tab Title' });
+
+            chromeMock.storage.local.get.mockResolvedValue(createV2Data(
+                { [id]: item },
+                { [popTime]: [id] }
+            ));
+
+            chromeMock.windows.getLastFocused.mockResolvedValue({ id: 999 });
+            chromeMock.tabs.create.mockRejectedValue(new Error('Permanent failure'));
+
+            await runPopCheckWithTimers();
+
+            // Failed tabs info should be stored in session storage
+            expect(chromeMock.storage.session.set).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    failedRestoreTabs: expect.arrayContaining([
+                        expect.objectContaining({ id, title: 'Failed Tab Title' })
+                    ])
+                })
+            );
+        });
+
+        test('should retry group window creation on failure', async () => {
+            const popTime = MOCK_TIME - 1000;
+            const groupId = 'test-group';
+            const items = {
+                'g1': createItem('g1', popTime, { groupId, index: 0 }),
+                'g2': createItem('g2', popTime, { groupId, index: 1 })
+            };
+
+            chromeMock.storage.local.get.mockResolvedValue(createV2Data(
+                items,
+                { [popTime]: ['g1', 'g2'] }
+            ));
+
+            chromeMock.windows.create
+                .mockRejectedValueOnce(new Error('Window creation failed'))
+                .mockResolvedValueOnce({ id: 100, tabs: [{ id: 1 }, { id: 2 }] });
+
+            await runPopCheckWithTimers(RETRY_DELAY_MS * 2);
+
+            expect(chromeMock.windows.create).toHaveBeenCalledTimes(2);
+        });
+    });
+
     describe('setSnoozedTabs', () => {
         test('should overwrite existing V2 data with provided legacy data', async () => {
             // Existing V2 data in storage

@@ -11,11 +11,6 @@
 
 ### 🟡 Important
 
-- [ ] 🪲 `snoozeLogic.js`のタブ復元失敗時のロジック改善
-  1. `restoreTabs`内でリトライを行う（`setTimeout`で200ms程度の間隔を空けて3回程度）。
-  2. 最終的に失敗したタブは、自動的な再ループ防止のため一時的に保留状態（または未来時刻へシフト）にし、即座にエラー通知/Dialogを表示してユーザーに手動復元を促す。
-  3. ✨ 復元失敗時の通知から`Dialog`で失敗タブ一覧を表示する（shadcn/ui + スクロールリスト）。
-
 - [ ] 🧹 **V2一本化の完了**（親タスク - 順序依存あり）
   1. `StorageService`のV2対応 - 現在V1フォーマットのみ対応。
   2. UIはV2直表示へ移行（selector層を作り、V1アダプタは import/export のみに限定）。
@@ -68,6 +63,11 @@
 - [ ] ✨ Claude CodeのコミットをCodexで自動レビューするよう導線を整備（post-commitフック + `tools/codex-review.sh` でレビュー生成→クリップボード送信）。
 
 ### Done
+- [x] 🪲 `snoozeLogic.js`のタブ復元失敗時のロジック改善
+  1. `restoreTabs`内でリトライを行う（200ms間隔で最大3回）。
+  2. 最終的に失敗したタブは5分後に再スケジュールし、通知を表示。
+  3. 通知クリックでOptionsを開き、失敗タブ一覧をDialog（shadcn/ui）で表示。
+
 - [x] 🧹 JSDoc型定義（`SnoozedItemV2`, `ScheduleV2`, `Settings`等）を追加。
 
 - [x] 🧹 メッセージ契約の作成（`src/messages.js` - `MESSAGE_ACTIONS`, `validateMessageRequest`, `MESSAGE_HANDLERS`, `sendMessage`）。

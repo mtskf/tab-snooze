@@ -181,6 +181,16 @@ describe('snoozeLogic Safety Checks (V2)', () => {
   });
 
   describe('popCheck (Restoration Safety)', () => {
+    // Helper to run popCheck with timer advancement for retry logic
+    async function runPopCheckWithTimers(totalDelayMs = 700) {
+      const popCheckPromise = popCheck();
+      for (let elapsed = 0; elapsed < totalDelayMs; elapsed += 50) {
+        await vi.advanceTimersByTimeAsync(50);
+      }
+      await vi.runAllTimersAsync();
+      return popCheckPromise;
+    }
+
     it('should NOT remove tabs from storage if restoration fails', async () => {
       const now = Date.now();
       const pastTime = now - 1000;
@@ -190,21 +200,18 @@ describe('snoozeLogic Safety Checks (V2)', () => {
       mockStorage = createV2Data({ [id]: item }, { [pastTime]: [id] });
       chrome.storage.local.get.mockResolvedValue(mockStorage);
 
-      // Failures
+      // Failures - all retries will fail
       global.chrome.tabs.create.mockRejectedValue(new Error('Failed tab'));
       global.chrome.windows.create.mockRejectedValue(new Error('Failed win'));
       global.chrome.windows.getLastFocused.mockResolvedValue({ id: 999 });
 
-      await popCheck();
+      await runPopCheckWithTimers();
 
-      // Check storage updates
-      // Cleanup happens at end. If restoreTabs finds nothing restored, it removes nothing.
-      // So set IS called (cleaning up nothing), but data should remain.
-      if (chrome.storage.local.set.mock.calls.length > 0) {
-          const savedData = chrome.storage.local.set.mock.lastCall[0].snoooze_v2;
-          expect(savedData.items[id]).toBeDefined();
-      } else {
-          expect(true).toBe(true);
+      // Tab should still exist (rescheduled to future time after failed retries)
+      const v2SetCalls = chrome.storage.local.set.mock.calls.filter(c => c[0].snoooze_v2);
+      if (v2SetCalls.length > 0) {
+        const lastV2Call = v2SetCalls[v2SetCalls.length - 1][0].snoooze_v2;
+        expect(lastV2Call.items[id]).toBeDefined();
       }
     });
   });
@@ -221,6 +228,16 @@ describe('snoozeLogic Safety Checks (V2)', () => {
   });
 
   it('should correctly cleanup ONLY successfully restored tabs', async () => {
+      // Helper to run popCheck with timer advancement for retry logic
+      async function runPopCheckWithTimers(totalDelayMs = 700) {
+        const popCheckPromise = popCheck();
+        for (let elapsed = 0; elapsed < totalDelayMs; elapsed += 50) {
+          await vi.advanceTimersByTimeAsync(50);
+        }
+        await vi.runAllTimersAsync();
+        return popCheckPromise;
+      }
+
       const now = Date.now();
       const pastTime = now - 1000;
 
@@ -235,23 +252,34 @@ describe('snoozeLogic Safety Checks (V2)', () => {
       chrome.windows.create.mockResolvedValue({ id: 100 });
       chrome.windows.getLastFocused.mockResolvedValue({ id: 100 });
 
-      // Succeed for t1, Fail for t2
+      // Succeed for t1 always, Fail for t2 always (all retries will fail)
       global.chrome.tabs.create.mockImplementation((opts) => {
           if (opts.url === 'http://ok.com') return Promise.resolve({});
           return Promise.reject(new Error('Failed'));
       });
 
-      await popCheck();
+      await runPopCheckWithTimers();
 
-      expect(chrome.storage.local.set).toHaveBeenCalled();
-      const savedV2 = chrome.storage.local.set.mock.lastCall[0].snoooze_v2;
+      const v2SetCalls = chrome.storage.local.set.mock.calls.filter(c => c[0].snoooze_v2);
+      expect(v2SetCalls.length).toBeGreaterThan(0);
 
-      // t1 removed, t2 kept
-      expect(savedV2.items['t1']).toBeUndefined();
-      expect(savedV2.items['t2']).toBeDefined();
+      // Find the final state - t1 removed, t2 rescheduled (still exists)
+      const lastV2Call = v2SetCalls[v2SetCalls.length - 1][0].snoooze_v2;
+      expect(lastV2Call.items['t1']).toBeUndefined();
+      expect(lastV2Call.items['t2']).toBeDefined();
   });
 
   it('should NOT remove tabs from storage if window creation partially fails', async () => {
+      // Helper to run popCheck with timer advancement for retry logic
+      async function runPopCheckWithTimers(totalDelayMs = 700) {
+        const popCheckPromise = popCheck();
+        for (let elapsed = 0; elapsed < totalDelayMs; elapsed += 50) {
+          await vi.advanceTimersByTimeAsync(50);
+        }
+        await vi.runAllTimersAsync();
+        return popCheckPromise;
+      }
+
       const now = Date.now();
       const pastTime = now - 1000;
       const groupId = 'g1';
@@ -265,19 +293,20 @@ describe('snoozeLogic Safety Checks (V2)', () => {
       );
       chrome.storage.local.get.mockResolvedValue(mockStorage);
 
-      // Partial success
+      // Partial success - only 1 tab created instead of 2 (all retries will fail validation)
       global.chrome.windows.create.mockResolvedValue({
           id: 100,
           tabs: [{ id: 101, url: TAB_URL }] // Only 1 tab
       });
 
-      await popCheck();
+      await runPopCheckWithTimers();
 
-      // Ensure both preserved
-      if (chrome.storage.local.set.mock.calls.length > 0) {
-          const savedV2 = chrome.storage.local.set.mock.lastCall[0].snoooze_v2;
-          expect(savedV2.items['t1']).toBeDefined();
-          expect(savedV2.items['t2']).toBeDefined();
+      // Ensure both preserved (rescheduled after failed retries)
+      const v2SetCalls = chrome.storage.local.set.mock.calls.filter(c => c[0].snoooze_v2);
+      if (v2SetCalls.length > 0) {
+          const lastV2Call = v2SetCalls[v2SetCalls.length - 1][0].snoooze_v2;
+          expect(lastV2Call.items['t1']).toBeDefined();
+          expect(lastV2Call.items['t2']).toBeDefined();
       }
   });
 

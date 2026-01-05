@@ -446,6 +446,43 @@ export async function snooze(tab, popTime, groupId = null) {
 // Restoration Lock
 let isRestoring = false;
 
+// Retry configuration
+const RETRY_DELAY_MS = 200;
+const MAX_RETRIES = 3;
+const RESCHEDULE_DELAY_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Delays execution for specified milliseconds
+ * @param {number} ms - Milliseconds to delay
+ * @returns {Promise<void>}
+ */
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Executes an async function with retry logic
+ * @param {Function} fn - Async function to execute
+ * @param {number} maxRetries - Maximum number of retry attempts
+ * @param {number} delayMs - Delay between retries in milliseconds
+ * @returns {Promise<{success: boolean, result?: any, error?: Error}>}
+ */
+async function withRetry(fn, maxRetries = MAX_RETRIES, delayMs = RETRY_DELAY_MS) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await fn();
+      return { success: true, result };
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxRetries) {
+        await delay(delayMs);
+      }
+    }
+  }
+  return { success: false, error: lastError };
+}
+
 export async function popCheck() {
   if (isRestoring || !navigator.onLine) {
     return 0;
@@ -483,11 +520,11 @@ export async function popCheck() {
 }
 
 
-async function restoreTabs(tabs) {
+async function restoreTabs(tabsToRestore) {
   const groups = {};
   const ungrouped = [];
 
-  tabs.forEach((tab) => {
+  tabsToRestore.forEach((tab) => {
     if (tab.groupId) {
       if (!groups[tab.groupId]) groups[tab.groupId] = [];
       groups[tab.groupId].push(tab);
@@ -497,37 +534,39 @@ async function restoreTabs(tabs) {
   });
 
   const restoredTabs = [];
-  const failedTabs = []; // Track failures if we want to retain them (Safety)
+  const failedTabs = [];
 
-  // process groups
+  // Process groups with retry
   for (const groupId in groups) {
     const groupTabs = groups[groupId];
     if (groupTabs.length > 0) {
       groupTabs.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
       const urls = groupTabs.map((t) => t.url);
-      try {
-        let createdWindow = await windows.create({ url: urls, focused: true });
 
-        if (createdWindow && !createdWindow.tabs) {
-             try {
-                 createdWindow = await windows.get(createdWindow.id, { populate: true });
-             } catch (e) {}
+      const { success, result: createdWindow } = await withRetry(async () => {
+        let win = await windows.create({ url: urls, focused: true });
+        if (win && !win.tabs) {
+          try {
+            win = await windows.get(win.id, { populate: true });
+          } catch (e) { /* ignore */ }
         }
+        // Validate all tabs were created
+        if (!win || !win.tabs || win.tabs.length !== urls.length) {
+          throw new Error(`Partial restore: expected ${urls.length} tabs, got ${win?.tabs?.length || 0}`);
+        }
+        return win;
+      });
 
-        if (createdWindow && createdWindow.tabs && createdWindow.tabs.length === urls.length) {
-            restoredTabs.push(...groupTabs);
-        } else {
-            console.warn(`Partial restore detected for group ${groupId}. Preserving tabs.`);
-            // Do not add to restoredTabs -> Not removed from storage
-        }
-      } catch (e) {
-        console.error("Failed to restore group:", groupId, e);
+      if (success) {
+        restoredTabs.push(...groupTabs);
+      } else {
+        console.warn(`Failed to restore group ${groupId} after ${MAX_RETRIES} retries`);
         failedTabs.push(...groupTabs);
       }
     }
   }
 
-  // process ungrouped
+  // Process ungrouped tabs with retry
   if (ungrouped.length > 0) {
     let targetWindow;
     try {
@@ -541,21 +580,38 @@ async function restoreTabs(tabs) {
     }
 
     if (targetWindow) {
-      const results = await createTabsInWindow(ungrouped, targetWindow);
-      results.forEach((result, i) => {
-        if (result.success) {
-          restoredTabs.push(ungrouped[i]);
+      for (const tab of ungrouped) {
+        const { success } = await withRetry(async () => {
+          await tabs.create({
+            windowId: targetWindow.id,
+            url: tab.url,
+            active: false,
+          });
+        });
+
+        if (success) {
+          restoredTabs.push(tab);
+        } else {
+          failedTabs.push(tab);
         }
-      });
+      }
+    } else {
+      // No window available, all ungrouped tabs fail
+      failedTabs.push(...ungrouped);
     }
   }
 
-  // Cleanup storage
+  // Handle failed tabs: reschedule to future time and notify user
+  if (failedTabs.length > 0) {
+    await handleFailedTabs(failedTabs);
+  }
+
+  // Cleanup storage for restored tabs only
   const cleanupTask = storageLock.then(async () => {
     const v2Data = await getStorageV2();
 
     restoredTabs.forEach(tab => {
-        removeSnoozedTabV2(tab.id, v2Data);
+      removeSnoozedTabV2(tab.id, v2Data);
     });
 
     await saveStorageV2(v2Data);
@@ -563,9 +619,73 @@ async function restoreTabs(tabs) {
 
   storageLock = cleanupTask.catch(() => {});
   await cleanupTask.catch(err => {
-      console.error('Failed to cleanup storage after restore:', err);
+    console.error('Failed to cleanup storage after restore:', err);
   });
   await storageLock;
+}
+
+/**
+ * Handles failed tabs by rescheduling them and notifying the user
+ * @param {SnoozedItemV2[]} failedTabs - Array of tabs that failed to restore
+ */
+async function handleFailedTabs(failedTabs) {
+  const newPopTime = Date.now() + RESCHEDULE_DELAY_MS;
+
+  // Reschedule failed tabs to future time
+  const rescheduleTask = storageLock.then(async () => {
+    const v2Data = await getStorageV2();
+
+    for (const tab of failedTabs) {
+      const oldPopTime = tab.popTime;
+
+      // Remove from old schedule
+      if (v2Data.schedule[oldPopTime]) {
+        v2Data.schedule[oldPopTime] = v2Data.schedule[oldPopTime].filter(id => id !== tab.id);
+        if (v2Data.schedule[oldPopTime].length === 0) {
+          delete v2Data.schedule[oldPopTime];
+        }
+      }
+
+      // Update item's popTime
+      if (v2Data.items[tab.id]) {
+        v2Data.items[tab.id].popTime = newPopTime;
+      }
+
+      // Add to new schedule
+      if (!v2Data.schedule[newPopTime]) {
+        v2Data.schedule[newPopTime] = [];
+      }
+      v2Data.schedule[newPopTime].push(tab.id);
+    }
+
+    await saveStorageV2(v2Data);
+  });
+
+  storageLock = rescheduleTask.catch(() => {});
+  await rescheduleTask.catch(err => {
+    console.error('Failed to reschedule failed tabs:', err);
+  });
+
+  // Store failed tabs info in session storage for Dialog display
+  await storage.setSession({
+    failedRestoreTabs: failedTabs.map(tab => ({
+      id: tab.id,
+      url: tab.url,
+      title: tab.title,
+      favicon: tab.favicon
+    }))
+  });
+
+  // Show notification to user
+  const tabCount = failedTabs.length;
+  const tabWord = tabCount === 1 ? 'tab' : 'tabs';
+  await notifications.create('restore-failed', {
+    type: 'basic',
+    iconUrl: 'assets/icon128.png',
+    title: `Failed to restore ${tabCount} ${tabWord}`,
+    message: `Click to view details. ${tabWord.charAt(0).toUpperCase() + tabWord.slice(1)} will be retried in 5 minutes.`,
+    priority: 2
+  });
 }
 
 
