@@ -326,4 +326,125 @@ describe('Options', () => {
     // Clean up
     window.location.hash = '';
   });
+
+  describe('FailedTabsDialog integration', () => {
+    const mockFailedTabs = [
+      { id: 'tab-1', url: 'https://example.com/page1', title: 'Failed Page 1' },
+      { id: 'tab-2', url: 'https://test.com/page2', title: 'Failed Page 2' },
+    ];
+
+    beforeEach(() => {
+      // Setup session storage mock
+      global.chrome.storage.session = {
+        get: vi.fn(),
+        remove: vi.fn().mockResolvedValue(undefined),
+      };
+      // Mock history.replaceState
+      global.history.replaceState = vi.fn();
+    });
+
+    afterEach(() => {
+      // Reset URL search params
+      Object.defineProperty(window, 'location', {
+        value: { search: '', pathname: '/options/index.html', hash: '' },
+        writable: true,
+      });
+    });
+
+    it('opens FailedTabsDialog when URL has showFailedTabs=true and session has failed tabs', async () => {
+      // Set URL query param
+      Object.defineProperty(window, 'location', {
+        value: { search: '?showFailedTabs=true', pathname: '/options/index.html', hash: '' },
+        writable: true,
+      });
+
+      // Mock session storage to return failed tabs
+      global.chrome.storage.session.get.mockResolvedValue({
+        failedRestoreTabs: mockFailedTabs,
+      });
+
+      render(<Options />);
+
+      // Wait for dialog to open
+      await waitFor(() => {
+        expect(screen.getByText('Failed to Restore Tabs')).toBeInTheDocument();
+      });
+
+      // Verify failed tabs are displayed
+      expect(screen.getByText('Failed Page 1')).toBeInTheDocument();
+      expect(screen.getByText('Failed Page 2')).toBeInTheDocument();
+    });
+
+    it('does NOT open FailedTabsDialog when session storage is empty', async () => {
+      // Set URL query param
+      Object.defineProperty(window, 'location', {
+        value: { search: '?showFailedTabs=true', pathname: '/options/index.html', hash: '' },
+        writable: true,
+      });
+
+      // Mock session storage to return empty
+      global.chrome.storage.session.get.mockResolvedValue({
+        failedRestoreTabs: [],
+      });
+
+      render(<Options />);
+
+      // Wait for initial render
+      await waitFor(() => {
+        expect(screen.getByText('Snoozed Items')).toBeInTheDocument();
+      });
+
+      // Dialog should NOT be shown
+      expect(screen.queryByText('Failed to Restore Tabs')).not.toBeInTheDocument();
+    });
+
+    it('clears session storage and URL param after opening dialog', async () => {
+      // Set URL query param
+      Object.defineProperty(window, 'location', {
+        value: { search: '?showFailedTabs=true', pathname: '/options/index.html', hash: '' },
+        writable: true,
+      });
+
+      // Mock session storage
+      global.chrome.storage.session.get.mockResolvedValue({
+        failedRestoreTabs: mockFailedTabs,
+      });
+
+      render(<Options />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Failed to Restore Tabs')).toBeInTheDocument();
+      });
+
+      // Verify session storage was cleared
+      expect(global.chrome.storage.session.remove).toHaveBeenCalledWith('failedRestoreTabs');
+
+      // Verify URL was updated to remove query param
+      expect(global.history.replaceState).toHaveBeenCalledWith(
+        {},
+        '',
+        '/options/index.html'
+      );
+    });
+
+    it('does NOT open dialog when URL does not have showFailedTabs param', async () => {
+      // No query param
+      Object.defineProperty(window, 'location', {
+        value: { search: '', pathname: '/options/index.html', hash: '' },
+        writable: true,
+      });
+
+      render(<Options />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Snoozed Items')).toBeInTheDocument();
+      });
+
+      // Session storage should not be checked
+      expect(global.chrome.storage.session.get).not.toHaveBeenCalled();
+
+      // Dialog should NOT be shown
+      expect(screen.queryByText('Failed to Restore Tabs')).not.toBeInTheDocument();
+    });
+  });
 });
