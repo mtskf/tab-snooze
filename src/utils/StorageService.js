@@ -1,17 +1,15 @@
-
-import { validateSnoozedTabs, sanitizeSnoozedTabs } from "./validation";
+import { validateSnoozedTabs, sanitizeSnoozedTabs, validateSnoozedTabsV2, sanitizeSnoozedTabsV2 } from "./validation";
+import { detectSchemaVersion } from "../background/schemaVersioning";
 
 export const StorageService = {
   /**
    * Triggers a browser download of the given data as a JSON file.
-   * @param {Object} data - The data directly from storage (snoozedTabs).
+   * Supports V2 format: { version: 2, items: {...}, schedule: {...} }
+   * @param {Object} data - The V2 data from storage
    */
   exportTabs: (data) => {
-    if (
-      !data ||
-      Object.keys(data).length === 0 ||
-      (Object.keys(data).length === 1 && data.tabCount === 0)
-    ) {
+    // Check for valid V2 data with items
+    if (!data || !data.items || Object.keys(data.items).length === 0) {
       throw new Error("No tabs to export.");
     }
 
@@ -29,29 +27,46 @@ export const StorageService = {
 
   /**
    * Reads and parses a JSON file, validates it, and prepares it for storage.
+   * Supports both V1 and V2 formats.
    * @param {File} file - The file object from input[type="file"].
-   * @returns {Promise<Object>} - The valid data object to be merged/saved.
+   * @returns {Promise<Object>} - The valid data object to be saved.
    */
   parseImportFile: (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          let importedTabs = JSON.parse(e.target.result);
+          let importedData = JSON.parse(e.target.result);
 
-          const validation = validateSnoozedTabs(importedTabs);
-          if (!validation.valid && !validation.repairable) {
-            console.error("Validation errors (unrecoverable):", validation.errors);
-            reject(new Error("Invalid data structure that cannot be repaired"));
-            return;
+          // Detect schema version
+          const version = detectSchemaVersion(importedData);
+
+          if (version === 2) {
+            // V2 validation
+            const validation = validateSnoozedTabsV2(importedData);
+            if (!validation.valid) {
+              console.warn("V2 validation errors, sanitizing:", validation.errors);
+              importedData = sanitizeSnoozedTabsV2(importedData);
+            }
+            // Ensure version is present
+            importedData.version = 2;
+            resolve(importedData);
+          } else {
+            // V1 validation (backward compatibility)
+            const validation = validateSnoozedTabs(importedData);
+            if (!validation.valid && !validation.repairable) {
+              console.error("Validation errors (unrecoverable):", validation.errors);
+              reject(new Error("Invalid data structure that cannot be repaired"));
+              return;
+            }
+
+            if (!validation.valid && validation.repairable) {
+              console.warn("Repairing imported data:", validation.errors);
+              importedData = sanitizeSnoozedTabs(importedData);
+            }
+
+            resolve(importedData);
           }
-
-          if (!validation.valid && validation.repairable) {
-            console.warn("Repairing imported data:", validation.errors);
-            importedTabs = sanitizeSnoozedTabs(importedTabs);
-          }
-
-          resolve(importedTabs);
         } catch (error) {
           reject(error);
         }
@@ -60,39 +75,4 @@ export const StorageService = {
       reader.readAsText(file);
     });
   },
-
-  /**
-   * Merges imported tabs into the current snoozed tabs structure.
-   * @param {Object} currentTabs - The current tabs from storage.
-   * @param {Object} importedTabs - The parsed and validated imported data.
-   * @returns {Object} - The result object containing { mergedData, addedCount }.
-   */
-  mergeTabs: (currentTabs, importedTabs) => {
-    const merged = JSON.parse(JSON.stringify(currentTabs || { tabCount: 0 }));
-    let addedCount = 0;
-
-    Object.keys(importedTabs).forEach((key) => {
-      if (key === "tabCount") return;
-
-      const tabsList = importedTabs[key];
-      if (Array.isArray(tabsList)) {
-        if (!merged[key]) {
-          merged[key] = [];
-        }
-        merged[key].push(...tabsList);
-        addedCount += tabsList.length;
-      }
-    });
-
-    // Recalculate total count
-    let totalCount = 0;
-    Object.keys(merged).forEach((k) => {
-      if (k !== "tabCount" && Array.isArray(merged[k])) {
-        totalCount += merged[k].length;
-      }
-    });
-    merged.tabCount = totalCount;
-
-    return { mergedData: merged, addedCount };
-  }
 };

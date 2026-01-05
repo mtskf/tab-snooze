@@ -3,59 +3,60 @@ import SnoozedList from './SnoozedList';
 import { describe, it, expect, vi } from 'vitest';
 
 describe('SnoozedList', () => {
-  const mockSnoozedTabs = {
-    '1704100000000': [ // Some timestamp
-      {
-        url: 'https://example.com',
-        title: 'Example Tab',
-        favicon: '',
-        creationTime: 123,
-        popTime: 1704100000000
-      }
-    ],
-    tabCount: 1
-  };
+  const mockPopTime = 1704100000000;
+  const mockDate = new Date(mockPopTime);
+
+  // dayGroups format (output of selectSnoozedItemsByDay)
+  const mockDayGroups = [
+    {
+      key: mockDate.toDateString(),
+      date: new Date(mockDate.getFullYear(), mockDate.getMonth(), mockDate.getDate()),
+      displayItems: [
+        {
+          type: 'tab',
+          data: {
+            id: 'tab-1',
+            url: 'https://example.com',
+            title: 'Example Tab',
+            favicon: '',
+            creationTime: 123,
+            popTime: mockPopTime,
+          },
+        },
+      ],
+    },
+  ];
 
   it('renders snoozed items correctly', () => {
-    render(
-      <SnoozedList
-        snoozedTabs={mockSnoozedTabs}
-      />
-    );
+    render(<SnoozedList dayGroups={mockDayGroups} />);
     expect(screen.getByText('Example Tab')).toBeInTheDocument();
     expect(screen.getByText('example.com')).toBeInTheDocument();
   });
 
   it('calls onClearTab when delete button is clicked', () => {
     const handleClearTab = vi.fn();
-    render(
-      <SnoozedList
-        snoozedTabs={mockSnoozedTabs}
-        onClearTab={handleClearTab}
-      />
-    );
+    render(<SnoozedList dayGroups={mockDayGroups} onClearTab={handleClearTab} />);
 
-    // Find delete button - usually found by icon or aria-label if present.
-    // In SnoozedList.jsx, Button has Lucide Trash2 icon but no aria-label explicit in recent view?
-    // Let's look closely at SnoozedList.jsx again or use getAllByRole('button')
-    // The button has className="h-8 w-8 ..."
-
-    // Better: add aria-label to component or use container query?
-    // For now, let's try getting by button role. There's only one item, so one delete button (plus window delete buttons if groups)
     const buttons = screen.getAllByRole('button');
-    // Expect at least one delete button.
     const deleteBtn = buttons[0];
 
     fireEvent.click(deleteBtn);
 
     expect(handleClearTab).toHaveBeenCalledTimes(1);
-    expect(handleClearTab).toHaveBeenCalledWith(expect.objectContaining({
-        title: 'Example Tab'
-    }));
+    expect(handleClearTab).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Example Tab',
+      })
+    );
   });
 
   it('renders "No snoozed tabs" when empty', () => {
-    render(<SnoozedList snoozedTabs={{}} />);
+    render(<SnoozedList dayGroups={[]} />);
+    expect(screen.getByText('No snoozed tabs.')).toBeInTheDocument();
+  });
+
+  it('renders "No snoozed tabs" when dayGroups is undefined', () => {
+    render(<SnoozedList dayGroups={undefined} />);
     expect(screen.getByText('No snoozed tabs.')).toBeInTheDocument();
   });
 
@@ -63,31 +64,44 @@ describe('SnoozedList', () => {
     const onRestoreGroup = vi.fn();
     const onClearGroup = vi.fn();
     const onClearTab = vi.fn();
-    const groupedTabs = {
-      '1704100000000': [
-        {
-          url: 'https://example.com',
-          title: 'Grouped Tab A',
-          favicon: '',
-          creationTime: 123,
-          popTime: 1704100000000,
-          groupId: 'g1',
-        },
-        {
-          url: 'https://example.com/b',
-          title: 'Grouped Tab B',
-          favicon: '',
-          creationTime: 124,
-          popTime: 1704100000000,
-          groupId: 'g1',
-        },
-      ],
-      tabCount: 2,
-    };
+
+    const groupedDayGroups = [
+      {
+        key: mockDate.toDateString(),
+        date: new Date(mockDate.getFullYear(), mockDate.getMonth(), mockDate.getDate()),
+        displayItems: [
+          {
+            type: 'group',
+            groupId: 'g1',
+            popTime: mockPopTime,
+            groupItems: [
+              {
+                id: 'tab-1',
+                url: 'https://example.com',
+                title: 'Grouped Tab A',
+                favicon: '',
+                creationTime: 123,
+                popTime: mockPopTime,
+                groupId: 'g1',
+              },
+              {
+                id: 'tab-2',
+                url: 'https://example.com/b',
+                title: 'Grouped Tab B',
+                favicon: '',
+                creationTime: 124,
+                popTime: mockPopTime,
+                groupId: 'g1',
+              },
+            ],
+          },
+        ],
+      },
+    ];
 
     render(
       <SnoozedList
-        snoozedTabs={groupedTabs}
+        dayGroups={groupedDayGroups}
         onRestoreGroup={onRestoreGroup}
         onClearGroup={onClearGroup}
         onClearTab={onClearTab}
@@ -113,20 +127,27 @@ describe('SnoozedList', () => {
   });
 
   it('shows Unknown when tab URL is invalid', () => {
-    const invalidTabs = {
-      '1704100000000': [
-        {
-          url: 'not a url',
-          title: 'Broken Tab',
-          favicon: '',
-          creationTime: 123,
-          popTime: 1704100000000,
-        },
-      ],
-      tabCount: 1,
-    };
+    const invalidDayGroups = [
+      {
+        key: mockDate.toDateString(),
+        date: new Date(mockDate.getFullYear(), mockDate.getMonth(), mockDate.getDate()),
+        displayItems: [
+          {
+            type: 'tab',
+            data: {
+              id: 'tab-1',
+              url: 'not a url',
+              title: 'Broken Tab',
+              favicon: '',
+              creationTime: 123,
+              popTime: mockPopTime,
+            },
+          },
+        ],
+      },
+    ];
 
-    render(<SnoozedList snoozedTabs={invalidTabs} />);
+    render(<SnoozedList dayGroups={invalidDayGroups} />);
     expect(screen.getByText('Unknown')).toBeInTheDocument();
   });
 });

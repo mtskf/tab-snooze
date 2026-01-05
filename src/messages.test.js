@@ -12,6 +12,7 @@ describe('messages', () => {
   describe('MESSAGE_ACTIONS', () => {
     it('defines all expected action constants', () => {
       expect(MESSAGE_ACTIONS).toHaveProperty('GET_SNOOZED_TABS');
+      expect(MESSAGE_ACTIONS).toHaveProperty('GET_SNOOZED_TABS_V2');
       expect(MESSAGE_ACTIONS).toHaveProperty('SET_SNOOZED_TABS');
       expect(MESSAGE_ACTIONS).toHaveProperty('GET_SETTINGS');
       expect(MESSAGE_ACTIONS).toHaveProperty('SET_SETTINGS');
@@ -24,6 +25,7 @@ describe('messages', () => {
 
     it('uses correct action string values', () => {
       expect(MESSAGE_ACTIONS.GET_SNOOZED_TABS).toBe('getSnoozedTabs');
+      expect(MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2).toBe('getSnoozedTabsV2');
       expect(MESSAGE_ACTIONS.SNOOZE).toBe('snooze');
     });
   });
@@ -31,6 +33,13 @@ describe('messages', () => {
   describe('validateMessageRequest', () => {
     it('validates valid getSnoozedTabs request', () => {
       const request = { action: MESSAGE_ACTIONS.GET_SNOOZED_TABS };
+      const result = validateMessageRequest(request);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
+    it('validates valid getSnoozedTabsV2 request', () => {
+      const request = { action: MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2 };
       const result = validateMessageRequest(request);
       expect(result.valid).toBe(true);
       expect(result.errors).toEqual([]);
@@ -126,6 +135,23 @@ describe('messages', () => {
 
       expect(mockService.getValidatedSnoozedTabs).toHaveBeenCalled();
       expect(result).toEqual({ tabCount: 5 });
+    });
+
+    it('getSnoozedTabsV2 handler calls getSnoozedTabsV2', async () => {
+      const mockV2Data = {
+        version: 2,
+        items: { 'tab-1': { url: 'https://example.com' } },
+        schedule: { '1234567890': ['tab-1'] },
+      };
+      const mockService = {
+        getSnoozedTabsV2: vi.fn().mockResolvedValue(mockV2Data),
+      };
+
+      const request = { action: MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2 };
+      const result = await MESSAGE_HANDLERS[MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2](request, mockService);
+
+      expect(mockService.getSnoozedTabsV2).toHaveBeenCalled();
+      expect(result).toEqual(mockV2Data);
     });
 
     it('snooze handler calls snooze with correct params', async () => {

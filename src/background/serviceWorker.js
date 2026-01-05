@@ -11,6 +11,7 @@ import {
   removeWindowGroup,
   restoreWindowGroup,
   getSnoozedTabs,
+  getSnoozedTabsV2,
   setSnoozedTabs,
   getSettings,
   setSettings,
@@ -55,6 +56,7 @@ async function handleMessage(request, sendResponse) {
     // Create services object with all dependencies needed by message handlers
     const services = {
       getValidatedSnoozedTabs,
+      getSnoozedTabsV2,
       setSnoozedTabs,
       getSettings,
       setSettings,

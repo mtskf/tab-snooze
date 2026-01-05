@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import logo from "../assets/logo.svg";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
@@ -59,9 +59,14 @@ import { StorageService } from "@/utils/StorageService";
 import { sendMessage, MESSAGE_ACTIONS } from "@/messages";
 import { storage, commands } from "@/utils/ChromeApi";
 import FailedTabsDialog from "./FailedTabsDialog";
+import {
+  filterByQuery,
+  selectSnoozedItemsByDay,
+  selectTabCount,
+} from "@/utils/selectors";
 
 export default function Options() {
-  const [snoozedTabs, setSnoozedTabs] = useState({});
+  const [snoozedData, setSnoozedData] = useState({ version: 2, items: {}, schedule: {} });
   const [searchQuery, setSearchQuery] = useState("");
   const [settings, setSettings] = useState({});
   const [extensionShortcut, setExtensionShortcut] = useState(null);
@@ -78,11 +83,11 @@ export default function Options() {
 
   const fetchSnoozedTabs = useCallback(async () => {
     try {
-      const response = await sendMessage(MESSAGE_ACTIONS.GET_SNOOZED_TABS);
-      setSnoozedTabs(response || { tabCount: 0 });
+      const response = await sendMessage(MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2);
+      setSnoozedData(response || { version: 2, items: {}, schedule: {} });
     } catch (error) {
       console.error('Failed to fetch snoozed tabs:', error);
-      setSnoozedTabs({ tabCount: 0 });
+      setSnoozedData({ version: 2, items: {}, schedule: {} });
     }
   }, []);
 
@@ -194,32 +199,41 @@ export default function Options() {
     }
   };
 
-  // Export snoozed tabs to JSON
+  // Export snoozed tabs to JSON (V2 format)
   const handleExport = () => {
     try {
-      StorageService.exportTabs(snoozedTabs);
+      StorageService.exportTabs(snoozedData);
     } catch (e) {
       alert(e.message);
     }
   };
 
-  // Import from JSON
+  // Import from JSON (V2 format with overwrite)
   const handleImport = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
     try {
-      const importedTabs = await StorageService.parseImportFile(file);
-      const currentTabs = await sendMessage(MESSAGE_ACTIONS.GET_SNOOZED_TABS);
+      const importedData = await StorageService.parseImportFile(file);
 
-      const { mergedData, addedCount } = StorageService.mergeTabs(
-        currentTabs || { tabCount: 0 },
-        importedTabs
+      // Show confirmation dialog before overwrite
+      const confirmed = confirm(
+        "既存データを上書きします。自動バックアップは保証されないため、事前にエクスポートしてください。"
       );
 
-      // Use background setSnoozedTabs to trigger backup rotation and size check
-      await sendMessage(MESSAGE_ACTIONS.SET_SNOOZED_TABS, { data: mergedData });
-      alert(`Imported ${addedCount} tabs successfully!`);
+      if (!confirmed) {
+        event.target.value = ""; // Clear file input on cancel
+        return;
+      }
+
+      // Overwrite with imported data (no merge)
+      await sendMessage(MESSAGE_ACTIONS.SET_SNOOZED_TABS, { data: importedData });
+
+      // Calculate tab count based on data version
+      const importedTabCount = importedData.version === 2
+        ? selectTabCount(importedData)
+        : importedData.tabCount || 0;
+      alert(`Imported ${importedTabCount} tabs successfully!`);
     } catch (error) {
       console.error(error);
       alert(
@@ -233,31 +247,20 @@ export default function Options() {
     event.target.value = ""; // Reset file input
   };
 
-  const filteredTabs = React.useMemo(() => {
-    if (!searchQuery) return snoozedTabs;
-    const keywords = searchQuery
-      .toLowerCase()
-      .split(/[\s,]+/)
-      .filter((k) => k.trim() !== "");
-    if (keywords.length === 0) return snoozedTabs;
+  // Filter V2 data using selector
+  const filteredData = useMemo(() => {
+    return filterByQuery(snoozedData, searchQuery);
+  }, [snoozedData, searchQuery]);
 
-    const filtered = { tabCount: 0 };
-    Object.keys(snoozedTabs).forEach((key) => {
-      if (key === "tabCount") return;
-      if (!Array.isArray(snoozedTabs[key])) return; // Safety check
-      const tabs = snoozedTabs[key].filter((t) => {
-        const title = (t.title || "").toLowerCase();
-        const url = (t.url || "").toLowerCase();
-        return keywords.every((k) => title.includes(k) || url.includes(k));
-      });
+  // Convert to display format
+  const dayGroups = useMemo(() => {
+    return selectSnoozedItemsByDay(filteredData);
+  }, [filteredData]);
 
-      if (tabs.length > 0) {
-        filtered[key] = tabs;
-        filtered.tabCount += tabs.length; // Approximate count for display if needed
-      }
-    });
-    return filtered;
-  }, [snoozedTabs, searchQuery]);
+  // Get tab count
+  const tabCount = useMemo(() => {
+    return selectTabCount(snoozedData);
+  }, [snoozedData]);
 
   return (
     <div className="w-[672px] mx-auto py-8">
@@ -335,7 +338,7 @@ export default function Options() {
                     className="hidden"
                   />
 
-                  {snoozedTabs.tabCount > 0 && (
+                  {tabCount > 0 && (
                     <Button
                       className={cn(
                         "h-7 text-[10px] px-2",
@@ -371,7 +374,7 @@ export default function Options() {
 
             <CardContent>
               <SnoozedList
-                snoozedTabs={filteredTabs}
+                dayGroups={dayGroups}
                 onClearTab={clearTab}
                 onClearGroup={clearGroup}
                 onRestoreGroup={restoreGroup}

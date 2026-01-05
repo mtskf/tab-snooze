@@ -251,6 +251,29 @@ export async function getValidatedSnoozedTabs() {
 }
 
 /**
+ * Gets validated snoozed tabs in V2 format, sanitizing if validation fails
+ * @returns {Promise<StorageV2>} V2 format { version: 2, items: {...}, schedule: {...} }
+ */
+export async function getSnoozedTabsV2() {
+    const v2Data = await getStorageV2();
+    const validation = validateSnoozedTabsV2(v2Data);
+
+    if (!validation.valid) {
+        console.warn('V2 validation errors during read, sanitizing and persisting:', validation.errors);
+        const sanitized = sanitizeSnoozedTabsV2(v2Data);
+        const result = { ...sanitized, version: 2 };
+        await saveStorageV2(result);
+        return result;
+    }
+
+    // Ensure version field is present
+    return {
+        ...v2Data,
+        version: v2Data.version || 2
+    };
+}
+
+/**
  * Recovers snoozed tabs from backup storage
  * @returns {Promise<RecoveryResult>} Recovery result with data, success status, and tab count
  */

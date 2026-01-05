@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 const SnoozedList = React.memo(
   ({
-    snoozedTabs,
+    dayGroups = [],
     onClearTab,
     onClearGroup,
     onRestoreGroup,
@@ -27,32 +27,9 @@ const SnoozedList = React.memo(
       }
       return `${colorClass} hover:bg-transparent`;
     })();
+
     const renderList = () => {
-      const timestamps = Object.keys(snoozedTabs).sort(
-        (a, b) => parseInt(a) - parseInt(b)
-      );
-      const days = [];
-
-      timestamps.forEach((ts) => {
-        if (ts === "tabCount") return;
-        const tabs = snoozedTabs[ts];
-        if (!tabs || tabs.length === 0) return;
-
-        const date = new Date(parseInt(ts));
-        const dayKey = date.toDateString();
-
-        let dayGroup = days.find((d) => d.key === dayKey);
-        if (!dayGroup) {
-          dayGroup = { key: dayKey, date: date, items: [] };
-          days.push(dayGroup);
-        }
-
-        tabs.forEach((tab) => {
-          dayGroup.items.push({ ...tab, popTime: parseInt(ts) });
-        });
-      });
-
-      if (days.length === 0) {
+      if (!dayGroups || dayGroups.length === 0) {
         return (
           <div className="text-center p-8 text-muted-foreground">
             No snoozed tabs.
@@ -60,37 +37,8 @@ const SnoozedList = React.memo(
         );
       }
 
-      return days.map((day) => {
-        // Group items by groupId
-        const dayGroups = {};
-        const displayItems = [];
-
-        day.items.forEach((item) => {
-          if (item.groupId) {
-            if (!dayGroups[item.groupId]) {
-              dayGroups[item.groupId] = [];
-            }
-            dayGroups[item.groupId].push(item);
-          } else {
-            displayItems.push({ type: "tab", data: item, popTime: item.popTime });
-          }
-        });
-
-        // Add groups to displayItems
-        Object.entries(dayGroups).forEach(([groupId, groupItems]) => {
-          // Sort items within the group just in case
-          groupItems.sort((a, b) => a.popTime - b.popTime);
-
-          displayItems.push({
-            type: "group",
-            groupId,
-            groupItems,
-            popTime: groupItems[0]?.popTime || 0,
-          });
-        });
-
-        // Sort all items by popTime
-        displayItems.sort((a, b) => a.popTime - b.popTime);
+      return dayGroups.map((day) => {
+        const { displayItems } = day;
 
         return (
           <div key={day.key} className="mb-6">

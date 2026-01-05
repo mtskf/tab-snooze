@@ -12,7 +12,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('@/utils/StorageService', () => ({
   StorageService: {
     parseImportFile: vi.fn(),
-    mergeTabs: vi.fn(),
     exportTabs: vi.fn(),
   },
 }));
@@ -41,26 +40,31 @@ import { StorageService } from '@/utils/StorageService';
 import Options from './Options';
 
 describe('Options', () => {
-  const snoozedTabs = {
-    '1704100000000': [
-      {
+  // V2 format data
+  const snoozedDataV2 = {
+    version: 2,
+    items: {
+      'tab-1': {
+        id: 'tab-1',
         url: 'https://example.com',
         title: 'Example Tab',
         favicon: '',
         creationTime: 123,
         popTime: 1704100000000,
       },
-    ],
-    tabCount: 1,
+    },
+    schedule: {
+      '1704100000000': ['tab-1'],
+    },
   };
 
   let onChangedListener;
-  let currentSnoozedTabs;
+  let currentSnoozedData;
   let lastSetTabs;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    currentSnoozedTabs = snoozedTabs;
+    currentSnoozedData = snoozedDataV2;
     onChangedListener = undefined;
     lastSetTabs = undefined;
     global.alert = vi.fn();
@@ -88,8 +92,8 @@ describe('Options', () => {
     };
 
     global.chrome.runtime.sendMessage.mockImplementation((message, callback) => {
-      if (message.action === 'getSnoozedTabs') {
-        if (callback) callback(currentSnoozedTabs);
+      if (message.action === 'getSnoozedTabsV2') {
+        if (callback) callback(currentSnoozedData);
         return;
       }
       if (message.action === 'setSnoozedTabs') {
@@ -116,7 +120,7 @@ describe('Options', () => {
     });
 
     expect(global.chrome.runtime.sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'getSnoozedTabs' }),
+      expect.objectContaining({ action: 'getSnoozedTabsV2' }),
       expect.any(Function)
     );
   });
@@ -129,17 +133,21 @@ describe('Options', () => {
     });
     expect(onChangedListener).toBeTypeOf('function');
 
-    currentSnoozedTabs = {
-      '1704200000000': [
-        {
+    currentSnoozedData = {
+      version: 2,
+      items: {
+        'tab-2': {
+          id: 'tab-2',
           url: 'https://example.com/next',
           title: 'Next Tab',
           favicon: '',
           creationTime: 124,
           popTime: 1704200000000,
         },
-      ],
-      tabCount: 1,
+      },
+      schedule: {
+        '1704200000000': ['tab-2'],
+      },
     };
 
     act(() => {
@@ -154,27 +162,26 @@ describe('Options', () => {
     });
   });
 
-  it('imports by merging with background snoozed tabs data', async () => {
-    const importedTabs = {
-      tabCount: 1,
-      '1704300000000': [
-        {
+  it('imports V2 data with overwrite after confirmation', async () => {
+    const importedDataV2 = {
+      version: 2,
+      items: {
+        'imported-1': {
+          id: 'imported-1',
           url: 'https://example.com/imported',
           title: 'Imported Tab',
           favicon: '',
           creationTime: 125,
           popTime: 1704300000000,
         },
-      ],
-    };
-    const mergedData = {
-      ...snoozedTabs,
-      '1704300000000': importedTabs['1704300000000'],
-      tabCount: 2,
+      },
+      schedule: {
+        '1704300000000': ['imported-1'],
+      },
     };
 
-    StorageService.parseImportFile.mockResolvedValue(importedTabs);
-    StorageService.mergeTabs.mockReturnValue({ mergedData, addedCount: 1 });
+    StorageService.parseImportFile.mockResolvedValue(importedDataV2);
+    global.confirm = vi.fn().mockReturnValue(true);
 
     const { container } = render(<Options />);
     const fileInput = container.querySelector('input[type="file"]');
@@ -184,21 +191,52 @@ describe('Options', () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
     });
 
+    // Should show confirmation dialog
+    expect(global.confirm).toHaveBeenCalled();
+
     await waitFor(() => {
+      // Should overwrite with imported data (not merge)
       expect(global.chrome.runtime.sendMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'getSnoozedTabs' }),
+        expect.objectContaining({ action: 'setSnoozedTabs', data: importedDataV2 }),
         expect.any(Function)
       );
-      expect(global.chrome.runtime.sendMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'setSnoozedTabs', data: mergedData }),
-        expect.any(Function)
-      );
-      expect(lastSetTabs).toEqual(mergedData);
+      expect(lastSetTabs).toEqual(importedDataV2);
     });
   });
 
+  it('cancels import and clears file input when confirmation is declined', async () => {
+    const importedDataV2 = {
+      version: 2,
+      items: { 'imported-1': { id: 'imported-1', url: 'https://example.com', title: 'Test', popTime: 123 } },
+      schedule: {},
+    };
+
+    StorageService.parseImportFile.mockResolvedValue(importedDataV2);
+    global.confirm = vi.fn().mockReturnValue(false);
+
+    const { container } = render(<Options />);
+    const fileInput = container.querySelector('input[type="file"]');
+
+    const file = new File(['{}'], 'import.json', { type: 'application/json' });
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    // Should show confirmation dialog
+    expect(global.confirm).toHaveBeenCalled();
+
+    // Should NOT call setSnoozedTabs
+    expect(global.chrome.runtime.sendMessage).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'setSnoozedTabs' }),
+      expect.any(Function)
+    );
+
+    // File input should be cleared
+    expect(fileInput.value).toBe('');
+  });
+
   it('handles error response for snoozed tabs and shows empty state', async () => {
-    currentSnoozedTabs = { error: 'failed' };
+    currentSnoozedData = { error: 'failed' };
     render(<Options />);
 
     await waitFor(() => {

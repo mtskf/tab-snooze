@@ -2,6 +2,7 @@ import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   checkStorageSize,
   getSnoozedTabs,
+  getSnoozedTabsV2,
   setSnoozedTabs,
   initStorage,
   snooze,
@@ -767,6 +768,89 @@ describe('snoozeLogic.js (V2)', () => {
             await expect(setSnoozedTabs(futureData)).rejects.toThrow(
                 'Cannot import data from future schema version 3'
             );
+        });
+    });
+
+    describe('getSnoozedTabsV2', () => {
+        test('returns valid V2 data as-is', async () => {
+            const popTime = MOCK_TIME + 1000;
+            const id = 'tab-1';
+            const item = createItem(id, popTime);
+            const validV2 = {
+                snoooze_v2: {
+                    version: 2,
+                    items: { [id]: item },
+                    schedule: { [popTime]: [id] }
+                }
+            };
+            chromeMock.storage.local.get.mockResolvedValue(validV2);
+
+            const result = await getSnoozedTabsV2();
+
+            expect(result).toEqual(validV2.snoooze_v2);
+            // Should not call set (no sanitization needed)
+            expect(chromeMock.storage.local.set).not.toHaveBeenCalled();
+        });
+
+        test('sanitizes invalid V2 data and persists', async () => {
+            const popTime = MOCK_TIME + 1000;
+            const id = 'tab-1';
+            const item = createItem(id, popTime);
+            const invalidV2 = {
+                snoooze_v2: {
+                    version: 2,
+                    items: { [id]: item },
+                    schedule: { [popTime]: [id, 'missing-id'] } // orphaned reference
+                }
+            };
+            chromeMock.storage.local.get.mockResolvedValue(invalidV2);
+
+            const result = await getSnoozedTabsV2();
+
+            // Should return sanitized V2 data
+            expect(result.version).toBe(2);
+            expect(result.items).toEqual({ [id]: item });
+            expect(result.schedule[popTime]).toEqual([id]); // missing-id removed
+
+            // Should have persisted sanitized data
+            expect(chromeMock.storage.local.set).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    snoooze_v2: expect.objectContaining({
+                        version: 2,
+                        schedule: { [popTime]: [id] }
+                    })
+                })
+            );
+        });
+
+        test('returns empty V2 structure for missing data', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({});
+
+            const result = await getSnoozedTabsV2();
+
+            expect(result).toEqual({
+                version: 2,
+                items: {},
+                schedule: {}
+            });
+        });
+
+        test('adds version field when missing', async () => {
+            const popTime = MOCK_TIME + 1000;
+            const id = 'tab-1';
+            const item = createItem(id, popTime);
+            const v2WithoutVersion = {
+                snoooze_v2: {
+                    items: { [id]: item },
+                    schedule: { [popTime]: [id] }
+                }
+            };
+            chromeMock.storage.local.get.mockResolvedValue(v2WithoutVersion);
+
+            const result = await getSnoozedTabsV2();
+
+            expect(result.version).toBe(2);
+            expect(result.items).toEqual({ [id]: item });
         });
     });
 });
