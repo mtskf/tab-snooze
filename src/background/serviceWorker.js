@@ -16,6 +16,8 @@ import {
   getSettings,
   setSettings,
   getValidatedSnoozedTabs,
+  importTabs,
+  getExportData,
 } from "./snoozeLogic";
 import { dispatchMessage } from "../messages";
 import { storage, tabs, notifications, alarms, runtime } from "../utils/ChromeApi";
@@ -64,6 +66,8 @@ async function handleMessage(request, sendResponse) {
       removeSnoozedTabWrapper,
       removeWindowGroup,
       restoreWindowGroup,
+      importTabs,
+      getExportData,
     };
 
     // Dispatch to appropriate handler using message contract

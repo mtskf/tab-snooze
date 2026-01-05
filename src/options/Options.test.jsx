@@ -11,6 +11,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@/utils/StorageService', () => ({
   StorageService: {
+    readJsonFile: vi.fn(),
+    downloadAsJson: vi.fn(),
+    // Legacy aliases (kept for backward compatibility)
     parseImportFile: vi.fn(),
     exportTabs: vi.fn(),
   },
@@ -162,7 +165,7 @@ describe('Options', () => {
     });
   });
 
-  it('imports V2 data with overwrite after confirmation', async () => {
+  it('imports data via background importTabs after confirmation', async () => {
     const importedDataV2 = {
       version: 2,
       items: {
@@ -180,8 +183,25 @@ describe('Options', () => {
       },
     };
 
-    StorageService.parseImportFile.mockResolvedValue(importedDataV2);
+    StorageService.readJsonFile.mockResolvedValue(importedDataV2);
     global.confirm = vi.fn().mockReturnValue(true);
+
+    // Mock importTabs response
+    global.chrome.runtime.sendMessage.mockImplementation((message, callback) => {
+      if (message.action === 'getSnoozedTabsV2') {
+        if (callback) callback(currentSnoozedData);
+        return;
+      }
+      if (message.action === 'importTabs') {
+        if (callback) callback({ success: true, addedCount: 1 });
+        return;
+      }
+      if (message.action === 'getSettings') {
+        if (callback) callback({ 'start-day': '8:00 AM', timezone: 'UTC' });
+        return;
+      }
+      if (callback) callback();
+    });
 
     const { container } = render(<Options />);
     const fileInput = container.querySelector('input[type="file"]');
@@ -195,13 +215,15 @@ describe('Options', () => {
     expect(global.confirm).toHaveBeenCalled();
 
     await waitFor(() => {
-      // Should overwrite with imported data (not merge)
+      // Should call importTabs message (not setSnoozedTabs)
       expect(global.chrome.runtime.sendMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'setSnoozedTabs', data: importedDataV2 }),
+        expect.objectContaining({ action: 'importTabs', data: importedDataV2 }),
         expect.any(Function)
       );
-      expect(lastSetTabs).toEqual(importedDataV2);
     });
+
+    // Should show success alert
+    expect(global.alert).toHaveBeenCalledWith('Imported 1 tabs successfully!');
   });
 
   it('cancels import and clears file input when confirmation is declined', async () => {
@@ -211,7 +233,7 @@ describe('Options', () => {
       schedule: {},
     };
 
-    StorageService.parseImportFile.mockResolvedValue(importedDataV2);
+    StorageService.readJsonFile.mockResolvedValue(importedDataV2);
     global.confirm = vi.fn().mockReturnValue(false);
 
     const { container } = render(<Options />);
@@ -225,9 +247,9 @@ describe('Options', () => {
     // Should show confirmation dialog
     expect(global.confirm).toHaveBeenCalled();
 
-    // Should NOT call setSnoozedTabs
+    // Should NOT call importTabs
     expect(global.chrome.runtime.sendMessage).not.toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'setSnoozedTabs' }),
+      expect.objectContaining({ action: 'importTabs' }),
       expect.any(Function)
     );
 
@@ -302,18 +324,45 @@ describe('Options', () => {
   });
 
   it('alerts on export failure', async () => {
-    StorageService.exportTabs.mockImplementation(() => {
+    // Mock exportTabs message to return data, but downloadAsJson to throw
+    global.chrome.runtime.sendMessage.mockImplementation((message, callback) => {
+      if (message.action === 'getSnoozedTabsV2') {
+        if (callback) callback(currentSnoozedData);
+        return;
+      }
+      if (message.action === 'exportTabs') {
+        if (callback) callback(snoozedDataV2);
+        return;
+      }
+      if (message.action === 'getSettings') {
+        if (callback) callback({ 'start-day': '8:00 AM', timezone: 'UTC' });
+        return;
+      }
+      if (callback) callback();
+    });
+
+    StorageService.downloadAsJson.mockImplementation(() => {
       throw new Error('Export failed');
     });
+
     render(<Options />);
 
-    fireEvent.click(screen.getByText('Export'));
-    expect(global.alert).toHaveBeenCalledWith('Export failed');
+    await waitFor(() => {
+      expect(screen.getByText('Export')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Export'));
+    });
+
+    await waitFor(() => {
+      expect(global.alert).toHaveBeenCalledWith('Export failed');
+    });
   });
 
-  it('shows validation error when import data is unrecoverable', async () => {
-    StorageService.parseImportFile.mockRejectedValue(
-      new Error('Invalid data structure that cannot be repaired')
+  it('shows error when readJsonFile fails to parse', async () => {
+    StorageService.readJsonFile.mockRejectedValue(
+      new Error('Invalid JSON file')
     );
     const { container } = render(<Options />);
     const fileInput = container.querySelector('input[type="file"]');
@@ -324,8 +373,52 @@ describe('Options', () => {
     });
 
     expect(global.alert).toHaveBeenCalledWith(
-      'Failed to import: The file contains invalid data.'
+      'Failed to import: Invalid JSON file'
     );
+  });
+
+  it('shows error when background importTabs fails', async () => {
+    const importData = {
+      version: 2,
+      items: { 'tab-1': { id: 'tab-1', url: 'https://example.com', title: 'Test', popTime: 123 } },
+      schedule: {},
+    };
+    StorageService.readJsonFile.mockResolvedValue(importData);
+    global.confirm = vi.fn().mockReturnValue(true);
+
+    // Mock importTabs to return failure (without top-level 'error' to avoid sendMessage rejection)
+    global.chrome.runtime.sendMessage.mockImplementation((message, callback) => {
+      if (message.action === 'getSnoozedTabsV2') {
+        if (callback) callback(currentSnoozedData);
+        return;
+      }
+      if (message.action === 'importTabs') {
+        // Return failure result - sendMessage will resolve with this (not reject)
+        // because the error is in result.error not response.error at top level
+        if (callback) callback({ success: false, error: 'Invalid data structure' });
+        return;
+      }
+      if (message.action === 'getSettings') {
+        if (callback) callback({ 'start-day': '8:00 AM', timezone: 'UTC' });
+        return;
+      }
+      if (callback) callback();
+    });
+
+    const { container } = render(<Options />);
+    const fileInput = container.querySelector('input[type="file"]');
+
+    const file = new File(['{}'], 'import.json', { type: 'application/json' });
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    // sendMessage sees response.error and rejects, so catch block handles it
+    await waitFor(() => {
+      expect(global.alert).toHaveBeenCalledWith(
+        'Failed to import: Invalid data structure'
+      );
+    });
   });
 
   it('should use setSettings message API instead of direct chrome.storage.local.set', async () => {

@@ -274,6 +274,108 @@ export async function getSnoozedTabsV2() {
 }
 
 /**
+ * Gets export data (validated V2 format)
+ * @returns {Promise<StorageV2>} V2 format ready for export
+ */
+export async function getExportData() {
+    return await getSnoozedTabsV2();
+}
+
+/**
+ * Imports tabs from raw data (V1 or V2 format)
+ * Migrates V1 to V2 if needed, validates, and merges with existing data.
+ * ID collisions are resolved by generating new UUIDs.
+ * @param {Object} rawData - Raw import data (V1 or V2 format)
+ * @returns {Promise<{success: boolean, addedCount?: number, error?: string}>}
+ */
+export async function importTabs(rawData) {
+    const { detectSchemaVersion, runMigrations, CURRENT_SCHEMA_VERSION } = await import('./schemaVersioning.js');
+
+    try {
+        // Validate input is an object
+        if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) {
+            return { success: false, error: 'Invalid data structure' };
+        }
+
+        // Detect schema version
+        const sourceVersion = detectSchemaVersion(rawData);
+
+        if (sourceVersion === null) {
+            // Empty or invalid data
+            return { success: true, addedCount: 0 };
+        }
+
+        // Reject future schema versions
+        if (sourceVersion > CURRENT_SCHEMA_VERSION) {
+            return {
+                success: false,
+                error: `Cannot import data from future schema version ${sourceVersion}`
+            };
+        }
+
+        // Migrate to V2 if needed
+        let importV2Data = sourceVersion === CURRENT_SCHEMA_VERSION
+            ? rawData
+            : await runMigrations(rawData, sourceVersion, CURRENT_SCHEMA_VERSION);
+
+        // Ensure version field
+        importV2Data = { ...importV2Data, version: CURRENT_SCHEMA_VERSION };
+
+        // Validate and sanitize import data
+        const validation = validateSnoozedTabsV2(importV2Data);
+        if (!validation.valid) {
+            console.warn('Import data validation errors, sanitizing:', validation.errors);
+            importV2Data = { ...sanitizeSnoozedTabsV2(importV2Data), version: CURRENT_SCHEMA_VERSION };
+        }
+
+        // Get existing data
+        const existingData = await getStorageV2();
+
+        // Count items to add
+        const itemsToImport = Object.keys(importV2Data.items || {}).length;
+        if (itemsToImport === 0) {
+            return { success: true, addedCount: 0 };
+        }
+
+        // Merge with collision handling
+        const mergedItems = { ...existingData.items };
+        const mergedSchedule = { ...existingData.schedule };
+
+        for (const [originalId, item] of Object.entries(importV2Data.items)) {
+            let finalId = originalId;
+
+            // Handle ID collision
+            if (mergedItems[originalId]) {
+                finalId = generateUUID();
+            }
+
+            // Add item with potentially new ID
+            mergedItems[finalId] = { ...item, id: finalId };
+
+            // Add to schedule
+            const popTime = item.popTime;
+            if (!mergedSchedule[popTime]) {
+                mergedSchedule[popTime] = [];
+            }
+            mergedSchedule[popTime].push(finalId);
+        }
+
+        // Save merged data
+        const mergedData = {
+            version: CURRENT_SCHEMA_VERSION,
+            items: mergedItems,
+            schedule: mergedSchedule
+        };
+        await saveStorageV2(mergedData);
+
+        return { success: true, addedCount: itemsToImport };
+    } catch (error) {
+        console.error('Import failed:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
  * Recovers snoozed tabs from backup storage
  * @returns {Promise<RecoveryResult>} Recovery result with data, success status, and tab count
  */

@@ -11,6 +11,8 @@ import {
   removeWindowGroup,
   getSettings,
   getValidatedSnoozedTabs,
+  importTabs,
+  getExportData,
 } from './snoozeLogic';
 
 vi.mock('../utils/uuid.js', async (importOriginal) => {
@@ -851,6 +853,255 @@ describe('snoozeLogic.js (V2)', () => {
 
             expect(result.version).toBe(2);
             expect(result.items).toEqual({ [id]: item });
+        });
+    });
+
+    describe('importTabs', () => {
+        test('imports V2 data and merges with existing data', async () => {
+            // Existing data
+            const existingItem = createItem('existing-1', MOCK_TIME + 1000);
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: {
+                    version: 2,
+                    items: { 'existing-1': existingItem },
+                    schedule: { [MOCK_TIME + 1000]: ['existing-1'] }
+                }
+            });
+
+            // Import data
+            const importItem = createItem('import-1', MOCK_TIME + 2000);
+            const importData = {
+                version: 2,
+                items: { 'import-1': importItem },
+                schedule: { [MOCK_TIME + 2000]: ['import-1'] }
+            };
+
+            const result = await importTabs(importData);
+
+            expect(result.success).toBe(true);
+            expect(result.addedCount).toBe(1);
+
+            // Should merge both items
+            expect(chromeMock.storage.local.set).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    snoooze_v2: expect.objectContaining({
+                        version: 2,
+                        items: expect.objectContaining({
+                            'existing-1': existingItem,
+                            'import-1': importItem
+                        })
+                    })
+                })
+            );
+        });
+
+        test('imports V1 data by migrating to V2 first', async () => {
+            // Empty existing data
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: { version: 2, items: {}, schedule: {} }
+            });
+
+            // V1 format data
+            const v1Data = {
+                tabCount: 1,
+                [MOCK_TIME + 1000]: [{
+                    url: TAB_URL,
+                    title: TAB_TITLE,
+                    creationTime: MOCK_TIME - 3600000,
+                    popTime: MOCK_TIME + 1000
+                }]
+            };
+
+            const result = await importTabs(v1Data);
+
+            expect(result.success).toBe(true);
+            expect(result.addedCount).toBe(1);
+
+            // Should save V2 format
+            expect(chromeMock.storage.local.set).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    snoooze_v2: expect.objectContaining({
+                        version: 2,
+                        items: expect.any(Object),
+                        schedule: expect.any(Object)
+                    })
+                })
+            );
+        });
+
+        test('generates new UUID when ID collision occurs', async () => {
+            const popTime = MOCK_TIME + 1000;
+            const existingItem = createItem('collision-id', popTime);
+
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: {
+                    version: 2,
+                    items: { 'collision-id': existingItem },
+                    schedule: { [popTime]: ['collision-id'] }
+                }
+            });
+
+            // Import data with same ID
+            const importItem = createItem('collision-id', MOCK_TIME + 2000, { title: 'New Title' });
+            const importData = {
+                version: 2,
+                items: { 'collision-id': importItem },
+                schedule: { [MOCK_TIME + 2000]: ['collision-id'] }
+            };
+
+            // Mock UUID to return predictable value
+            generateUUID.mockReturnValueOnce('new-unique-id');
+
+            const result = await importTabs(importData);
+
+            expect(result.success).toBe(true);
+            expect(result.addedCount).toBe(1);
+
+            // Should have generated new UUID
+            expect(generateUUID).toHaveBeenCalled();
+
+            // Should save with both items (original + renamed)
+            const setCall = chromeMock.storage.local.set.mock.calls.find(
+                call => call[0].snoooze_v2
+            );
+            expect(setCall).toBeTruthy();
+            const savedData = setCall[0].snoooze_v2;
+            expect(Object.keys(savedData.items)).toHaveLength(2);
+            expect(savedData.items['collision-id']).toEqual(existingItem);
+            expect(savedData.items['new-unique-id']).toBeDefined();
+            expect(savedData.items['new-unique-id'].title).toBe('New Title');
+        });
+
+        test('sanitizes invalid V2 import data', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: { version: 2, items: {}, schedule: {} }
+            });
+
+            // Invalid V2 data (schedule references non-existent item)
+            const importData = {
+                version: 2,
+                items: {
+                    'valid-tab': createItem('valid-tab', MOCK_TIME + 1000)
+                },
+                schedule: {
+                    [MOCK_TIME + 1000]: ['valid-tab', 'non-existent']
+                }
+            };
+
+            const result = await importTabs(importData);
+
+            expect(result.success).toBe(true);
+            expect(result.addedCount).toBe(1);
+
+            // Schedule should not contain non-existent item
+            const setCall = chromeMock.storage.local.set.mock.calls.find(
+                call => call[0].snoooze_v2
+            );
+            const savedSchedule = setCall[0].snoooze_v2.schedule;
+            expect(savedSchedule[MOCK_TIME + 1000]).toEqual(['valid-tab']);
+        });
+
+        test('returns zero addedCount for empty import data', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: { version: 2, items: {}, schedule: {} }
+            });
+
+            const result = await importTabs({ version: 2, items: {}, schedule: {} });
+
+            expect(result.success).toBe(true);
+            expect(result.addedCount).toBe(0);
+        });
+
+        test('rejects invalid data structure', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: { version: 2, items: {}, schedule: {} }
+            });
+
+            const result = await importTabs(['not', 'an', 'object']);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBeDefined();
+        });
+
+        test('rejects future schema version', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: { version: 2, items: {}, schedule: {} }
+            });
+
+            // Data with a future version
+            const futureData = {
+                version: 99,
+                items: { 'tab-1': createItem('tab-1', MOCK_TIME + 1000) },
+                schedule: { [MOCK_TIME + 1000]: ['tab-1'] }
+            };
+
+            const result = await importTabs(futureData);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('future schema version');
+        });
+
+        test('handles null input gracefully', async () => {
+            const result = await importTabs(null);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Invalid data structure');
+        });
+
+        test('handles undefined input gracefully', async () => {
+            const result = await importTabs(undefined);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Invalid data structure');
+        });
+
+        test('returns success with zero count for null version detection', async () => {
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: { version: 2, items: {}, schedule: {} }
+            });
+
+            // Empty object that has no recognizable schema
+            const result = await importTabs({});
+
+            expect(result.success).toBe(true);
+            expect(result.addedCount).toBe(0);
+        });
+    });
+
+    describe('getExportData', () => {
+        test('returns validated V2 data', async () => {
+            const popTime = MOCK_TIME + 1000;
+            const item = createItem('tab-1', popTime);
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: {
+                    version: 2,
+                    items: { 'tab-1': item },
+                    schedule: { [popTime]: ['tab-1'] }
+                }
+            });
+
+            const result = await getExportData();
+
+            expect(result.version).toBe(2);
+            expect(result.items['tab-1']).toEqual(item);
+            expect(result.schedule[popTime]).toEqual(['tab-1']);
+        });
+
+        test('sanitizes data before returning', async () => {
+            const popTime = MOCK_TIME + 1000;
+            const item = createItem('tab-1', popTime);
+            chromeMock.storage.local.get.mockResolvedValue({
+                snoooze_v2: {
+                    version: 2,
+                    items: { 'tab-1': item },
+                    schedule: { [popTime]: ['tab-1', 'missing-id'] }
+                }
+            });
+
+            const result = await getExportData();
+
+            // Should return sanitized data (missing-id removed)
+            expect(result.schedule[popTime]).toEqual(['tab-1']);
         });
     });
 });

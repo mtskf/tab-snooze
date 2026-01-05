@@ -199,26 +199,32 @@ export default function Options() {
     }
   };
 
-  // Export snoozed tabs to JSON (V2 format)
-  const handleExport = () => {
+  // Export snoozed tabs to JSON (V2 format via background)
+  const handleExport = async () => {
     try {
-      StorageService.exportTabs(snoozedData);
+      const data = await sendMessage(MESSAGE_ACTIONS.EXPORT_TABS);
+      if (!data || !data.items || Object.keys(data.items).length === 0) {
+        alert("No tabs to export.");
+        return;
+      }
+      StorageService.downloadAsJson(data);
     } catch (e) {
       alert(e.message);
     }
   };
 
-  // Import from JSON (V2 format with overwrite)
+  // Import from JSON (V1/V2 format, merged with existing data via background)
   const handleImport = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
     try {
-      const importedData = await StorageService.parseImportFile(file);
+      // Read raw JSON (no validation, background handles it)
+      const rawData = await StorageService.readJsonFile(file);
 
-      // Show confirmation dialog before overwrite
+      // Show confirmation dialog
       const confirmed = confirm(
-        "既存データを上書きします。自動バックアップは保証されないため、事前にエクスポートしてください。"
+        "インポートしたタブを既存データにマージします。ID衝突時は新しいIDが割り当てられます。"
       );
 
       if (!confirmed) {
@@ -226,23 +232,17 @@ export default function Options() {
         return;
       }
 
-      // Overwrite with imported data (no merge)
-      await sendMessage(MESSAGE_ACTIONS.SET_SNOOZED_TABS, { data: importedData });
+      // Send to background for validation, migration, and merge
+      const result = await sendMessage(MESSAGE_ACTIONS.IMPORT_TABS, { data: rawData });
 
-      // Calculate tab count based on data version
-      const importedTabCount = importedData.version === 2
-        ? selectTabCount(importedData)
-        : importedData.tabCount || 0;
-      alert(`Imported ${importedTabCount} tabs successfully!`);
+      if (result.success) {
+        alert(`Imported ${result.addedCount} tabs successfully!`);
+      } else {
+        alert(`Import failed: ${result.error}`);
+      }
     } catch (error) {
       console.error(error);
-      alert(
-        `Failed to import: ${
-          error.message === "Invalid data structure that cannot be repaired"
-            ? "The file contains invalid data."
-            : "Invalid JSON file."
-        }`
-      );
+      alert(`Failed to import: ${error.message || "Invalid JSON file."}`);
     }
     event.target.value = ""; // Reset file input
   };

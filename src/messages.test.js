@@ -21,6 +21,8 @@ describe('messages', () => {
       expect(MESSAGE_ACTIONS).toHaveProperty('CLEAR_ALL_SNOOZED_TABS');
       expect(MESSAGE_ACTIONS).toHaveProperty('REMOVE_WINDOW_GROUP');
       expect(MESSAGE_ACTIONS).toHaveProperty('RESTORE_WINDOW_GROUP');
+      expect(MESSAGE_ACTIONS).toHaveProperty('IMPORT_TABS');
+      expect(MESSAGE_ACTIONS).toHaveProperty('EXPORT_TABS');
     });
 
     it('uses correct action string values', () => {
@@ -90,6 +92,27 @@ describe('messages', () => {
       const result = validateMessageRequest({ action: MESSAGE_ACTIONS.REMOVE_WINDOW_GROUP });
       expect(result.valid).toBe(false);
       expect(result.errors.some(e => e.includes('groupId'))).toBe(true);
+    });
+
+    it('validates importTabs requires data object', () => {
+      const result = validateMessageRequest({ action: MESSAGE_ACTIONS.IMPORT_TABS });
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('data'))).toBe(true);
+    });
+
+    it('accepts valid importTabs request', () => {
+      const request = {
+        action: MESSAGE_ACTIONS.IMPORT_TABS,
+        data: { version: 2, items: {}, schedule: {} },
+      };
+      const result = validateMessageRequest(request);
+      expect(result.valid).toBe(true);
+    });
+
+    it('validates exportTabs requires no additional properties', () => {
+      const request = { action: MESSAGE_ACTIONS.EXPORT_TABS };
+      const result = validateMessageRequest(request);
+      expect(result.valid).toBe(true);
     });
   });
 
@@ -174,6 +197,41 @@ describe('messages', () => {
         'group-1'
       );
       expect(result).toEqual({ success: true });
+    });
+
+    it('importTabs handler calls importTabs with data', async () => {
+      const mockResult = { success: true, addedCount: 5 };
+      const mockService = {
+        importTabs: vi.fn().mockResolvedValue(mockResult),
+      };
+
+      const importData = { version: 2, items: {}, schedule: {} };
+      const request = {
+        action: MESSAGE_ACTIONS.IMPORT_TABS,
+        data: importData,
+      };
+
+      const result = await MESSAGE_HANDLERS[MESSAGE_ACTIONS.IMPORT_TABS](request, mockService);
+
+      expect(mockService.importTabs).toHaveBeenCalledWith(importData);
+      expect(result).toEqual(mockResult);
+    });
+
+    it('exportTabs handler calls getExportData', async () => {
+      const mockV2Data = {
+        version: 2,
+        items: { 'tab-1': { url: 'https://example.com' } },
+        schedule: { '1234567890': ['tab-1'] },
+      };
+      const mockService = {
+        getExportData: vi.fn().mockResolvedValue(mockV2Data),
+      };
+
+      const request = { action: MESSAGE_ACTIONS.EXPORT_TABS };
+      const result = await MESSAGE_HANDLERS[MESSAGE_ACTIONS.EXPORT_TABS](request, mockService);
+
+      expect(mockService.getExportData).toHaveBeenCalled();
+      expect(result).toEqual(mockV2Data);
     });
   });
 

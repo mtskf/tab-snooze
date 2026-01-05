@@ -32,6 +32,8 @@ export const MESSAGE_ACTIONS = {
   CLEAR_ALL_SNOOZED_TABS: 'clearAllSnoozedTabs',
   REMOVE_WINDOW_GROUP: 'removeWindowGroup',
   RESTORE_WINDOW_GROUP: 'restoreWindowGroup',
+  IMPORT_TABS: 'importTabs',
+  EXPORT_TABS: 'exportTabs',
 };
 
 /**
@@ -96,11 +98,18 @@ export function validateMessageRequest(request) {
       }
       break;
 
+    case MESSAGE_ACTIONS.IMPORT_TABS:
+      if (!request.data || typeof request.data !== 'object') {
+        errors.push('importTabs requires data object');
+      }
+      break;
+
     // These actions require no additional properties
     case MESSAGE_ACTIONS.GET_SNOOZED_TABS:
     case MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2:
     case MESSAGE_ACTIONS.GET_SETTINGS:
     case MESSAGE_ACTIONS.CLEAR_ALL_SNOOZED_TABS:
+    case MESSAGE_ACTIONS.EXPORT_TABS:
       break;
   }
 
@@ -180,6 +189,14 @@ export const MESSAGE_HANDLERS = {
   [MESSAGE_ACTIONS.RESTORE_WINDOW_GROUP]: async (request, { restoreWindowGroup }) => {
     await restoreWindowGroup(request.groupId);
     return { success: true };
+  },
+
+  [MESSAGE_ACTIONS.IMPORT_TABS]: async (request, { importTabs }) => {
+    return await importTabs(request.data);
+  },
+
+  [MESSAGE_ACTIONS.EXPORT_TABS]: async (request, { getExportData }) => {
+    return await getExportData();
   },
 };
 
