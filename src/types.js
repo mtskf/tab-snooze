@@ -117,10 +117,10 @@
  */
 
 /**
- * Request: Set snoozed tabs (overwrite with V2 data)
+ * Request: Set snoozed tabs (overwrite, V1/V2 auto-detected and migrated)
  * @typedef {Object} SetSnoozedTabsRequest
  * @property {"setSnoozedTabs"} action
- * @property {StorageV2} data - V2 format data to save
+ * @property {Object} data - V1 legacy format or V2 data (auto-detected and migrated)
  */
 
 /**
