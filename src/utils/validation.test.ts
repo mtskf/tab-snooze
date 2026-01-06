@@ -2,10 +2,47 @@ import { describe, it, expect } from 'vitest';
 import {
   validateTabEntry,
   validateSnoozedTabsV2,
-  sanitizeSnoozedTabsV2
+  sanitizeSnoozedTabsV2,
+  isRestorableUrl
 } from './validation';
 
 describe('validation', () => {
+  describe('isRestorableUrl', () => {
+    it('should accept valid http/https URLs', () => {
+      expect(isRestorableUrl('https://example.com')).toBe(true);
+      expect(isRestorableUrl('http://example.com')).toBe(true);
+      expect(isRestorableUrl('https://example.com/path?query=1')).toBe(true);
+    });
+
+    it('should reject empty/whitespace strings', () => {
+      expect(isRestorableUrl('')).toBe(false);
+      expect(isRestorableUrl('   ')).toBe(false);
+      expect(isRestorableUrl('\t\n')).toBe(false);
+    });
+
+    it('should reject non-string values', () => {
+      expect(isRestorableUrl(null)).toBe(false);
+      expect(isRestorableUrl(undefined)).toBe(false);
+      expect(isRestorableUrl(123)).toBe(false);
+      expect(isRestorableUrl({})).toBe(false);
+    });
+
+    it('should reject invalid URLs', () => {
+      expect(isRestorableUrl('not-a-url')).toBe(false);
+      expect(isRestorableUrl('://invalid')).toBe(false);
+    });
+
+    it('should reject restricted protocols', () => {
+      expect(isRestorableUrl('chrome://extensions')).toBe(false);
+      expect(isRestorableUrl('chrome-extension://id/page.html')).toBe(false);
+      expect(isRestorableUrl('file:///local/path')).toBe(false);
+      expect(isRestorableUrl('about:blank')).toBe(false);
+      expect(isRestorableUrl('edge://settings')).toBe(false);
+      expect(isRestorableUrl('brave://settings')).toBe(false);
+    });
+  });
+
+
   describe('validateTabEntry', () => {
     it('should validate a complete tab entry', () => {
       const tab = {

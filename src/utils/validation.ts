@@ -1,4 +1,24 @@
 import type { SnoozedItemV2, ValidationResult } from '../types';
+import { RESTRICTED_PROTOCOLS } from './constants';
+
+/**
+ * Validates if a URL is restorable (valid format, not restricted protocol)
+ * Used by both snooze logic and schema migration
+ */
+export function isRestorableUrl(url: unknown): url is string {
+  if (typeof url !== 'string' || url.trim() === '') {
+    return false;
+  }
+  try {
+    const parsed = new URL(url);
+    if (RESTRICTED_PROTOCOLS.some(p => parsed.protocol === p)) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Required fields for a valid tab entry

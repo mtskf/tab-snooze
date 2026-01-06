@@ -7,8 +7,8 @@
 import type { SnoozedItemV2, StorageV2, Settings, RecoveryResult } from '../types';
 import { generateUUID } from '../utils/uuid';
 import { storage, tabs, windows, notifications } from '../utils/ChromeApi';
-import { validateSnoozedTabsV2, sanitizeSnoozedTabsV2 } from '../utils/validation';
-import { DEFAULT_SETTINGS, RESTRICTED_PROTOCOLS, BACKUP_COUNT, BACKUP_DEBOUNCE_MS, BACKUP_PREFIX, WARNING_THRESHOLD, CLEAR_THRESHOLD, THROTTLE_MS } from '../utils/constants';
+import { validateSnoozedTabsV2, sanitizeSnoozedTabsV2, isRestorableUrl } from '../utils/validation';
+import { DEFAULT_SETTINGS, BACKUP_COUNT, BACKUP_DEBOUNCE_MS, BACKUP_PREFIX, WARNING_THRESHOLD, CLEAR_THRESHOLD, THROTTLE_MS } from '../utils/constants';
 import { getSettingsWithDefaults } from '../utils/settingsHelper';
 import { ensureValidStorage } from './schemaVersioning';
 
@@ -479,14 +479,8 @@ async function addSnoozedTab(tab: TabInput, popTime: Date, groupId: string | nul
 export async function snooze(tab: TabInput, popTime: number, groupId: string | null = null): Promise<void> {
   const popTimeObj = new Date(popTime);
 
-  try {
-    const url = new URL(tab.url);
-    if (RESTRICTED_PROTOCOLS.some(p => url.protocol === p)) {
-      console.warn(`Skipping restricted URL: ${tab.url}`);
-      return;
-    }
-  } catch (e) {
-    console.warn("Invalid URL for snooze:", tab.url);
+  if (!isRestorableUrl(tab.url)) {
+    console.warn("Skipping invalid/restricted URL:", tab.url);
     return;
   }
 
