@@ -2,12 +2,12 @@
 module.exports = {
   darkMode: ["class"],
   content: [
-    './pages/**/*.{js,jsx}',
-    './components/**/*.{js,jsx}',
-    './app/**/*.{js,jsx}',
-    './src/**/*.{js,jsx}',
-    './popup/**/*.{html,js,jsx}', // temporary support
-    './options/**/*.{html,js,jsx}' // temporary support
+    './pages/**/*.{js,jsx,ts,tsx}',
+    './components/**/*.{js,jsx,ts,tsx}',
+    './app/**/*.{js,jsx,ts,tsx}',
+    './src/**/*.{html,js,jsx,ts,tsx}',
+    './popup/**/*.{html,js,jsx,ts,tsx}', // temporary support
+    './options/**/*.{html,js,jsx,ts,tsx}' // temporary support
   ],
   prefix: "",
   theme: {
