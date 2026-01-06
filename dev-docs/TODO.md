@@ -13,14 +13,6 @@
 
 ## Refactoring & Maintenance
 
-### ⚠️ Medium
-
-- [ ] 🔧 [M] **ストレージ取得の一本化** - `getStorageV2` / `ensureValidStorage` / `getValidatedSnoozedTabs` を統合
-- [ ] 🔧 [S] **メッセージ送信の一本化** - `messages.ts` に統一、`ChromeApi.sendMessage` を削除
-- [ ] 🔧 [L] **`snoozeLogic.ts` の分割** - 責務ごとにモジュール化（~900行）
-
----
-
 ### ✅ Done
 
 - [x] 🔧 [L] **TypeScriptへの移行** (PR #103, #107, #108, #109, #110)
