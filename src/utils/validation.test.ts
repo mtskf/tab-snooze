@@ -184,6 +184,42 @@ describe('validation', () => {
       expect(sanitized.schedule['1704067200000']).toBeUndefined();
     });
 
+    it('should remove items with non-restorable URLs (chrome://, etc.)', () => {
+      const data = {
+        items: {
+          'uuid-1': { id: 'uuid-1', url: 'chrome://extensions', creationTime: 1704000000000, popTime: 1704067200000 },
+          'uuid-2': { id: 'uuid-2', url: 'chrome-extension://abc123/page.html', creationTime: 1704000000000, popTime: 1704067200000 },
+          'uuid-3': { id: 'uuid-3', url: 'https://valid.com', creationTime: 1704000000000, popTime: 1704067200000 }
+        },
+        schedule: {
+          '1704067200000': ['uuid-1', 'uuid-2', 'uuid-3']
+        }
+      };
+      const sanitized = sanitizeSnoozedTabsV2(data);
+      expect(Object.keys(sanitized.items)).toHaveLength(1);
+      expect(sanitized.items['uuid-1']).toBeUndefined();
+      expect(sanitized.items['uuid-2']).toBeUndefined();
+      expect(sanitized.items['uuid-3']).toBeDefined();
+      expect(sanitized.schedule['1704067200000']).toEqual(['uuid-3']);
+    });
+
+    it('should remove items with other restricted protocols', () => {
+      const data = {
+        items: {
+          'uuid-1': { id: 'uuid-1', url: 'file:///local/path', creationTime: 1704000000000, popTime: 1704067200000 },
+          'uuid-2': { id: 'uuid-2', url: 'about:blank', creationTime: 1704000000000, popTime: 1704067200000 },
+          'uuid-3': { id: 'uuid-3', url: 'edge://settings', creationTime: 1704000000000, popTime: 1704067200000 },
+          'uuid-4': { id: 'uuid-4', url: 'brave://settings', creationTime: 1704000000000, popTime: 1704067200000 }
+        },
+        schedule: {
+          '1704067200000': ['uuid-1', 'uuid-2', 'uuid-3', 'uuid-4']
+        }
+      };
+      const sanitized = sanitizeSnoozedTabsV2(data);
+      expect(Object.keys(sanitized.items)).toHaveLength(0);
+      expect(sanitized.schedule['1704067200000']).toBeUndefined();
+    });
+
     it('should preserve valid items and schedule', () => {
       const data = {
         items: {

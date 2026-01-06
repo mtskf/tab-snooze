@@ -149,7 +149,7 @@ export function sanitizeSnoozedTabsV2(v2Data: unknown): SanitizedV2Data {
 
       const entryResult = validateTabEntry(item);
       const itemObj = item as Record<string, unknown>;
-      if (entryResult.valid && itemObj.id === id) {
+      if (entryResult.valid && itemObj.id === id && isRestorableUrl(itemObj.url)) {
         items[id] = item as SnoozedItemV2;
       }
     }
