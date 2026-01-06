@@ -303,7 +303,9 @@ describe('Options', () => {
       );
     });
 
-    expect(screen.getByText('Storage is almost full')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Storage is almost full')).toBeInTheDocument();
+    });
   });
 
   it('clears all tabs only when confirmed', async () => {

@@ -17,6 +17,7 @@ describe('Dialog', () => {
         <DialogTrigger>Open Dialog</DialogTrigger>
         <DialogContent>
           <DialogTitle>Test Title</DialogTitle>
+          <DialogDescription>Test description</DialogDescription>
         </DialogContent>
       </Dialog>
     );
@@ -49,6 +50,7 @@ describe('Dialog', () => {
         <DialogTrigger>Open Dialog</DialogTrigger>
         <DialogContent>
           <DialogTitle>Test Title</DialogTitle>
+          <DialogDescription>Test description</DialogDescription>
         </DialogContent>
       </Dialog>
     );
@@ -69,6 +71,7 @@ describe('Dialog', () => {
       <Dialog open={true} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogTitle>Controlled Dialog</DialogTitle>
+          <DialogDescription>Controlled description</DialogDescription>
         </DialogContent>
       </Dialog>
     );
