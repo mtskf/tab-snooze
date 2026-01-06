@@ -1,9 +1,52 @@
 # TODO
 
+> [!IMPORTANT]
+> **Always keep this list sorted by Priority (High > Medium > Low).**
+
 **Legend**:
+
 - **Priority**: 🚨 High | ⚠️ Medium | 💡 Low
-- **Type**: ✨ Feature | 🔧 Refactor | 🐛 Bug | ⚡ Performance | 📦 Infra
+- **Type**: ✨ Feature | 🔧 Refactor | 🐛 Bug | ⚡ Performance | 📦 Infra | 🧪 Test
 - **Scope**: [S] Small | [M] Medium | [L] Large
+
+---
+
+## 🤖 AI Agent Infrastructure
+
+> AI自律開発の基盤。これらがないとエージェントは自己検証できない。
+
+### 🚨 High
+
+- [ ] 📦 [M] **Validation Scripts の整備**
+  - `npm run type-check` (tsc --noEmit)
+  - `npm run lint` (ESLint + Prettier)
+  - `npm run verify` (type-check → lint → test → build を順次実行)
+  - `tools/verify.sh` でローカル一括検証
+
+- [ ] 📦 [M] **CI/CD の導入**
+  - `.github/workflows/verify.yml`: PR時に `npm run verify` 実行
+  - カバレッジレポート、マージブロック設定
+
+### ⚠️ Medium
+
+- [ ] 📦 [S] **CONTRIBUTING.md の作成**
+  - 開発セットアップ手順、コマンド集
+  - PR要件、TDDルール、型安全ガイドライン
+  - dev-docs/ へのリンク
+
+- [ ] 📦 [S] **ESLint + Prettier 設定の追加**
+  - TypeScript/React対応ルール
+  - `husky` + `lint-staged` で pre-commit フック
+
+- [ ] 🧪 [S] **テストカバレッジ閾値の設定**
+  - `vitest.config.ts`: lines 80%, branches 70%
+  - CI で低下時にマージブロック
+
+### 💡 Low
+
+- [ ] 📦 [M] `tools/release.sh` の作成 - zip生成、manifest調整、バージョンバンプ自動化
+
+- [ ] 🧪 [M] E2E テストの導入調査 - Playwright等でモックなしのブラウザテスト
 
 ---
 
@@ -11,109 +54,106 @@
 
 ### ⚠️ Medium
 
-- [ ] 🔧 [L] **TypeScriptへの移行** (プロジェクトルール準拠) - Phase 7/8 完了
-  - ✅ Phase 1: インフラ整備 (tsconfig, vite.config.ts, @types/chrome)
-  - ✅ Phase 2: 型定義 (types.ts)
-  - ✅ Phase 3: ユーティリティ層 (utils/*.ts)
-  - ✅ Phase 4: メッセージング層 (messages.ts)
-  - ✅ Phase 5: バックグラウンド層 (background/*.ts)
-  - ✅ Phase 6: Reactコンポーネント層 (popup/*.tsx, options/*.tsx, components/ui/*.tsx)
-  - ✅ Phase 7: テストセットアップ (setup.ts, jest-dom/vitest型)
-  - ⏳ Phase 8: クリーンアップ (allowJs: false) - 保留
+#### 📐 アーキテクチャ・ドキュメント
 
----
+- [ ] 🔧 [M] **ARCHITECTURE.md の強化**
+  - エグゼクティブサマリー（1ページ概要）追加
+  - データフロー図の明示セクション化
+  - V2データモデル、メッセージ契約、snooze/restoreフロー
+
+- [ ] 🔧 [S] URL検証の境界ルール（`validateTabEntry` vs `isRestorableUrl`）を設計メモに追記
+
+#### 🧹 コード統合・簡素化
+
+- [ ] 🔧 [M] **ストレージ取得の一本化**
+  - `getStorageV2` / `ensureValidStorage` / `getValidatedSnoozedTabs` を統合
+
+- [ ] 🔧 [S] メッセージ送信の一本化 - `messages.ts` に統一、`ChromeApi.sendMessage` を削除
+
+- [ ] 🔧 [S] `uuid.ts` の削除 - `crypto.randomUUID()` へ置換（Chrome 92+対応済み）
+
+- [ ] 🔧 [S] `ACTION_ICONS` マッピングの統合 - `ShortcutEditor.tsx`/`Popup.tsx` から `constants.ts` へ移動
+
+- [ ] 🔧 [S] `formatDay`/`formatTime` を `timeUtils.ts` へ移動（現在 `SnoozedList.tsx` にインライン定義）
+
+- [ ] 🔧 [S] JSDoc `@typedef` の整理 - `snoozeLogic.ts`/`messages.ts` の冗長な定義を削除、`types.ts` に統一
+
+#### 🏗️ ロジック分離
+
+- [ ] 🔧 [M] **`Options.tsx` のロジック分離**
+  - `useSnoozeActions`, `useOptionsState` などカスタムフックへ分離
+
+- [ ] 🔧 [M] **`SnoozedList.tsx` のグルーピングロジック分離**
+  - 日付/ウィンドウグループ化をフック/ユーティリティへ抽出
+  - ユニットテスト追加
+
+- [ ] 🔧 [M] **`Popup.tsx` のロジック分離**
+  - `useSnooze` フックへ抽出
+  - 早朝/週末/終了時間判定を `timeUtils.ts` と共通化
+
+- [ ] 🔧 [S] `snoozeLogic.ts` にセクション見出しを追加（分割の前段階）
+
+- [ ] 🔧 [L] `snoozeLogic.ts` の分割（上記整理後に実施）
+
+#### ⚙️ システム改善
+
+- [ ] 🔧 [L] **Functional Core / Imperative Shell パターンの導入**
+  - 純粋ロジックと Chrome I/O を分離
+  - `Date.now()` を依存注入化（テスト性向上）
+
+- [ ] 🔧 [M] エラーハンドリングの統一 - ログレベル制御、通知の一元化
+
+- [ ] 🔧 [S] `serviceWorker.ts` の再整理 - マジックナンバー排除、`checkPendingRecoveryNotification` 分離
+
+- [ ] 🔧 [S] `serviceWorker.ts` の `clearAllSnoozedTabs` を専用メッセージハンドラ化
+
+- [ ] 🔧 [S] 未使用importの整理 - `getSnoozedTabs` 等
 
 ### 💡 Low
 
-- [ ] 🔧 [M] `SnoozedList.tsx` の表示ロジック（グルーピング）をフック/ユーティリティに分離し、ユニットテストを強化する。
-   - 現在UI内にインライン記述されている複雑な日付/ウィンドウグループ化ロジックをテスト可能な形にする。
+#### 🐛 バグ・堅牢性
 
-- [ ] 🔧 [S] `Popup.tsx` と `timeUtils.ts` で重複する「早朝/週末/終了時間判定」ロジックを共通化する。
+- [ ] 🐛 [S] 非同期処理中のアンマウント時 `setState` ガード追加（`Options`/`Popup`）
 
-- [ ] 🔧 [M] ストレージ取得の一本化（`getStorageV2` / `ensureValidStorage` / `getValidatedSnoozedTabs` を統合）。
+- [ ] 🐛 [S] キーボードショートカット無効化対象を拡張（`textarea`/`select`/`contenteditable`）
 
+#### ✨ 機能改善
 
-- [ ] 🔧 [S] メッセージ送信の一本化（`messages.ts`に統一し、`ChromeApi`側の`sendMessage`を削除）。
+- [ ] ✨ [M] インポート時の重複タブデデュープ実装（キー: `url`+`popTime`）
 
-- [ ] ✨ [M] インポート時に重複タブをデデュープする方針を決めて実装する（キー設計: `url`+`popTime`など）。
+#### 🧪 テスト改善
 
-- [ ] 🔧 [M] Popupのロジック分離と共通化。
-   - `Popup` ロジックを `useSnooze` フックへ分離。
+- [ ] 🧪 [M] `timeUtils.ts` のエッジケーステスト強化（日付またぎ、DST、不正入力）
 
-- [ ] 🔧 [L] `snoozeLogic.ts` の分割（スキーマ整理後に実施）。
+- [ ] 🧪 [M] Reactコンポーネントのパフォーマンス/a11yレビュー（再レンダリング、focus管理、ARIA）
 
-- [ ] 🔧 [L] Functional Core / Imperative Shell に分離（純粋ロジックと `chrome` I/O を分けてテスト容易性を上げる）。
-   - Clock/Now の依存注入（`Date.now()` 直呼び排除でテスト性/再現性を向上）。
+- [ ] 🧪 [S] `FailedTabsDialog` 統合テストのURL制御を `history.pushState` ベースに改善
 
-- [ ] 🔧 [M] エラーハンドリングの統一（ログレベル制御、通知の一元化）※`ChromeApi`導入後に実施。
-
-- [ ] 🔧 [S] データフローを`ARCHITECTURE.md`に明示セクション化。
-
-- [ ] 🔧 [S] `serviceWorker.ts`の`clearAllSnoozedTabs`アクションで、専用の`clearAll`メッセージハンドラを使い、V2ストアを直接クリアするようリファクタリングする。
-
-- [ ] 🐛 [S] 非同期処理中にコンポーネントがアンマウントされた場合の`setState`ガードを追加する（`Options`/`Popup`）。
-
-- [ ] 🐛 [S] キーボードショートカットの無効化対象を`input`以外（`textarea`/`select`/`contenteditable`）にも拡張する。
-
-- [ ] 🔧 [S] `serviceWorker.ts`の再整理 - `setTimeout`のマジックナンバー排除、`checkPendingRecoveryNotification`のロジック分離。
-
-- [ ] 🧪 [M] 統合テスト(E2E)の導入調査 - モックに頼らない実際のブラウザ挙動(Playwright等)での復元テスト。
-
-- [ ] 🔧 [S] 未使用importの整理 - `serviceWorker.ts`の`getSnoozedTabs`（`getValidatedSnoozedTabs`のみ使用）、Options/Popupなど。
-
-- [ ] 🧪 [S] OptionsのFailedTabsDialog統合テストで`window.location`再定義を避け、`history.pushState`を使ったより堅牢なURL制御に置き換える（低優先）。
-
----
-
-#### 💡 低リスク簡素化（Phase 1）
-
-- [ ] 🔧 [S] `uuid.ts`の削除 - `crypto.randomUUID()`へ置換（Chrome 92+/Firefox 95+対応済み）。
-
-- [ ] 🔧 [S] `ACTION_ICONS`マッピングの統合 - `ShortcutEditor.tsx` と `Popup.tsx` で重複定義。`constants.ts`に移動。
-
-- [ ] 🔧 [S] `formatDay`/`formatTime` を `timeUtils.ts` に移動 - 現在 `SnoozedList.tsx` にインライン定義。
-
-- [ ] 🔧 [M] `timeUtils.ts`のテストカバレッジを向上させる。特に、`later-today`の日付またぎ、タイムゾーンまたぎ（DST）、不正な入力形式など、エッジケースを網羅する。
-
-- [ ] 🔧 [M] Reactコンポーネント（`Popup.tsx`, `Options.tsx`, `SnoozedList.tsx`）のパフォーマンス/アクセシビリティ/ベストプラクティスを、具体的観点（再レンダリングの原因、focus管理、ARIA）でレビューする。
-
-- [ ] 🔧 [S] ユーティリティ（`timeUtils.ts`, `uuid.ts`）の改善余地を観点ベースでレビューする（API表面, 境界値, テスト欠落）。
-
-- [ ] 🔧 [S] JSDoc型定義の整理 - `snoozeLogic.ts` や `messages.ts` に残っている冗長な `@typedef` を削除し、`types.ts` からのインポートに統一する。
-
-- [ ] 📦 [M] Claude CodeのコミットをCodexで自動レビューするよう導線を整備（post-commitフック + `tools/codex-review.sh` でレビュー生成→クリップボード送信）。
+- [ ] 🔧 [S] テスト用 `chrome` モック最小契約を `setup.ts` 近くに明記
 
 ---
 
 ### ✅ Done
 
+- [x] 🔧 [L] **TypeScriptへの移行** (PR #103, #107, #108, #109, #110)
+  - Phase 1-8 完了: インフラ → 型定義 → ユーティリティ → メッセージング → バックグラウンド → React → テスト → クリーンアップ (`allowJs: false`)
+
 - [x] 🔧 [L] **V2一本化の完了** (PR #100, #101, #102)
-  1. StorageService V2対応 + Selector層追加
-  2. UI V2直表示へ移行
-  3. Import/Exportロジックをバックグラウンドへ移動
-  4. V1アダプタ/バリデーション/レガシーコード撤去 (~430行削除)
+  - StorageService V2対応、UI直接表示、Import/Export移動、レガシーコード撤去 (~430行削除)
 
-- [x] 🐛 `snoozeLogic.ts`のタブ復元失敗時のロジック改善
-  1. `restoreTabs`内でリトライを行う（200ms間隔で最大3回）。
-  2. 最終的に失敗したタブは5分後に再スケジュールし、通知を表示。
-  3. 通知クリックでOptionsを開き、失敗タブ一覧をDialog（shadcn/ui）で表示。
+- [x] 🐛 `snoozeLogic.ts` のタブ復元失敗時ロジック改善
+  - リトライ（200ms×3回）、5分後再スケジュール、通知→FailedTabsDialog
 
-- [x] 🔧 JSDoc型定義（`SnoozedItemV2`, `ScheduleV2`, `Settings`等）を追加。
+- [x] 🔧 メッセージ契約の作成・接続（`messages.ts`）
 
-- [x] 🔧 メッセージ契約の作成（`src/messages.ts` - `MESSAGE_ACTIONS`, `validateMessageRequest`, `MESSAGE_HANDLERS`, `sendMessage`）。
+- [x] 🔧 Chrome APIラッパー（`ChromeApi.ts`）
 
-- [x] 🔧 Chrome APIラッパーの作成（`src/utils/ChromeApi.ts` - storage, tabs, windows, notifications, alarms, runtime の統一ラッパー）。
+- [x] 🐛 V2サニタイズ時のversion保持
 
-- [x] 🐛 V2サニタイズ時のversion保持（`getValidatedSnoozedTabs`/`recoverFromBackup` の保存前に `version` を付与）。
+- [x] 🐛 schemaVersioningの配列検出
 
-- [x] 🐛 schemaVersioningの配列検出（`detectSchemaVersion` は配列を無効扱いにする）。
+- [x] 🔧 `Options.tsx` の設定書き込みをメッセージ経由に変更
 
-- [x] 🔧 `Options.tsx`の設定書き込みが背景APIをバイパス - `updateSetting`を`chrome.storage.local.set`から`chrome.runtime.sendMessage({ action: 'setSettings' })`に変更（TDDで実装）。
+- [x] 🔧 `getSettings` の統合（`snoozeLogic.ts` → `timeUtils.ts`）
 
-- [x] 🔧 メッセージ契約の接続（`messages.ts` の `MESSAGE_ACTIONS`/`dispatchMessage`/`sendMessage` を service worker / UI に適用）。
-
-- [x] 🔧 重複した`getSettings`の統合 - `snoozeLogic.ts` と `timeUtils.ts` に同一の関数が存在。`snoozeLogic.ts`のものを正とし、`timeUtils.ts`はimportに変更する。
-
-- [x] 🔧 `timeUtils.ts`の`getTime()`にエラーハンドリングを追加し、取得失敗時は`DEFAULT_SETTINGS`へ安全にフォールバックする。
-
-- [x] 🔧 `timeUtils.ts`の`getSettings`依存を`snoozeLogic.ts`から切り離す（`ChromeApi`を直接使用）。
+- [x] 🔧 `timeUtils.ts` のエラーハンドリング追加

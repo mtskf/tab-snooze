@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import {
   checkStorageSize,
   getSnoozedTabsV2,
@@ -12,9 +12,17 @@ import {
   importTabs,
   getExportData,
 } from './snoozeLogic';
+import type { SnoozedItemV2 } from '../types';
 
-vi.mock('../utils/uuid.js', async (importOriginal) => {
-  const actual = await importOriginal();
+// Type for V2 storage data in tests (version is optional for flexibility)
+interface TestStorageV2 {
+  version?: number;
+  items: Record<string, SnoozedItemV2>;
+  schedule: Record<string, string[]>;
+}
+
+vi.mock('../utils/uuid', async (importOriginal) => {
+  const actual = await importOriginal() as { generateUUID: () => string };
   return {
     ...actual,
     generateUUID: vi.fn(actual.generateUUID),
@@ -60,11 +68,11 @@ const MOCK_TIME = 1625097600000;
 const TAB_URL = 'https://example.com';
 const TAB_TITLE = 'Example';
 
-const createV2Data = (items = {}, schedule = {}) => ({
+const createV2Data = (items: Record<string, SnoozedItemV2> = {}, schedule: Record<string, string[]> = {}): { snoooze_v2: TestStorageV2 } => ({
   snoooze_v2: { items, schedule }
 });
 
-const createItem = (id, popTime, overrides = {}) => ({
+const createItem = (id: string, popTime: number, overrides: Partial<SnoozedItemV2> = {}): SnoozedItemV2 => ({
   id,
   url: TAB_URL,
   title: TAB_TITLE,
@@ -142,37 +150,36 @@ describe('snoozeLogic.js (V2)', () => {
         };
         chromeMock.storage.local.get.mockResolvedValue(legacy);
 
-        const originalImpl = generateUUID.getMockImplementation();
-        generateUUID.mockImplementation(() => 'new-id');
+        const originalImpl = (generateUUID as Mock).getMockImplementation() ?? (() => crypto.randomUUID());
+        (generateUUID as Mock).mockImplementation(() => 'new-id');
 
         await initStorage();
 
-        const v2Call = chromeMock.storage.local.set.mock.calls.find(
-            (call) => call[0].snoooze_v2
-        );
+        const mockCalls = chromeMock.storage.local.set.mock.calls as Array<[Record<string, unknown>]>;
+        const v2Call = mockCalls.find((call) => call[0].snoooze_v2);
         expect(v2Call).toBeTruthy();
 
-        const { items, schedule } = v2Call[0].snoooze_v2;
+        const { items, schedule } = v2Call![0].snoooze_v2 as TestStorageV2;
         expect(Object.keys(items)).toHaveLength(2);
         expect(Object.keys(items)).toEqual(expect.arrayContaining(['dup-id', 'new-id']));
         expect(schedule[MOCK_TIME]).toEqual(expect.arrayContaining(['dup-id', 'new-id']));
 
-        generateUUID.mockImplementation(originalImpl);
+        (generateUUID as Mock).mockImplementation(originalImpl);
     });
 
     test('snooze - saves to V2 items and schedule w/ ID', async () => {
-        const popTime = new Date(MOCK_TIME + 3600000);
+        const popTime = MOCK_TIME + 3600000;
         const tab = { url: TAB_URL, title: TAB_TITLE, index: 0, id: 99 };
 
         await snooze(tab, popTime);
 
         expect(chromeMock.storage.local.set).toHaveBeenCalled();
-        const callArg = chromeMock.storage.local.set.mock.calls[0][0];
+        const callArg = chromeMock.storage.local.set.mock.calls[0][0] as { snoooze_v2: TestStorageV2 };
         expect(callArg.snoooze_v2).toBeDefined();
 
         const ids = Object.keys(callArg.snoooze_v2.items);
         expect(ids.length).toBe(1);
-        expect(callArg.snoooze_v2.schedule[popTime.getTime()]).toContain(ids[0]);
+        expect(callArg.snoooze_v2.schedule[popTime]).toContain(ids[0]);
     });
 
     test('popCheck - restores valid tabs from V2', async () => {
@@ -195,7 +202,9 @@ describe('snoozeLogic.js (V2)', () => {
 
         // Verify cleanup
         expect(chromeMock.storage.local.set).toHaveBeenCalled();
-        const verifyCall = chromeMock.storage.local.set.mock.lastCall[0];
+        const lastCall = chromeMock.storage.local.set.mock.lastCall;
+        expect(lastCall).toBeDefined();
+        const verifyCall = lastCall![0] as { snoooze_v2: TestStorageV2 };
         expect(verifyCall.snoooze_v2.items[id]).toBeUndefined();
     });
 
@@ -218,15 +227,18 @@ describe('snoozeLogic.js (V2)', () => {
             { [popTime]: [id] }
         ));
 
-        await removeSnoozedTabWrapper({ id: id, popTime: popTime });
+        // Test with minimal data - full item exists in storage
+        await removeSnoozedTabWrapper({ id: id } as unknown as SnoozedItemV2);
 
         expect(chromeMock.storage.local.set).toHaveBeenCalled();
-        const setCall = chromeMock.storage.local.set.mock.lastCall[0];
+        const lastCall = chromeMock.storage.local.set.mock.lastCall;
+        expect(lastCall).toBeDefined();
+        const setCall = lastCall![0] as { snoooze_v2: TestStorageV2 };
         expect(setCall.snoooze_v2.items[id]).toBeUndefined();
     });
 
     test('RESTRICTED_PROTOCOLS prevent saving', async () => {
-        const popTime = new Date(MOCK_TIME + 1000);
+        const popTime = MOCK_TIME + 1000;
         const tab = { url: 'chrome://settings', title: 'Settings', id: 1 };
 
         await snooze(tab, popTime);
@@ -529,12 +541,11 @@ describe('snoozeLogic.js (V2)', () => {
             await runPopCheckWithTimers(RETRY_DELAY_MS * 2);
 
             // Find the call that saved snoooze_v2
-            const v2SetCall = chromeMock.storage.local.set.mock.calls.find(
-                call => call[0].snoooze_v2
-            );
+            const mockCalls1 = chromeMock.storage.local.set.mock.calls as Array<[Record<string, unknown>]>;
+            const v2SetCall = mockCalls1.find((call) => call[0].snoooze_v2);
             expect(v2SetCall).toBeDefined();
-            expect(v2SetCall[0].snoooze_v2.items[id]).toBeUndefined();
-            expect(v2SetCall[0].snoooze_v2.schedule[popTime]).toBeUndefined();
+            expect((v2SetCall![0].snoooze_v2 as TestStorageV2).items[id]).toBeUndefined();
+            expect((v2SetCall![0].snoooze_v2 as TestStorageV2).schedule[popTime]).toBeUndefined();
         });
 
         test('should reschedule tab to future time after all retries fail', async () => {
@@ -553,11 +564,10 @@ describe('snoozeLogic.js (V2)', () => {
             await runPopCheckWithTimers();
 
             // Find the last call that saved snoooze_v2 (reschedule happens after cleanup)
-            const v2SetCalls = chromeMock.storage.local.set.mock.calls.filter(
-                call => call[0].snoooze_v2
-            );
+            const mockCalls = chromeMock.storage.local.set.mock.calls as Array<[Record<string, unknown>]>;
+            const v2SetCalls = mockCalls.filter((call) => call[0].snoooze_v2);
             expect(v2SetCalls.length).toBeGreaterThan(0);
-            const lastV2Call = v2SetCalls[v2SetCalls.length - 1][0];
+            const lastV2Call = v2SetCalls[v2SetCalls.length - 1][0] as { snoooze_v2: TestStorageV2 };
 
             // Tab should be rescheduled approximately 5 minutes from current time
             // Allow for timer drift during test execution
@@ -685,14 +695,14 @@ describe('snoozeLogic.js (V2)', () => {
             };
 
             // Mock storage.get to return existing V2 data
-            chromeMock.storage.local.get.mockImplementation((keys) => {
+            chromeMock.storage.local.get.mockImplementation((keys: string | string[] | null) => {
                 if (keys === null) {
                     return Promise.resolve({ snoooze_v2: existingV2 });
                 }
                 if (keys === 'snoooze_v2') {
                     return Promise.resolve({ snoooze_v2: existingV2 });
                 }
-                if (keys.includes('snoozedTabs')) {
+                if (Array.isArray(keys) && keys.includes('snoozedTabs')) {
                     return Promise.resolve({ snoozedTabs: newLegacyData });
                 }
                 return Promise.resolve({});
@@ -701,12 +711,11 @@ describe('snoozeLogic.js (V2)', () => {
             await setSnoozedTabs(newLegacyData);
 
             // Should have saved V2 data derived from newLegacyData, not existingV2
-            const setCall = chromeMock.storage.local.set.mock.calls.find(
-                (call) => call[0].snoooze_v2
-            );
+            const mockCalls = chromeMock.storage.local.set.mock.calls as Array<[Record<string, unknown>]>;
+            const setCall = mockCalls.find((call) => call[0].snoooze_v2);
             expect(setCall).toBeTruthy();
 
-            const savedV2 = setCall[0].snoooze_v2;
+            const savedV2 = setCall![0].snoooze_v2 as TestStorageV2;
             expect(savedV2.version).toBe(2);
 
             // Should contain tab from newLegacyData with TAB_URL
@@ -723,11 +732,10 @@ describe('snoozeLogic.js (V2)', () => {
 
             await setSnoozedTabs({ tabCount: 0 });
 
-            const setCall = chromeMock.storage.local.set.mock.calls.find(
-                (call) => call[0].snoooze_v2
-            );
+            const mockCalls = chromeMock.storage.local.set.mock.calls as Array<[Record<string, unknown>]>;
+            const setCall = mockCalls.find((call) => call[0].snoooze_v2);
             expect(setCall).toBeTruthy();
-            expect(setCall[0].snoooze_v2).toEqual({
+            expect(setCall![0].snoooze_v2).toEqual({
                 version: 2,
                 items: {},
                 schedule: {}
@@ -745,12 +753,11 @@ describe('snoozeLogic.js (V2)', () => {
 
             await setSnoozedTabs(v2DataWithoutVersion);
 
-            const setCall = chromeMock.storage.local.set.mock.calls.find(
-                (call) => call[0].snoooze_v2
-            );
+            const mockCalls = chromeMock.storage.local.set.mock.calls as Array<[Record<string, unknown>]>;
+            const setCall = mockCalls.find((call) => call[0].snoooze_v2);
             expect(setCall).toBeTruthy();
 
-            const savedV2 = setCall[0].snoooze_v2;
+            const savedV2 = setCall![0].snoooze_v2 as TestStorageV2;
             expect(savedV2.version).toBe(2); // Version should be added
             expect(savedV2.items).toEqual(v2DataWithoutVersion.items);
             expect(savedV2.schedule).toEqual(v2DataWithoutVersion.schedule);
@@ -950,7 +957,7 @@ describe('snoozeLogic.js (V2)', () => {
             };
 
             // Mock UUID to return predictable value
-            generateUUID.mockReturnValueOnce('new-unique-id');
+            (generateUUID as Mock).mockReturnValueOnce('new-unique-id');
 
             const result = await importTabs(importData);
 
@@ -961,11 +968,10 @@ describe('snoozeLogic.js (V2)', () => {
             expect(generateUUID).toHaveBeenCalled();
 
             // Should save with both items (original + renamed)
-            const setCall = chromeMock.storage.local.set.mock.calls.find(
-                call => call[0].snoooze_v2
-            );
+            const mockCalls = chromeMock.storage.local.set.mock.calls as Array<[Record<string, unknown>]>;
+            const setCall = mockCalls.find((call) => call[0].snoooze_v2);
             expect(setCall).toBeTruthy();
-            const savedData = setCall[0].snoooze_v2;
+            const savedData = setCall![0].snoooze_v2 as TestStorageV2;
             expect(Object.keys(savedData.items)).toHaveLength(2);
             expect(savedData.items['collision-id']).toEqual(existingItem);
             expect(savedData.items['new-unique-id']).toBeDefined();
@@ -994,10 +1000,10 @@ describe('snoozeLogic.js (V2)', () => {
             expect(result.addedCount).toBe(1);
 
             // Schedule should not contain non-existent item
-            const setCall = chromeMock.storage.local.set.mock.calls.find(
-                call => call[0].snoooze_v2
-            );
-            const savedSchedule = setCall[0].snoooze_v2.schedule;
+            const mockCalls = chromeMock.storage.local.set.mock.calls as Array<[Record<string, unknown>]>;
+            const setCall = mockCalls.find((call) => call[0].snoooze_v2);
+            expect(setCall).toBeTruthy();
+            const savedSchedule = (setCall![0].snoooze_v2 as TestStorageV2).schedule;
             expect(savedSchedule[MOCK_TIME + 1000]).toEqual(['valid-tab']);
         });
 

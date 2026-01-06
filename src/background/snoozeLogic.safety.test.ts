@@ -1,18 +1,26 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { removeSnoozedTabWrapper, removeWindowGroup, restoreWindowGroup, snooze, popCheck, initStorage, recoverFromBackup } from './snoozeLogic';
+import type { SnoozedItemV2 } from '../types';
+
+// Type for V2 storage data in tests (version is optional for flexibility)
+interface TestStorageV2 {
+  version?: number;
+  items: Record<string, SnoozedItemV2>;
+  schedule: Record<string, string[]>;
+}
 
 // Helpers
 const MOCK_TIME = 1625097600000;
 const TAB_URL = 'https://example.com';
 
-const createV2Data = (items = {}, schedule = {}) => ({
+const createV2Data = (items: Record<string, SnoozedItemV2> = {}, schedule: Record<string, string[]> = {}): { snoooze_v2: TestStorageV2 } => ({
   snoooze_v2: {
     items,
     schedule
   }
 });
 
-const createItem = (id, popTime, overrides = {}) => ({
+const createItem = (id: string, popTime: number, overrides: Partial<SnoozedItemV2> = {}): SnoozedItemV2 => ({
   id,
   url: TAB_URL,
   creationTime: MOCK_TIME - 3600000,
@@ -21,7 +29,7 @@ const createItem = (id, popTime, overrides = {}) => ({
 });
 
 describe('snoozeLogic Safety Checks (V2)', () => {
-  let mockStorage = {};
+  let mockStorage: Record<string, unknown> = {};
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -29,7 +37,7 @@ describe('snoozeLogic Safety Checks (V2)', () => {
     vi.setSystemTime(MOCK_TIME);
     mockStorage = {};
 
-    global.chrome = {
+    globalThis.chrome = {
       windows: {
         getLastFocused: vi.fn(),
         create: vi.fn(),
@@ -40,12 +48,12 @@ describe('snoozeLogic Safety Checks (V2)', () => {
       },
       storage: {
         local: {
-          get: vi.fn((key) => {
+          get: vi.fn((key: string | string[] | null) => {
              if (key === null) return Promise.resolve(mockStorage);
              if (typeof key === 'string') return Promise.resolve({ [key]: mockStorage[key] });
              return Promise.resolve(mockStorage);
           }),
-          set: vi.fn((obj) => {
+          set: vi.fn((obj: Record<string, unknown>) => {
             Object.assign(mockStorage, obj);
             return Promise.resolve();
           }),
@@ -58,7 +66,7 @@ describe('snoozeLogic Safety Checks (V2)', () => {
         setBadgeBackgroundColor: vi.fn(),
       },
       notifications: { create: vi.fn() }
-    };
+    } as unknown as typeof chrome;
   });
 
   afterEach(() => {
@@ -69,7 +77,7 @@ describe('snoozeLogic Safety Checks (V2)', () => {
     mockStorage = {
       snoooze_v2: { items: 'oops', schedule: {} }
     };
-    chrome.storage.local.get.mockResolvedValue(mockStorage);
+    (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValue(mockStorage);
 
     await initStorage();
 
@@ -88,8 +96,9 @@ describe('snoozeLogic Safety Checks (V2)', () => {
 
   describe('removeSnoozedTabWrapper', () => {
     it('should not throw if storage is empty/null', async () => {
-      chrome.storage.local.get.mockResolvedValue({});
-      const tabToRemove = { id: 'missing' };
+      (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValue({});
+      // Test with minimal data to check defensive handling
+      const tabToRemove = { id: 'missing' } as unknown as SnoozedItemV2;
       await expect(removeSnoozedTabWrapper(tabToRemove)).resolves.not.toThrow();
       // Should not set new data if nothing found (optimization) or set same data
       // Current implementation saves anyway if it loaded successfully
@@ -98,14 +107,14 @@ describe('snoozeLogic Safety Checks (V2)', () => {
 
   describe('removeWindowGroup', () => {
     it('should not throw if storage is empty/null', async () => {
-      chrome.storage.local.get.mockResolvedValue({});
+      (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValue({});
       await expect(removeWindowGroup('some-group-id')).resolves.not.toThrow();
     });
   });
 
   describe('restoreWindowGroup', () => {
     it('should not throw if storage is empty/null', async () => {
-      chrome.storage.local.get.mockResolvedValue({});
+      (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValue({});
       await expect(restoreWindowGroup('some-group-id')).resolves.not.toThrow();
       expect(chrome.windows.create).not.toHaveBeenCalled();
     });
@@ -122,10 +131,10 @@ describe('snoozeLogic Safety Checks (V2)', () => {
             { 't1': item1, 't2': item2 },
             { [pastTime]: ['t1', 't2'] }
         );
-        chrome.storage.local.get.mockResolvedValue(mockStorage);
+        (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValue(mockStorage);
 
         // Mock partial success (only 1 tab restored)
-        global.chrome.windows.create = vi.fn().mockResolvedValue({
+        (chrome.windows.create as ReturnType<typeof vi.fn>).mockResolvedValue({
             id: 999,
             tabs: [{ id: 100, url: TAB_URL }] // Only 1 tab
         });
@@ -148,18 +157,18 @@ describe('snoozeLogic Safety Checks (V2)', () => {
   describe('snooze (Critical: save before close)', () => {
     it('should save to storage BEFORE removing tab', async () => {
       const tab = { id: 1, url: 'http://test.com', title: 'Test' };
-      const popTime = new Date();
-      const callOrder = [];
+      const popTime = Date.now() + 3600000;
+      const callOrder: string[] = [];
 
-      global.chrome.storage.local.set = vi.fn(() => {
+      (chrome.storage.local.set as ReturnType<typeof vi.fn>).mockImplementation(() => {
         callOrder.push('storage.set');
         return Promise.resolve();
       });
-      global.chrome.tabs.remove = vi.fn(() => {
+      (chrome.tabs.remove as ReturnType<typeof vi.fn>).mockImplementation(() => {
         callOrder.push('tabs.remove');
         return Promise.resolve();
       });
-      global.chrome.storage.local.get.mockResolvedValue(createV2Data());
+      (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValue(createV2Data());
 
       await snooze(tab, popTime);
 
@@ -168,10 +177,10 @@ describe('snoozeLogic Safety Checks (V2)', () => {
 
     it('should ignore and NOT snooze restricted URLs', async () => {
       const restrictedTab = { id: 99, url: 'chrome://extensions', title: 'Extensions' };
-      const popTime = new Date();
+      const popTime = Date.now() + 3600000;
 
-      global.chrome.storage.local.set.mockClear();
-      global.chrome.tabs.remove.mockClear();
+      (chrome.storage.local.set as ReturnType<typeof vi.fn>).mockClear();
+      (chrome.tabs.remove as ReturnType<typeof vi.fn>).mockClear();
 
       await snooze(restrictedTab, popTime);
 
@@ -198,19 +207,20 @@ describe('snoozeLogic Safety Checks (V2)', () => {
       const item = createItem(id, pastTime);
 
       mockStorage = createV2Data({ [id]: item }, { [pastTime]: [id] });
-      chrome.storage.local.get.mockResolvedValue(mockStorage);
+      (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValue(mockStorage);
 
       // Failures - all retries will fail
-      global.chrome.tabs.create.mockRejectedValue(new Error('Failed tab'));
-      global.chrome.windows.create.mockRejectedValue(new Error('Failed win'));
-      global.chrome.windows.getLastFocused.mockResolvedValue({ id: 999 });
+      (chrome.tabs.create as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Failed tab'));
+      (chrome.windows.create as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Failed win'));
+      (chrome.windows.getLastFocused as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 999 });
 
       await runPopCheckWithTimers();
 
       // Tab should still exist (rescheduled to future time after failed retries)
-      const v2SetCalls = chrome.storage.local.set.mock.calls.filter(c => c[0].snoooze_v2);
+      const mockCalls = (chrome.storage.local.set as ReturnType<typeof vi.fn>).mock.calls as Array<[Record<string, unknown>]>;
+      const v2SetCalls = mockCalls.filter((c) => c[0].snoooze_v2);
       if (v2SetCalls.length > 0) {
-        const lastV2Call = v2SetCalls[v2SetCalls.length - 1][0].snoooze_v2;
+        const lastV2Call = v2SetCalls[v2SetCalls.length - 1][0].snoooze_v2 as TestStorageV2;
         expect(lastV2Call.items[id]).toBeDefined();
       }
     });
@@ -218,10 +228,10 @@ describe('snoozeLogic Safety Checks (V2)', () => {
 
   it('should handle storage failure gracefully even if tab is removed', async () => {
     const tab = { id: 1, url: 'http://test.com', title: 'Test' };
-    const popTime = new Date();
+    const popTime = Date.now() + 3600000;
 
-    global.chrome.storage.local.set.mockRejectedValue(new Error('Storage full'));
-    global.chrome.storage.local.get.mockResolvedValue(createV2Data());
+    (chrome.storage.local.set as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Storage full'));
+    (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValue(createV2Data());
 
     await expect(snooze(tab, popTime)).rejects.toThrow();
     expect(chrome.tabs.remove).not.toHaveBeenCalled();
@@ -248,23 +258,24 @@ describe('snoozeLogic Safety Checks (V2)', () => {
           { 't1': i1, 't2': i2 },
           { [pastTime]: ['t1', 't2'] }
       );
-      chrome.storage.local.get.mockResolvedValue(mockStorage);
-      chrome.windows.create.mockResolvedValue({ id: 100 });
-      chrome.windows.getLastFocused.mockResolvedValue({ id: 100 });
+      (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValue(mockStorage);
+      (chrome.windows.create as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 100 });
+      (chrome.windows.getLastFocused as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 100 });
 
       // Succeed for t1 always, Fail for t2 always (all retries will fail)
-      global.chrome.tabs.create.mockImplementation((opts) => {
+      (chrome.tabs.create as ReturnType<typeof vi.fn>).mockImplementation((opts: { url?: string }) => {
           if (opts.url === 'http://ok.com') return Promise.resolve({});
           return Promise.reject(new Error('Failed'));
       });
 
       await runPopCheckWithTimers();
 
-      const v2SetCalls = chrome.storage.local.set.mock.calls.filter(c => c[0].snoooze_v2);
+      const mockCalls = (chrome.storage.local.set as ReturnType<typeof vi.fn>).mock.calls as Array<[Record<string, unknown>]>;
+      const v2SetCalls = mockCalls.filter((c) => c[0].snoooze_v2);
       expect(v2SetCalls.length).toBeGreaterThan(0);
 
       // Find the final state - t1 removed, t2 rescheduled (still exists)
-      const lastV2Call = v2SetCalls[v2SetCalls.length - 1][0].snoooze_v2;
+      const lastV2Call = v2SetCalls[v2SetCalls.length - 1][0].snoooze_v2 as TestStorageV2;
       expect(lastV2Call.items['t1']).toBeUndefined();
       expect(lastV2Call.items['t2']).toBeDefined();
   });
@@ -291,10 +302,10 @@ describe('snoozeLogic Safety Checks (V2)', () => {
           { 't1': i1, 't2': i2 },
           { [pastTime]: ['t1', 't2'] }
       );
-      chrome.storage.local.get.mockResolvedValue(mockStorage);
+      (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValue(mockStorage);
 
       // Partial success - only 1 tab created instead of 2 (all retries will fail validation)
-      global.chrome.windows.create.mockResolvedValue({
+      (chrome.windows.create as ReturnType<typeof vi.fn>).mockResolvedValue({
           id: 100,
           tabs: [{ id: 101, url: TAB_URL }] // Only 1 tab
       });
@@ -302,9 +313,10 @@ describe('snoozeLogic Safety Checks (V2)', () => {
       await runPopCheckWithTimers();
 
       // Ensure both preserved (rescheduled after failed retries)
-      const v2SetCalls = chrome.storage.local.set.mock.calls.filter(c => c[0].snoooze_v2);
+      const mockCalls = (chrome.storage.local.set as ReturnType<typeof vi.fn>).mock.calls as Array<[Record<string, unknown>]>;
+      const v2SetCalls = mockCalls.filter((c) => c[0].snoooze_v2);
       if (v2SetCalls.length > 0) {
-          const lastV2Call = v2SetCalls[v2SetCalls.length - 1][0].snoooze_v2;
+          const lastV2Call = v2SetCalls[v2SetCalls.length - 1][0].snoooze_v2 as TestStorageV2;
           expect(lastV2Call.items['t1']).toBeDefined();
           expect(lastV2Call.items['t2']).toBeDefined();
       }
@@ -319,7 +331,7 @@ describe('snoozeLogic Safety Checks (V2)', () => {
               'snoozedTabs_backup_100': validOld,  // Oldest
               'snoozedTabs_backup_200': invalidNew // Newest
           };
-          chrome.storage.local.get.mockResolvedValue(mockStorage);
+          (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValue(mockStorage);
 
           const result = await recoverFromBackup();
 
@@ -351,7 +363,7 @@ describe('snoozeLogic Safety Checks (V2)', () => {
               'snoozedTabs_backup_200': backupB,
               'snoozedTabs_backup_100': backupC
           };
-          chrome.storage.local.get.mockResolvedValue(mockStorage);
+          (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValue(mockStorage);
 
           const result = await recoverFromBackup();
 
@@ -382,7 +394,7 @@ describe('snoozeLogic Safety Checks (V2)', () => {
               snoooze_v2: null, // Corrupted main storage
               snoozedTabs_backup_1234567890: backupWithoutVersion
           };
-          chrome.storage.local.get.mockResolvedValue(mockStorage);
+          (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValue(mockStorage);
 
           await recoverFromBackup();
 

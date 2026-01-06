@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 describe('serviceWorker notification click handler', () => {
-  let notificationClickHandler;
-  let tabsCreateMock;
-  let runtimeGetURLMock;
+  let notificationClickHandler: ((notificationId: string) => void) | null;
+  let tabsCreateMock: ReturnType<typeof vi.fn>;
+  let runtimeGetURLMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.resetModules();
@@ -12,10 +12,10 @@ describe('serviceWorker notification click handler', () => {
     // Capture the notification click handler when registered
     notificationClickHandler = null;
     tabsCreateMock = vi.fn().mockResolvedValue({});
-    runtimeGetURLMock = vi.fn((path) => `chrome-extension://fake-id/${path}`);
+    runtimeGetURLMock = vi.fn((path: string) => `chrome-extension://fake-id/${path}`);
 
     // Setup chrome API mocks
-    global.chrome = {
+    globalThis.chrome = {
       runtime: {
         onInstalled: { addListener: vi.fn() },
         onStartup: { addListener: vi.fn() },
@@ -28,7 +28,7 @@ describe('serviceWorker notification click handler', () => {
       },
       notifications: {
         onClicked: {
-          addListener: vi.fn((handler) => {
+          addListener: vi.fn((handler: (notificationId: string) => void) => {
             notificationClickHandler = handler;
           }),
         },
@@ -48,7 +48,7 @@ describe('serviceWorker notification click handler', () => {
       tabs: {
         create: tabsCreateMock,
       },
-    };
+    } as unknown as typeof chrome;
   });
 
   afterEach(() => {
@@ -57,7 +57,7 @@ describe('serviceWorker notification click handler', () => {
 
   async function importServiceWorker() {
     // Dynamic import to ensure mocks are set up first
-    await import('./serviceWorker.js');
+    await import('./serviceWorker');
   }
 
   it('opens Options page when storage-warning notification is clicked', async () => {
@@ -66,7 +66,7 @@ describe('serviceWorker notification click handler', () => {
     expect(notificationClickHandler).not.toBeNull();
 
     // Trigger click on storage-warning notification
-    notificationClickHandler('storage-warning');
+    notificationClickHandler!('storage-warning');
 
     expect(tabsCreateMock).toHaveBeenCalledWith({
       url: 'chrome-extension://fake-id/options/index.html',
@@ -79,7 +79,7 @@ describe('serviceWorker notification click handler', () => {
     expect(notificationClickHandler).not.toBeNull();
 
     // Trigger click on recovery-notification
-    notificationClickHandler('recovery-notification');
+    notificationClickHandler!('recovery-notification');
 
     expect(tabsCreateMock).toHaveBeenCalledWith({
       url: 'chrome-extension://fake-id/options/index.html',
@@ -92,7 +92,7 @@ describe('serviceWorker notification click handler', () => {
     expect(notificationClickHandler).not.toBeNull();
 
     // Trigger click on restore-failed notification
-    notificationClickHandler('restore-failed');
+    notificationClickHandler!('restore-failed');
 
     expect(tabsCreateMock).toHaveBeenCalledWith({
       url: 'chrome-extension://fake-id/options/index.html?showFailedTabs=true',
@@ -105,7 +105,7 @@ describe('serviceWorker notification click handler', () => {
     expect(notificationClickHandler).not.toBeNull();
 
     // Trigger click on unknown notification
-    notificationClickHandler('unknown-notification');
+    notificationClickHandler!('unknown-notification');
 
     expect(tabsCreateMock).not.toHaveBeenCalled();
   });
