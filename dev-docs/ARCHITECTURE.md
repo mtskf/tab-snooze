@@ -1,147 +1,334 @@
 # Architecture Overview
 
-Quick reference for system design and implementation.
+## Executive Summary
 
-## Project Structure
+**Snooooze** is a Chrome extension that lets users temporarily hide browser tabs and automatically restore them at a scheduled time.
+
+### Core Concepts
+
+| Concept | Description |
+|---------|-------------|
+| **Snooze** | Save tab(s) to storage, close them, schedule restoration |
+| **Pop** | Restore tabs when scheduled time arrives |
+| **Scope** | "Selected tabs" or "Window" - determines what gets snoozed |
+
+### Architecture at a Glance
 
 ```
-Snooooze/
-├── src/
-│   ├── background/          # Service Worker (Manifest V3)
-│   │   ├── serviceWorker.js # Alarm handling
-│   │   └── snoozeLogic.js   # Storage & Tab mgmt logic
-│   ├── popup/               # Extension popup UI
-│   │   └── Popup.jsx        # Snooze options, scope selection
-│   ├── options/             # Options/Settings page
-│   │   └── Options.jsx      # Snoozed list, settings management
-│   ├── components/ui/       # shadcn/ui components
-│   ├── utils/               # Shared utilities
-│   │   ├── ChromeApi.js     # Unified Chrome Extension API wrapper
-│   │   ├── timeUtils.js     # Time calculations
-│   │   ├── StorageService.js# Import/export helpers
-│   │   ├── validation.js    # Storage data validation
-│   │   ├── constants.js     # Config, Defaults, Theme colors
-│   │   └── uuid.js          # UUID generation
-│   ├── lib/                 # shadcn utilities (cn)
-│   └── index.css            # Global styles (Neo Carbon theme)
-├── dist/                    # Built extension
-├── docs/                    # GitHub Pages (Website)
-├── dev-docs/                # Developer Documentation
-└── public/assets/           # Icons, manifest.json
+┌─────────────────────────────────────────────────────────────────┐
+│                        USER INTERFACE                            │
+│  ┌──────────────┐              ┌──────────────────────────────┐ │
+│  │   Popup.tsx  │              │         Options.tsx          │ │
+│  │  - Snooze UI │              │  - Snoozed list              │ │
+│  │  - Scope     │              │  - Settings                  │ │
+│  │  - Shortcuts │              │  - Import/Export             │ │
+│  └──────┬───────┘              └──────────────┬───────────────┘ │
+└─────────┼────────────────────────────────────┼──────────────────┘
+          │ chrome.runtime.sendMessage         │
+          ▼                                    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    SERVICE WORKER (Background)                   │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │                    messages.ts                            │   │
+│  │  MESSAGE_HANDLERS: dispatchMessage() → handler functions  │   │
+│  └──────────────────────────────┬───────────────────────────┘   │
+│                                 │                                │
+│  ┌──────────────────────────────▼───────────────────────────┐   │
+│  │                   snoozeLogic.ts                          │   │
+│  │  - snooze()      : Save tabs, schedule alarm              │   │
+│  │  - popCheck()    : Restore due tabs                       │   │
+│  │  - initStorage() : Validate/recover on startup            │   │
+│  └──────────────────────────────┬───────────────────────────┘   │
+└─────────────────────────────────┼───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     CHROME STORAGE                               │
+│  ┌─────────────────┐  ┌─────────────┐  ┌────────────────────┐   │
+│  │   snoooze_v2    │  │  settings   │  │ snoozedTabs_backup │   │
+│  │ (items+schedule)│  │ (user prefs)│  │  (3 generations)   │   │
+│  └─────────────────┘  └─────────────┘  └────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Core Components
+### Tech Stack
 
-### Chrome API Wrapper (`ChromeApi.js`)
-- **Unified Abstraction**: Centralized wrapper for all Chrome Extension APIs (storage, tabs, windows, notifications, alarms, runtime, commands)
-- **Promise-based**: Converts callback-based APIs to Promises for async/await support
-- **Error Handling**: Consistent try-catch patterns with descriptive error messages
-- **Firefox Compatibility**: Graceful fallbacks for unsupported APIs (session storage, getBytesInUse)
-- **Testability**: Single mocking point for all Chrome API interactions in tests
+- **Runtime**: Chrome Extension Manifest V3 (Service Worker)
+- **UI**: React 19 + Vite 7 + TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Testing**: Vitest + Testing Library
 
-### Service Worker (`serviceWorker.js` + `snoozeLogic.js`)
-- **Alarm System**: `popCheck` runs every minute (or on startup) to restore overdue tabs
-- **Storage**: `chrome.storage.local` for snoozed tabs and settings
-- **Restoration**: Directly opens tabs when time is reached
-- **Mutex Lock**: Promise-chain mutex (`storageLock`) prevents race conditions
-- **Shared Config**: `DEFAULT_SETTINGS` imported from `constants.js`
-- **Helper**: `getTabsByGroupId()` extracts tabs by group ID
-- **Backup System**: Debounced 3-generation rotating backups with auto-recovery
-- **Null Safety**: All storage operations guard against missing/corrupted data
-- **Startup Recovery**: `initStorage()` validates `snoooze_v2` and invokes backup recovery + session notification when invalid
+---
 
-### Popup (`Popup.jsx`)
-- **Scope Selection**: "Selected tabs" or "Window" (Shift key toggle)
-- **Snooze Options**: Later today, Evening, Tomorrow, Weekend, etc.
-- **Keyboard Shortcuts**: L, E, T, S, N, W, M, P for options, Shift+key for window scope
-- **Snoozed Counter**: Shows pending tab count (999+ for large numbers)
-- **Settings Fetch**: Uses `chrome.runtime.sendMessage({ action: "getSettings" })` to load settings from background
+## Data Model (V2 Schema)
 
-### Options (`Options.jsx`)
-- **Snoozed List**: Grouped by date, with delete/restore actions
-- **Settings**: Fetches via `getSettings` message (unified with Popup). Manage Morning/Evening times, Appearance theme.
-- **Export/Import**: JSON format via `StorageService`
-- **Import Merge**: Uses `getSnoozedTabs` message to fetch current data
-- **URL Hash**: Supports `#settings` to open directly to Settings tab
+### Primary Storage: `snoooze_v2`
 
-## Data Storage
+Normalized relational model for O(1) lookups and efficient scheduling.
 
-### `snoooze_v2` (chrome.storage.local)
-**Normalized Relational Model**
-```javascript
+```typescript
+interface StorageV2 {
+  version: 2;
+  items: Record<string, SnoozedItemV2>;   // UUID → Item
+  schedule: Record<string, string[]>;      // timestamp → [UUID, ...]
+}
+
+interface SnoozedItemV2 {
+  id: string;           // UUID
+  url: string;          // Tab URL
+  title?: string;       // Tab title
+  favicon?: string;     // Favicon URL
+  popTime: number;      // Restore timestamp (ms)
+  creationTime: number; // Snooze timestamp (ms)
+  groupId?: string;     // Window group ID (optional)
+  index?: number;       // Tab position in window
+}
+```
+
+**Example**:
+```json
 {
+  "version": 2,
   "items": {
-    "uuid-1234": {
-      "id": "uuid-1234",
-      "url": "https://example.com",
-      "title": "Example",
-      "popTime": 1702700400000,
-      "creationTime": 1702700000000,
-      "groupId": "optional-group-id"
-    }
+    "a1b2c3": { "id": "a1b2c3", "url": "https://example.com", "popTime": 1704110400000, "creationTime": 1704067200000 }
   },
   "schedule": {
-    "1702700400000": ["uuid-1234", "uuid-5678"] // time -> [uuid]
+    "1704110400000": ["a1b2c3"]
   }
 }
-// Note: UI components use an adapter to read this as the legacy format.
 ```
 
-### `settings` (chrome.storage.local)
-```javascript
-{
-  "start-day": "8:00 AM",
-  "end-day": "5:00 PM",
-  "timezone": "Australia/Sydney",
-  "appearance": "heatmap"
+### Settings Storage
+
+```typescript
+interface Settings {
+  "start-day": string;      // "8:00 AM"
+  "end-day": string;        // "5:00 PM"
+  "timezone": string;       // "Australia/Sydney"
+  "appearance": Appearance; // "heatmap" | "ocean" | ...
 }
 ```
 
-### Backup Keys (chrome.storage.local)
-```javascript
-"snoozedTabs_backup_<timestamp>": { /* same structure as snoozedTabs */ }
-// Up to 3 rotating backups
+### Session & Backup Storage
+
+| Key | Purpose |
+|-----|---------|
+| `snoozedTabs_backup_<ts>` | Rotating backups (max 3) |
+| `pendingRecoveryNotification` | Session flag for recovery notification |
+| `sizeWarningActive` | Storage quota warning flag |
+
+---
+
+## Message Contract
+
+All UI ↔ Background communication uses typed messages via `messages.ts`.
+
+### Message Actions
+
+| Action | Direction | Purpose |
+|--------|-----------|---------|
+| `getSnoozedTabsV2` | UI → BG | Fetch all snoozed items |
+| `setSnoozedTabs` | UI → BG | Import/overwrite storage |
+| `getSettings` | UI → BG | Fetch user settings |
+| `setSettings` | UI → BG | Update user settings |
+| `snooze` | UI → BG | Snooze tab(s) |
+| `removeSnoozedTab` | UI → BG | Cancel a snoozed tab |
+| `removeWindowGroup` | UI → BG | Cancel entire window group |
+| `restoreWindowGroup` | UI → BG | Restore window group now |
+| `clearAll` | UI → BG | Delete all snoozed tabs |
+| `getExportData` | UI → BG | Get data for JSON export |
+| `importTabs` | UI → BG | Merge imported tabs |
+
+### Message Flow
+
+```
+┌────────────┐   sendMessage({ action, data })   ┌────────────────┐
+│   Popup    │ ─────────────────────────────────▶│ serviceWorker  │
+│  Options   │                                   │                │
+│            │◀───────────────────────────────── │ dispatchMessage│
+└────────────┘         response                  └────────────────┘
 ```
 
-### Session State (chrome.storage.session)
-```javascript
-{
-  "pendingRecoveryNotification": 5,  // tab count if recovery needed
-  "lastRecoveryNotifiedAt": 1704067200000
-}
-```
-
-### Storage Size Warning (chrome.storage.local)
-```javascript
-{
-  "sizeWarningActive": true,         // true if usage > 80%
-  "lastSizeWarningAt": 1704067200000 // timestamp of last notification (24h throttle)
-}
-```
+---
 
 ## Key Flows
 
 ### Snooze Flow
-1. User selects scope (tabs/window) and time option
-2. Service worker generates a UUID and stores tab data in `items` map and `schedule` index (V2 Normalized Schema)
-3. Tab is closed (ONLY after successful storage save); popup window closes
 
-### Restore Flow
-1. `popCheck` alarm fires (every 1 min, or on startup)
-2. Checks timestamps < `Date.now()`
-3. **Directly restores tabs** (Current Window or New Window based on Snooze Scope)
-4. Removes from storage (ONLY if restoration succeeded)
+```
+User clicks "Later Today"
+         │
+         ▼
+┌─────────────────────────────────────┐
+│ 1. Popup: Calculate popTime         │
+│    (timeUtils.getTime('later'))     │
+└─────────────────┬───────────────────┘
+                  │ sendMessage({ action: 'snooze', data: { tabs, popTime } })
+                  ▼
+┌─────────────────────────────────────┐
+│ 2. snoozeLogic.snooze()             │
+│    - Validate URL (no chrome://)    │
+│    - Generate UUID                  │
+│    - Add to items + schedule        │
+│    - Save to storage                │
+│    - Create/update alarm            │
+└─────────────────┬───────────────────┘
+                  │ storage.local.set() SUCCESS
+                  ▼
+┌─────────────────────────────────────┐
+│ 3. Close tab(s)                     │
+│    chrome.tabs.remove()             │
+│    (ONLY after save succeeds)       │
+└─────────────────────────────────────┘
+```
 
-## Technologies
-- **React** + **Vite** for UI
-- **shadcn/ui** + **Tailwind CSS** for components
-- **lucide-react** for icons
-- **Chrome Extension Manifest V3**
+**Critical Safety**: Tab is NEVER closed before storage save completes.
 
-## Communication Patterns
+### Pop/Restore Flow
 
-### Message Passing (`messages.js`)
-- **Centralized Contracts**: All communication between UI and Background uses typed contracts defined in `messages.js`.
-- **Action Constants**: `MESSAGE_ACTIONS` (e.g., `GET_SETTINGS`, `SNOOZE`) prevent magic string typos.
-- **Type Safety**: `validateMessageRequest` ensures payloads match expected shapes before processing.
-- **Handlers**: `MESSAGE_HANDLERS` map actions to logic, allowing dependency injection for easier testing.
+```
+chrome.alarms.onAlarm fires (every 1 min)
+         │
+         ▼
+┌─────────────────────────────────────┐
+│ 1. popCheck()                       │
+│    - Check navigator.onLine         │
+│    - Load snoooze_v2                │
+│    - Find due items (popTime < now) │
+└─────────────────┬───────────────────┘
+                  │ has due items?
+                  ▼
+┌─────────────────────────────────────┐
+│ 2. Restore tabs                     │
+│    - Group by groupId               │
+│    - Create window or tabs          │
+│    - Retry on failure (3x)          │
+└─────────────────┬───────────────────┘
+                  │ restore SUCCESS?
+                  ▼
+┌─────────────────────────────────────┐
+│ 3a. SUCCESS: Remove from storage    │
+│     Delete from items + schedule    │
+├─────────────────────────────────────┤
+│ 3b. FAILURE: Reschedule             │
+│     Move to +5 minutes              │
+│     Show notification               │
+└─────────────────────────────────────┘
+```
+
+### Backup & Recovery Flow
+
+```
+Storage write (debounced 3s)
+         │
+         ▼
+┌─────────────────────────────────────┐
+│ createBackup()                      │
+│ - Save snapshot with timestamp      │
+│ - Keep only 3 newest backups        │
+└─────────────────────────────────────┘
+
+Extension startup (initStorage)
+         │
+         ▼
+┌─────────────────────────────────────┐
+│ Validate snoooze_v2                 │
+│ - Check structure (items, schedule) │
+│ - Verify referential integrity      │
+└─────────────────┬───────────────────┘
+                  │ INVALID?
+                  ▼
+┌─────────────────────────────────────┐
+│ recoverFromBackup()                 │
+│ - Find newest VALID backup          │
+│ - Restore to snoooze_v2             │
+│ - Queue recovery notification       │
+└─────────────────────────────────────┘
+```
+
+---
+
+## Project Structure
+
+```
+src/
+├── background/
+│   ├── serviceWorker.ts    # Event listeners, alarm handler
+│   ├── snoozeLogic.ts      # Core snooze/restore logic (~850 LOC)
+│   └── schemaVersioning.ts # V1→V2 migration, validation
+├── popup/
+│   ├── Popup.tsx           # Snooze UI
+│   └── hooks/              # useKeyboardNavigation
+├── options/
+│   ├── Options.tsx         # Main options page
+│   ├── SnoozedList.tsx     # Grouped tab list
+│   └── *.tsx               # Settings components
+├── components/ui/          # shadcn/ui primitives
+├── utils/
+│   ├── ChromeApi.ts        # Chrome API wrapper
+│   ├── timeUtils.ts        # Time calculations
+│   ├── validation.ts       # Data validators
+│   ├── StorageService.ts   # Import/export helpers
+│   └── constants.ts        # Config, defaults
+├── messages.ts             # IPC contracts
+├── types.ts                # TypeScript interfaces
+└── test/
+    └── setup.ts            # Vitest chrome mock
+```
+
+---
+
+## Chrome API Wrapper (`ChromeApi.ts`)
+
+Centralized abstraction for all Chrome Extension APIs:
+
+- **Promise-based**: Async/await support
+- **Error handling**: Consistent try-catch with descriptive messages
+- **Firefox compat**: Graceful fallbacks (session storage, getBytesInUse)
+- **Testability**: Single mock point
+
+```typescript
+// Usage
+import { storage, tabs, windows } from '@/utils/ChromeApi';
+
+await storage.getLocal(['snoooze_v2']);
+await tabs.create({ url: 'https://...' });
+```
+
+---
+
+## Concurrency & Safety
+
+### Storage Mutex
+
+`storageLock` (Promise chain) prevents race conditions on concurrent writes:
+
+```typescript
+let storageLock = Promise.resolve();
+
+async function withStorageLock<T>(fn: () => Promise<T>): Promise<T> {
+  const release = storageLock;
+  let resolve: () => void;
+  storageLock = new Promise(r => { resolve = r; });
+  await release;
+  try {
+    return await fn();
+  } finally {
+    resolve!();
+  }
+}
+```
+
+### Tab Close Safety
+
+Tabs are NEVER closed before storage write succeeds:
+
+```typescript
+// snooze()
+await storage.setLocal({ snoooze_v2: updated }); // ← Must succeed first
+await tabs.remove(tabId);                         // ← Only then close
+```
+
+### Restore Retry
+
+Failed tab restores retry 3 times (200ms intervals), then reschedule +5min.
