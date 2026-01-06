@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.3.1 - 2026-01-06
+
+### Fixed
+- **Vite Build Warnings**: Resolved mixed static/dynamic imports in `snoozeLogic.ts`.
+- **Production Assets**: Fixed asset loading in production builds by configuring correct `base` path in Vite and updating Tailwind content paths.
+- **Skipped Tests**: Documented test skipping reasons in `Popup.test.tsx`.
+
+### Removed
+- **Dead Code**: Removed unused UI components (`command.tsx`, `popover.tsx`) and dependencies (`@radix-ui/react-popover`, `cmdk`).
+- **Unused Constants**: Removed `OTHER_SHORTCUTS` constant.
+
 ## v0.3.0 - 2026-01-04
 
 ### Added
