@@ -102,35 +102,38 @@ async function saveStorageV2(v2Data: StorageV2): Promise<void> {
 /**
  * Write Adapter (V1 -> V2)
  * Used if legacy code calls setSnoozedTabs. Converts structure and saves V2.
+ * Uses storageLock to prevent race conditions with other storage operations
  */
 export async function setSnoozedTabs(legacyData: unknown): Promise<void> {
-
-
-  // Detect source version and migrate to current version
+  // Detect source version and migrate to current version (can be done outside lock)
   const sourceVersion = detectSchemaVersion(legacyData);
 
-  if (sourceVersion === null) {
-    // Empty/invalid data - save empty V2
-    await storage.setLocal({
-      snoooze_v2: { version: CURRENT_SCHEMA_VERSION, items: {}, schedule: {} }
-    });
-    return;
-  }
-
   // Reject future schema versions (cannot downgrade)
-  if (sourceVersion > CURRENT_SCHEMA_VERSION) {
+  if (sourceVersion !== null && sourceVersion > CURRENT_SCHEMA_VERSION) {
     throw new Error(`Cannot import data from future schema version ${sourceVersion}. Current version is ${CURRENT_SCHEMA_VERSION}.`);
   }
 
-  // Migrate from source version to current version
-  let v2Data = await runMigrations(legacyData, sourceVersion, CURRENT_SCHEMA_VERSION);
-
-  // Ensure version field is always present (even if source == target)
-  if (!v2Data.version) {
-    v2Data = { ...v2Data, version: CURRENT_SCHEMA_VERSION };
+  // Prepare data outside lock
+  let v2Data: StorageV2;
+  if (sourceVersion === null) {
+    // Empty/invalid data - use empty V2
+    v2Data = { version: CURRENT_SCHEMA_VERSION, items: {}, schedule: {} };
+  } else {
+    // Migrate from source version to current version
+    v2Data = await runMigrations(legacyData, sourceVersion, CURRENT_SCHEMA_VERSION);
+    // Ensure version field is always present (even if source == target)
+    if (!v2Data.version) {
+      v2Data = { ...v2Data, version: CURRENT_SCHEMA_VERSION };
+    }
   }
 
-  await storage.setLocal({ snoooze_v2: v2Data });
+  // Use storageLock for the storage write
+  const task = storageLock.then(async () => {
+    await storage.setLocal({ snoooze_v2: v2Data });
+  });
+
+  storageLock = task.catch(() => { /* ignore */ });
+  return task;
 }
 
 // --- Backup & Rotation ---
@@ -220,55 +223,55 @@ interface ImportResult {
 
 /**
  * Imports tabs from raw data (V1 or V2 format)
+ * Uses storageLock to prevent race conditions with other storage operations
  */
 export async function importTabs(rawData: unknown): Promise<ImportResult> {
+  // Validate input is an object (can be done outside lock)
+  if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) {
+    return { success: false, error: 'Invalid data structure' };
+  }
 
+  // Detect schema version (can be done outside lock)
+  const sourceVersion = detectSchemaVersion(rawData);
 
-  try {
-    // Validate input is an object
-    if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) {
-      return { success: false, error: 'Invalid data structure' };
-    }
+  if (sourceVersion === null) {
+    // Empty or invalid data
+    return { success: true, addedCount: 0 };
+  }
 
-    // Detect schema version
-    const sourceVersion = detectSchemaVersion(rawData);
+  // Reject future schema versions (can be done outside lock)
+  if (sourceVersion > CURRENT_SCHEMA_VERSION) {
+    return {
+      success: false,
+      error: `Cannot import data from future schema version ${sourceVersion}`
+    };
+  }
 
-    if (sourceVersion === null) {
-      // Empty or invalid data
-      return { success: true, addedCount: 0 };
-    }
+  // Migrate to V2 if needed (can be done outside lock)
+  let importV2Data: StorageV2 = sourceVersion === CURRENT_SCHEMA_VERSION
+    ? rawData as StorageV2
+    : await runMigrations(rawData, sourceVersion, CURRENT_SCHEMA_VERSION);
 
-    // Reject future schema versions
-    if (sourceVersion > CURRENT_SCHEMA_VERSION) {
-      return {
-        success: false,
-        error: `Cannot import data from future schema version ${sourceVersion}`
-      };
-    }
+  // Ensure version field
+  importV2Data = { ...importV2Data, version: CURRENT_SCHEMA_VERSION };
 
-    // Migrate to V2 if needed
-    let importV2Data: StorageV2 = sourceVersion === CURRENT_SCHEMA_VERSION
-      ? rawData as StorageV2
-      : await runMigrations(rawData, sourceVersion, CURRENT_SCHEMA_VERSION);
+  // Validate and sanitize import data (can be done outside lock)
+  const validation = validateSnoozedTabsV2(importV2Data);
+  if (!validation.valid) {
+    console.warn('Import data validation errors, sanitizing:', validation.errors);
+    importV2Data = { ...sanitizeSnoozedTabsV2(importV2Data), version: CURRENT_SCHEMA_VERSION };
+  }
 
-    // Ensure version field
-    importV2Data = { ...importV2Data, version: CURRENT_SCHEMA_VERSION };
+  // Count items to add
+  const itemsToImport = Object.keys(importV2Data.items || {}).length;
+  if (itemsToImport === 0) {
+    return { success: true, addedCount: 0 };
+  }
 
-    // Validate and sanitize import data
-    const validation = validateSnoozedTabsV2(importV2Data);
-    if (!validation.valid) {
-      console.warn('Import data validation errors, sanitizing:', validation.errors);
-      importV2Data = { ...sanitizeSnoozedTabsV2(importV2Data), version: CURRENT_SCHEMA_VERSION };
-    }
-
-    // Get existing data
+  // Use storageLock for the read-modify-write cycle
+  const task = storageLock.then(async () => {
+    // Get existing data (inside lock to ensure consistency)
     const existingData = await getStorageV2();
-
-    // Count items to add
-    const itemsToImport = Object.keys(importV2Data.items || {}).length;
-    if (itemsToImport === 0) {
-      return { success: true, addedCount: 0 };
-    }
 
     // Merge with collision handling
     const mergedItems = { ...existingData.items };
@@ -300,7 +303,12 @@ export async function importTabs(rawData: unknown): Promise<ImportResult> {
       schedule: mergedSchedule
     };
     await saveStorageV2(mergedData);
+  });
 
+  storageLock = task.catch(() => { /* ignore */ });
+
+  try {
+    await task;
     return { success: true, addedCount: itemsToImport };
   } catch (error) {
     console.error('Import failed:', error);

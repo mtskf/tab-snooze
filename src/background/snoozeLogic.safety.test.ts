@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { removeSnoozedTabWrapper, removeWindowGroup, restoreWindowGroup, snooze, popCheck, initStorage, recoverFromBackup } from './snoozeLogic';
+import { removeSnoozedTabWrapper, removeWindowGroup, restoreWindowGroup, snooze, popCheck, initStorage, recoverFromBackup, importTabs, setSnoozedTabs } from './snoozeLogic';
 import type { SnoozedItemV2 } from '../types';
 
 // Type for V2 storage data in tests (version is optional for flexibility)
@@ -406,6 +406,182 @@ describe('snoozeLogic Safety Checks (V2)', () => {
                   schedule: expect.any(Object)
               })
           });
+      });
+  });
+
+  describe('storageLock race condition prevention', () => {
+      it('importTabs should serialize with snooze via storageLock', async () => {
+          // Setup: existing tab in storage
+          const existingItem = createItem('existing-1', MOCK_TIME + 5000);
+          mockStorage = createV2Data(
+              { 'existing-1': existingItem },
+              { [MOCK_TIME + 5000]: ['existing-1'] }
+          );
+
+          // Track operation order
+          const operationOrder: string[] = [];
+          let snoozeResolve: () => void;
+          const snoozeBarrier = new Promise<void>(resolve => { snoozeResolve = resolve; });
+
+          (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(() => {
+              return Promise.resolve({ snoooze_v2: mockStorage.snoooze_v2 });
+          });
+
+          (chrome.storage.local.set as ReturnType<typeof vi.fn>).mockImplementation(async (data: Record<string, unknown>) => {
+              if (data.snoooze_v2) {
+                  const v2 = data.snoooze_v2 as TestStorageV2;
+                  // If this is from snooze (has new tab), add delay to simulate slow write
+                  if (Object.keys(v2.items).some(id => id !== 'existing-1' && id !== 'import-1')) {
+                      operationOrder.push('snooze-write-start');
+                      await snoozeBarrier;
+                      operationOrder.push('snooze-write-end');
+                  } else if (v2.items['import-1']) {
+                      operationOrder.push('import-write');
+                  }
+                  mockStorage.snoooze_v2 = v2;
+              }
+              return Promise.resolve();
+          });
+
+          // Start snooze operation (will be delayed at write)
+          const snoozePromise = snooze(
+              { id: 100, url: 'https://snooze.com', title: 'Snooze Tab' },
+              MOCK_TIME + 10000
+          );
+
+          // Allow snooze to start and reach the write barrier
+          await vi.advanceTimersByTimeAsync(10);
+
+          // Start importTabs while snooze is blocked at write
+          const importData = {
+              version: 2,
+              items: { 'import-1': createItem('import-1', MOCK_TIME + 20000) },
+              schedule: { [MOCK_TIME + 20000]: ['import-1'] }
+          };
+          const importPromise = importTabs(importData);
+
+          // Release snooze write
+          snoozeResolve!();
+
+          // Wait for both operations
+          await snoozePromise;
+          await importPromise;
+
+          // If storageLock is properly used, snooze should complete before import starts
+          // The final storage should contain ALL items: existing-1, new snoozed tab, and import-1
+          const finalData = mockStorage.snoooze_v2 as TestStorageV2;
+          expect(Object.keys(finalData.items)).toHaveLength(3);
+          expect(finalData.items['existing-1']).toBeDefined();
+          expect(finalData.items['import-1']).toBeDefined();
+      });
+
+      it('setSnoozedTabs should serialize with removeSnoozedTabWrapper via storageLock', async () => {
+          // Setup: existing tab in storage
+          const existingItem = createItem('tab-to-remove', MOCK_TIME + 5000);
+          mockStorage = createV2Data(
+              { 'tab-to-remove': existingItem },
+              { [MOCK_TIME + 5000]: ['tab-to-remove'] }
+          );
+
+          let removeResolve: () => void;
+          const removeBarrier = new Promise<void>(resolve => { removeResolve = resolve; });
+          const operationOrder: string[] = [];
+
+          (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(() => {
+              return Promise.resolve({ snoooze_v2: mockStorage.snoooze_v2 });
+          });
+
+          (chrome.storage.local.set as ReturnType<typeof vi.fn>).mockImplementation(async (data: Record<string, unknown>) => {
+              if (data.snoooze_v2) {
+                  const v2 = data.snoooze_v2 as TestStorageV2;
+                  // If this is from remove (items empty or tab-to-remove missing)
+                  if (!v2.items['tab-to-remove'] && Object.keys(v2.items).length === 0) {
+                      operationOrder.push('remove-write-start');
+                      await removeBarrier;
+                      operationOrder.push('remove-write-end');
+                  } else {
+                      operationOrder.push('set-write');
+                  }
+                  mockStorage.snoooze_v2 = v2;
+              }
+              return Promise.resolve();
+          });
+
+          // Start remove operation (will be delayed at write)
+          const removePromise = removeSnoozedTabWrapper(existingItem);
+
+          // Allow remove to start
+          await vi.advanceTimersByTimeAsync(10);
+
+          // Start setSnoozedTabs while remove is blocked
+          const newData = {
+              version: 2,
+              items: { 'new-tab': createItem('new-tab', MOCK_TIME + 10000) },
+              schedule: { [MOCK_TIME + 10000]: ['new-tab'] }
+          };
+          const setPromise = setSnoozedTabs(newData);
+
+          // Release remove write
+          removeResolve!();
+
+          // Wait for both operations
+          await removePromise;
+          await setPromise;
+
+          // If storageLock is properly used, operations should serialize
+          // Without lock: setSnoozedTabs might overwrite remove's changes
+          // With lock: remove completes first, then setSnoozedTabs overwrites with new data
+          // The key is that no data corruption occurs (partial writes)
+          expect(operationOrder[0]).toBe('remove-write-start');
+          expect(operationOrder[1]).toBe('remove-write-end');
+          expect(operationOrder[2]).toBe('set-write');
+      });
+
+      it('concurrent importTabs calls should not lose data', async () => {
+          // Setup: empty storage
+          mockStorage = createV2Data({}, {});
+
+          const writeOrder: string[] = [];
+
+          (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(() => {
+              return Promise.resolve({ snoooze_v2: mockStorage.snoooze_v2 });
+          });
+
+          (chrome.storage.local.set as ReturnType<typeof vi.fn>).mockImplementation(async (data: Record<string, unknown>) => {
+              if (data.snoooze_v2) {
+                  const v2 = data.snoooze_v2 as TestStorageV2;
+                  writeOrder.push(`write:${Object.keys(v2.items).join(',')}`);
+                  mockStorage.snoooze_v2 = v2;
+              }
+              return Promise.resolve();
+          });
+
+          // Two concurrent imports
+          const import1 = {
+              version: 2,
+              items: { 'tab-a': createItem('tab-a', MOCK_TIME + 1000) },
+              schedule: { [MOCK_TIME + 1000]: ['tab-a'] }
+          };
+          const import2 = {
+              version: 2,
+              items: { 'tab-b': createItem('tab-b', MOCK_TIME + 2000) },
+              schedule: { [MOCK_TIME + 2000]: ['tab-b'] }
+          };
+
+          // Start both imports concurrently
+          const [result1, result2] = await Promise.all([
+              importTabs(import1),
+              importTabs(import2)
+          ]);
+
+          expect(result1.success).toBe(true);
+          expect(result2.success).toBe(true);
+
+          // Final storage should contain BOTH tabs if storageLock works
+          const finalData = mockStorage.snoooze_v2 as TestStorageV2;
+          expect(Object.keys(finalData.items)).toHaveLength(2);
+          expect(finalData.items['tab-a']).toBeDefined();
+          expect(finalData.items['tab-b']).toBeDefined();
       });
   });
 
