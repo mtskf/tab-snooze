@@ -30,11 +30,6 @@ export const SNOOZE_ACTIONS = [
   { id: "pick-date", label: "Pick Date" },
 ] as const;
 
-export const OTHER_SHORTCUTS = [
-  { id: "snoozed-items", label: "Snoozed Items" },
-  { id: "settings", label: "Settings" },
-] as const;
-
 // Default (monochromatic gradient)
 export const DEFAULT_COLORS = {
   "later-today": "text-sky-300",
