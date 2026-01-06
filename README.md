@@ -16,15 +16,9 @@
   </p>
 
   <p>
-    <a href="https://github.com/mtskf/Snooooze/blob/main/LICENSE">
-      <img src="https://img.shields.io/github/license/mtskf/Snooooze?style=flat-square&color=4F46E5" alt="License" />
-    </a>
-    <a href="https://github.com/mtskf/Snooooze/releases">
-      <img src="https://img.shields.io/badge/version-v0.3.2-blue.svg" alt="Version" />
-    </a>
-    <a href="https://chromewebstore.google.com/detail/snooooze/gncjidjnndmkohhhnijekcjiakmllonk">
-      <img src="https://img.shields.io/badge/Chrome%20Web%20Store-Available-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome Web Store" />
-    </a>
+    <a href="https://github.com/mtskf/Snooooze/blob/main/LICENSE"><img src="https://img.shields.io/github/license/mtskf/Snooooze?style=flat-square&color=4F46E5" alt="License" /></a>
+    <a href="https://github.com/mtskf/Snooooze/releases"><img src="https://img.shields.io/badge/version-v0.3.2-blue.svg" alt="Version" /></a>
+    <a href="https://chromewebstore.google.com/detail/snooooze/gncjidjnndmkohhhnijekcjiakmllonk"><img src="https://img.shields.io/badge/Chrome%20Web%20Store-Available-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome Web Store" /></a>
     <img src="https://img.shields.io/badge/Made%20with-Love-ff4081?style=flat-square" alt="Made with Love" />
   </p>
 </div>
