@@ -50,6 +50,7 @@ import {
   VIVID_COLORS,
   HEATMAP_COLORS,
 } from "@/utils/constants";
+import { getHexFromClass } from "@/utils/colorUtils";
 import TimeSettings from "./TimeSettings";
 import GlobalShortcutSettings from "./GlobalShortcutSettings";
 import SnoozeActionSettings from "./SnoozeActionSettings";
@@ -360,13 +361,11 @@ export default function Options() {
                       )}
                       style={(() => {
                         const appearance = settings.appearance;
-                        const getHex = (cls: string | undefined) =>
-                          cls?.replace("text-[", "").replace("]", "");
                         if (appearance === "vivid" && VIVID_COLORS?.delete) {
-                          return { backgroundColor: getHex(VIVID_COLORS.delete) };
+                          return { backgroundColor: getHexFromClass(VIVID_COLORS.delete) };
                         }
                         if (appearance === "heatmap" && HEATMAP_COLORS?.delete) {
-                          return { backgroundColor: getHex(HEATMAP_COLORS.delete) };
+                          return { backgroundColor: getHexFromClass(HEATMAP_COLORS.delete) };
                         }
                         return {};
                       })()}

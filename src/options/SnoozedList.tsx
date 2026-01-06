@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trash2, AppWindow } from "lucide-react";
 import { VIVID_COLORS, HEATMAP_COLORS } from "@/utils/constants";
+import { getHexFromClass } from "@/utils/colorUtils";
 import { cn } from "@/lib/utils";
 import type { SnoozedItemV2 } from "@/types";
 import type { DayGroup } from "@/utils/selectors";
@@ -25,14 +26,12 @@ const SnoozedList = React.memo(
   }: SnoozedListProps) => {
     // Delete color style
     const deleteHoverStyle = (() => {
-      const getHex = (cls: string | undefined) => cls?.replace("text-[", "").replace("]", "");
-
       let colorClass = "hover:text-destructive";
 
       if (appearance === "vivid" && VIVID_COLORS?.delete) {
-        colorClass = `hover:text-[${getHex(VIVID_COLORS.delete)}]`;
+        colorClass = `hover:text-[${getHexFromClass(VIVID_COLORS.delete)}]`;
       } else if (appearance === "heatmap" && HEATMAP_COLORS?.delete) {
-        colorClass = `hover:text-[${getHex(HEATMAP_COLORS.delete)}]`;
+        colorClass = `hover:text-[${getHexFromClass(HEATMAP_COLORS.delete)}]`;
       }
       return `${colorClass} hover:bg-transparent`;
     })();
