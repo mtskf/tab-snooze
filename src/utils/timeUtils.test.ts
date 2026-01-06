@@ -1,13 +1,16 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { getTime, parseTimeString } from './timeUtils';
 import { DEFAULT_SETTINGS } from './constants';
+
+// Helper to get mocked chrome.storage.local.get
+const getStorageMock = () => chrome.storage.local.get as Mock;
 
 describe('timeUtils', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     // Default mock for chrome.storage.local.get to return empty object (using defaults)
     // or you can return specific settings
-    chrome.storage.local.get.mockResolvedValue({});
+    getStorageMock().mockResolvedValue({});
 
     // Mock system time to a fixed point if needed,
     // but getTime uses new Date(), so we might need useFakeTimers
@@ -122,7 +125,7 @@ describe('timeUtils', () => {
 
     it('should fallback to DEFAULT_SETTINGS when getSettings fails', async () => {
       // Mock chrome.storage.local.get to reject (simulating API failure)
-      chrome.storage.local.get.mockRejectedValue(new Error('Storage API failed'));
+      getStorageMock().mockRejectedValue(new Error('Storage API failed'));
 
       // Should still work and use DEFAULT_SETTINGS
       const result = await getTime('tomorrow');
@@ -134,7 +137,7 @@ describe('timeUtils', () => {
 
     it('should use system timezone when getSettings fails', async () => {
       // Mock chrome.storage.local.get to reject
-      chrome.storage.local.get.mockRejectedValue(new Error('Storage API failed'));
+      getStorageMock().mockRejectedValue(new Error('Storage API failed'));
 
       // Should still calculate time correctly using system timezone
       const result = await getTime('later-today');

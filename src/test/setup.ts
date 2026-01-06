@@ -1,8 +1,7 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 
-// Mock Chrome API with proper typing to avoid type inference issues
-/** @type {typeof chrome} */
+// Mock Chrome API with proper typing
 const chromeMock = {
   storage: {
     local: {
@@ -27,11 +26,9 @@ const chromeMock = {
     getLastFocused: vi.fn(),
     create: vi.fn(),
   },
-};
+} as unknown as typeof chrome;
 
 vi.stubGlobal('chrome', chromeMock);
-// @ts-expect-error - intentionally assigning mock to global
-window.chrome = chromeMock;
-// @ts-expect-error - intentionally assigning mock to global
-globalThis.chrome = chromeMock;
+(window as { chrome?: typeof chrome }).chrome = chromeMock;
+(globalThis as { chrome?: typeof chrome }).chrome = chromeMock;
 console.log('Setup file loaded, chrome mock assigned');

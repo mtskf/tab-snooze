@@ -154,7 +154,11 @@ export const tabs = {
    */
   async update(tabId: number, updateProperties: chrome.tabs.UpdateProperties): Promise<chrome.tabs.Tab> {
     try {
-      return await chrome.tabs.update(tabId, updateProperties);
+      const tab = await chrome.tabs.update(tabId, updateProperties);
+      if (!tab) {
+        throw new Error('Tab not found');
+      }
+      return tab;
     } catch (error) {
       console.error('Tabs.update failed:', error);
       throw new Error(`Failed to update tab: ${(error as Error).message}`);

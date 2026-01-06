@@ -11,14 +11,14 @@
 
 ### ⚠️ Medium
 
-- [ ] 🔧 [L] **TypeScriptへの移行** (プロジェクトルール準拠) - Phase 6/8 完了
+- [ ] 🔧 [L] **TypeScriptへの移行** (プロジェクトルール準拠) - Phase 7/8 完了
   - ✅ Phase 1: インフラ整備 (tsconfig, vite.config.ts, @types/chrome)
   - ✅ Phase 2: 型定義 (types.ts)
   - ✅ Phase 3: ユーティリティ層 (utils/*.ts)
   - ✅ Phase 4: メッセージング層 (messages.ts)
   - ✅ Phase 5: バックグラウンド層 (background/*.ts)
   - ✅ Phase 6: Reactコンポーネント層 (popup/*.tsx, options/*.tsx, components/ui/*.tsx)
-  - ⏳ Phase 7: テストセットアップ (setup.js → setup.ts) - 保留
+  - ✅ Phase 7: テストセットアップ (setup.ts, jest-dom/vitest型)
   - ⏳ Phase 8: クリーンアップ (allowJs: false) - 保留
 
 ---

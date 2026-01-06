@@ -208,6 +208,30 @@ describe('ChromeApi', () => {
     });
   });
 
+  describe('tabs.update', () => {
+    it('calls chrome.tabs.update and returns tab', async () => {
+      const mockTab = { id: 123, url: 'https://example.com', active: true };
+      (chrome.tabs.update as ReturnType<typeof vi.fn>).mockResolvedValue(mockTab);
+
+      const result = await tabs.update(123, { active: true });
+
+      expect(chrome.tabs.update).toHaveBeenCalledWith(123, { active: true });
+      expect(result).toEqual(mockTab);
+    });
+
+    it('throws error when tab not found (undefined returned)', async () => {
+      (chrome.tabs.update as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+      await expect(tabs.update(999, { active: true })).rejects.toThrow('Failed to update tab: Tab not found');
+    });
+
+    it('throws error on API failure', async () => {
+      (chrome.tabs.update as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Update error'));
+
+      await expect(tabs.update(123, { active: true })).rejects.toThrow('Failed to update tab');
+    });
+  });
+
   describe('windows.create', () => {
     it('calls chrome.windows.create', async () => {
       const mockWindow = { id: 1 };
