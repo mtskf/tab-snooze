@@ -4,7 +4,7 @@
  * Manages storage schema versions and migrations.
  * Provides a unified entry point for validation, migration, and repair.
  *
- * @typedef {import('../types.js').StorageV2} StorageV2
+ * @typedef {import('../types').StorageV2} StorageV2
  */
 
 import { generateUUID } from '../utils/uuid.js';

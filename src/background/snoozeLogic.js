@@ -1,9 +1,9 @@
 /**
- * @typedef {import('../types.js').SnoozedItemV2} SnoozedItemV2
- * @typedef {import('../types.js').StorageV2} StorageV2
- * @typedef {import('../types.js').Settings} Settings
- * @typedef {import('../types.js').RecoveryResult} RecoveryResult
- * @typedef {import('../types.js').ChromeTab} ChromeTab
+ * @typedef {import('../types').SnoozedItemV2} SnoozedItemV2
+ * @typedef {import('../types').StorageV2} StorageV2
+ * @typedef {import('../types').Settings} Settings
+ * @typedef {import('../types').RecoveryResult} RecoveryResult
+ * @typedef {import('../types').ChromeTab} ChromeTab
  */
 
 import { generateUUID } from '../utils/uuid.js';

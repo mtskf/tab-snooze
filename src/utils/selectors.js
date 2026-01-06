@@ -3,8 +3,8 @@
  *
  * All selectors take V2 raw data { version, items, schedule } as input.
  *
- * @typedef {import('../types.js').StorageV2} StorageV2
- * @typedef {import('../types.js').SnoozedItemV2} SnoozedItemV2
+ * @typedef {import('../types').StorageV2} StorageV2
+ * @typedef {import('../types').SnoozedItemV2} SnoozedItemV2
  */
 
 /**

@@ -4,17 +4,17 @@
  * Centralizes all message action types, request/response validation,
  * and handler mappings for chrome.runtime messaging.
  *
- * @typedef {import('./types.js').MessageRequest} MessageRequest
- * @typedef {import('./types.js').MessageResponse} MessageResponse
- * @typedef {import('./types.js').GetSnoozedTabsRequest} GetSnoozedTabsRequest
- * @typedef {import('./types.js').SetSnoozedTabsRequest} SetSnoozedTabsRequest
- * @typedef {import('./types.js').GetSettingsRequest} GetSettingsRequest
- * @typedef {import('./types.js').SetSettingsRequest} SetSettingsRequest
- * @typedef {import('./types.js').SnoozeRequest} SnoozeRequest
- * @typedef {import('./types.js').RemoveSnoozedTabRequest} RemoveSnoozedTabRequest
- * @typedef {import('./types.js').RemoveWindowGroupRequest} RemoveWindowGroupRequest
- * @typedef {import('./types.js').RestoreWindowGroupRequest} RestoreWindowGroupRequest
- * @typedef {import('./types.js').ClearAllSnoozedTabsRequest} ClearAllSnoozedTabsRequest
+ * @typedef {import('./types').MessageRequest} MessageRequest
+ * @typedef {import('./types').MessageResponse} MessageResponse
+ * @typedef {import('./types').GetSnoozedTabsRequest} GetSnoozedTabsRequest
+ * @typedef {import('./types').SetSnoozedTabsRequest} SetSnoozedTabsRequest
+ * @typedef {import('./types').GetSettingsRequest} GetSettingsRequest
+ * @typedef {import('./types').SetSettingsRequest} SetSettingsRequest
+ * @typedef {import('./types').SnoozeRequest} SnoozeRequest
+ * @typedef {import('./types').RemoveSnoozedTabRequest} RemoveSnoozedTabRequest
+ * @typedef {import('./types').RemoveWindowGroupRequest} RemoveWindowGroupRequest
+ * @typedef {import('./types').RestoreWindowGroupRequest} RestoreWindowGroupRequest
+ * @typedef {import('./types').ClearAllSnoozedTabsRequest} ClearAllSnoozedTabsRequest
  */
 
 /**
