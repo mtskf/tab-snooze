@@ -31,9 +31,10 @@
 
 Declutter your browser and your mind. **Snooooze** helps you focus on the task at hand by temporarily stashing tabs away until you actually need them. No more "I'll read this later" tabs clogging your RAM.
 
-- **🎨 Personalized Themes**: Choose between the calm Default theme, vibrant Vivid, or urgency-focused Warm Heatmap.
-- **⚡️ Zero Friction**: Snooze standard tabs or entire windows with keyboard shortcuts.
-- **🔒 Privacy First**: All data is stored locally on your device. Nothing touches the cloud.
+- **⏱️ Smart Scheduling**: One-click presets for Later Today, Tomorrow, Weekend—or pick any custom date.
+- **🔄 Auto Restoration**: Tabs reopen automatically at the scheduled time—even if Chrome was closed or your Mac was sleeping.
+- **⚡️ Keyboard First**: Single-key shortcuts for instant snoozing. No clicking required.
+- **🔒 Privacy First**: All data stays on your device. No cloud, no tracking.
 
 <br>
 
