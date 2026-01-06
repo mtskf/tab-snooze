@@ -54,7 +54,7 @@
 ### Tech Stack
 
 - **Runtime**: Chrome Extension Manifest V3 (Service Worker)
-- **UI**: React 19 + Vite 7 + TypeScript
+- **UI**: React 18 + Vite 7 + TypeScript
 - **Styling**: Tailwind CSS + shadcn/ui
 - **Testing**: Vitest + Testing Library
 
@@ -304,20 +304,19 @@ await tabs.create({ url: 'https://...' });
 `storageLock` (Promise chain) prevents race conditions on concurrent writes:
 
 ```typescript
-let storageLock = Promise.resolve();
+let storageLock: Promise<void> = Promise.resolve();
 
-async function withStorageLock<T>(fn: () => Promise<T>): Promise<T> {
-  const release = storageLock;
-  let resolve: () => void;
-  storageLock = new Promise(r => { resolve = r; });
-  await release;
-  try {
-    return await fn();
-  } finally {
-    resolve!();
-  }
-}
+// Usage pattern for read-modify-write operations:
+const task = storageLock.then(async () => {
+  const data = await getStorageV2();
+  // ... modify data ...
+  await saveStorageV2(data);
+});
+storageLock = task.catch(() => { /* ignore - ensures chain continues */ });
+await task;
 ```
+
+The `.catch(() => {})` ensures the Promise chain always resolves, preventing deadlocks.
 
 ### Tab Close Safety
 

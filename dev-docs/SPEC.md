@@ -14,7 +14,7 @@ This document defines the functional behavior, business logic, and user interfac
 
 ## 2. Snooze Logic & Timing
 
-The core logic for calculating snooze times resides in `src/utils/timeUtils.js`.
+The core logic for calculating snooze times resides in `src/utils/timeUtils.ts`.
 
 ### 2.1. Time Calculation Rules
 
@@ -31,7 +31,7 @@ All calculations are based on the **Current Zoned Time** (timezone comes from se
 | **Next Monday** | Next occurrence of Monday (never "today"). Time is `start-day`. | `start-day`: 8:00 AM |
 | **In a Week** | Current date + 7 days at `start-day`. | `start-day`: 8:00 AM |
 | **In a Month** | Current date + 1 month (using `date-fns/addMonths`) at `start-day`. | `start-day`: 8:00 AM |
-| **Pick Date** | Selected date at `start-day` time. Calendar starts on Monday. (Handled in `Popup.jsx`; `getTime("pick-date")` returns `undefined`.) | `start-day`: 8:00 AM |
+| **Pick Date** | Selected date at `start-day` time. Calendar starts on Monday. (Handled in `Popup.tsx`; `getTime("pick-date")` returns `undefined`.) | `start-day`: 8:00 AM |
 
 ### 2.2. "Early Morning" Exception (Start-Day Threshold)
 To prevent frustration when working late (e.g., at 2 AM), "Tomorrow" refers to the *logical* tomorrow (after waking up), which is effectively the calendar's "Today".
@@ -49,7 +49,7 @@ To prevent frustration when working late (e.g., at 2 AM), "Tomorrow" refers to t
 - **Modifier (Shift):** Temporarily toggles the scope to "Current Window" while held.
     - Example: `T` snoozes selected tabs to Tomorrow. `Shift + T` snoozes the entire window to Tomorrow.
 - **DatePicker Scope Preservation:** When opening the DatePicker with `Shift + P`, the "Window" scope is preserved even after the Shift key is released. The scope at the time of opening is stored in `calendarScope` state.
-- **Configurable:** Default shortcuts live in `src/utils/constants.js` and can be customized in Options.
+- **Configurable:** Default shortcuts live in `src/utils/constants.ts` and can be customized in Options.
 - **Settings Source:** Popup reads settings via background messaging (`getSettings`) instead of direct storage access.
 
 ## 4. Restore Logic
@@ -67,7 +67,7 @@ To prevent frustration when working late (e.g., at 2 AM), "Tomorrow" refers to t
 ## 5. UI & Themes
 
 ### 5.1. Appearance Modes
-Defined in `src/utils/constants.js`.
+Defined in `src/utils/constants.ts`.
 
 - **Default:** Monochromatic Blue/Indigo. Professional and calm.
 - **Vivid:** Semantic colors.
@@ -105,7 +105,7 @@ Defined in `src/utils/constants.js`.
 - **Repair Mode**: If validation fails due to minor issues (e.g., `tabCount` mismatch, missing non-critical fields), the validator returns `repairable: true`.
 - **Sanitization**: User can choose to "Sanitize & Import". This recalculates the `tabCount` and filters out only the strictly invalid entries, preserving the rest.
 - **Implementation**: Import/export is centralized in `StorageService` (validate, sanitize, merge, and error handling). The Options UI delegates to this service and only shows success/error messages.
-- **Merge Source**: Import merges with current data fetched via background (`getSnoozedTabs`) to avoid V1-only overwrites.
+- **Merge Source**: Import merges with current data fetched via background (`getSnoozedTabsV2`) to avoid overwrites.
 
 ## 7. Storage & Limits
 

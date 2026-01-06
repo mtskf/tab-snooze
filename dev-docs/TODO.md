@@ -20,5 +20,5 @@
 ## Backlog
 
 - [ ] 💡 🧪 [S] **serviceWorker結合テスト** - `onInstalled`/`onStartup` での `initStorage` ・アラーム登録・通知処理の確認
-- [ ] 💡 🔧 [S] **ドキュメント更新** - ARCHITECTURE/SPEC が現行TS実装と乖離（React 18、StorageService役割、インポートフロー）
+- [x] 💡 🔧 [S] **ドキュメント更新** - ARCHITECTURE/SPEC を現行TS実装に合わせて更新（React 18、.ts拡張子、storageLockパターン）
 - [ ] 💡 🔧 [S] **storageLock未適用の初期化経路** - `initStorage`, `recoverFromBackup` が `storageLock` を経由しない（起動時のみのため優先度低）
