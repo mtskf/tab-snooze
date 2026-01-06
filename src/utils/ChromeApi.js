@@ -9,8 +9,8 @@
  */
 
 /**
- * @typedef {import('../types.js').ChromeTab} ChromeTab
- * @typedef {import('../types.js').NotificationOptions} NotificationOptions
+ * @typedef {import('../types').ChromeTab} ChromeTab
+ * @typedef {import('../types').NotificationOptions} NotificationOptions
  */
 
 /**

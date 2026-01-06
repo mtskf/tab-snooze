@@ -1,8 +1,8 @@
 /**
  * Validation utilities for snoozedTabs storage
- * @typedef {import('../types.js').SnoozedItemV2} SnoozedItemV2
- * @typedef {import('../types.js').StorageV2} StorageV2
- * @typedef {import('../types.js').ValidationResult} ValidationResult
+ * @typedef {import('../types').SnoozedItemV2} SnoozedItemV2
+ * @typedef {import('../types').StorageV2} StorageV2
+ * @typedef {import('../types').ValidationResult} ValidationResult
  */
 
 /**
