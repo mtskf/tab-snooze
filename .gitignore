@@ -34,3 +34,6 @@ release/*.zip
 
 dist/
 temp/
+
+# TypeScript
+*.tsbuildinfo
