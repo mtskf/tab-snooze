@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import ChromeApi, { storage, tabs, windows, notifications, alarms, runtime, commands } from './ChromeApi.js';
+import ChromeApi, { storage, tabs, windows, notifications, alarms, runtime, commands } from './ChromeApi';
 
 describe('ChromeApi', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.chrome = {
+    globalThis.chrome = {
       storage: {
         local: {
           get: vi.fn(),
@@ -48,13 +48,13 @@ describe('ChromeApi', () => {
       commands: {
         getAll: vi.fn(),
       },
-    };
+    } as unknown as typeof chrome;
   });
 
   describe('storage.getLocal', () => {
     it('calls chrome.storage.local.get and returns data', async () => {
       const mockData = { key: 'value' };
-      chrome.storage.local.get.mockResolvedValue(mockData);
+      (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValue(mockData);
 
       const result = await storage.getLocal('key');
 
@@ -63,7 +63,7 @@ describe('ChromeApi', () => {
     });
 
     it('throws error on failure', async () => {
-      chrome.storage.local.get.mockRejectedValue(new Error('Storage error'));
+      (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Storage error'));
 
       await expect(storage.getLocal('key')).rejects.toThrow('Failed to read from storage');
     });
@@ -71,7 +71,7 @@ describe('ChromeApi', () => {
 
   describe('storage.setLocal', () => {
     it('calls chrome.storage.local.set', async () => {
-      chrome.storage.local.set.mockResolvedValue(undefined);
+      (chrome.storage.local.set as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
       await storage.setLocal({ key: 'value' });
 
@@ -79,7 +79,7 @@ describe('ChromeApi', () => {
     });
 
     it('throws error on failure', async () => {
-      chrome.storage.local.set.mockRejectedValue(new Error('Write error'));
+      (chrome.storage.local.set as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Write error'));
 
       await expect(storage.setLocal({ key: 'value' })).rejects.toThrow('Failed to write to storage');
     });
@@ -87,7 +87,7 @@ describe('ChromeApi', () => {
 
   describe('storage.removeLocal', () => {
     it('calls chrome.storage.local.remove', async () => {
-      chrome.storage.local.remove.mockResolvedValue(undefined);
+      (chrome.storage.local.remove as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
       await storage.removeLocal('key');
 
@@ -95,7 +95,7 @@ describe('ChromeApi', () => {
     });
 
     it('throws error on failure', async () => {
-      chrome.storage.local.remove.mockRejectedValue(new Error('Remove error'));
+      (chrome.storage.local.remove as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Remove error'));
 
       await expect(storage.removeLocal('key')).rejects.toThrow('Failed to remove from storage');
     });
@@ -103,7 +103,7 @@ describe('ChromeApi', () => {
 
   describe('storage.getBytesInUse', () => {
     it('calls chrome.storage.local.getBytesInUse', async () => {
-      chrome.storage.local.getBytesInUse.mockResolvedValue(1024);
+      (chrome.storage.local.getBytesInUse as ReturnType<typeof vi.fn>).mockResolvedValue(1024);
 
       const result = await storage.getBytesInUse(null);
 
@@ -112,7 +112,7 @@ describe('ChromeApi', () => {
     });
 
     it('returns 0 if getBytesInUse is not supported', async () => {
-      delete chrome.storage.local.getBytesInUse;
+      (chrome.storage.local as { getBytesInUse?: unknown }).getBytesInUse = undefined;
 
       const result = await storage.getBytesInUse(null);
 
@@ -120,7 +120,7 @@ describe('ChromeApi', () => {
     });
 
     it('returns 0 on error', async () => {
-      chrome.storage.local.getBytesInUse.mockRejectedValue(new Error('API error'));
+      (chrome.storage.local.getBytesInUse as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('API error'));
 
       const result = await storage.getBytesInUse(null);
 
@@ -131,7 +131,7 @@ describe('ChromeApi', () => {
   describe('storage.getSession', () => {
     it('calls chrome.storage.session.get', async () => {
       const mockData = { sessionKey: 'sessionValue' };
-      chrome.storage.session.get.mockResolvedValue(mockData);
+      (chrome.storage.session.get as ReturnType<typeof vi.fn>).mockResolvedValue(mockData);
 
       const result = await storage.getSession('sessionKey');
 
@@ -140,7 +140,7 @@ describe('ChromeApi', () => {
     });
 
     it('returns empty object if session storage is not supported', async () => {
-      delete chrome.storage.session;
+      (chrome.storage as { session?: unknown }).session = undefined;
 
       const result = await storage.getSession('key');
 
@@ -148,7 +148,7 @@ describe('ChromeApi', () => {
     });
 
     it('returns empty object on error', async () => {
-      chrome.storage.session.get.mockRejectedValue(new Error('Session error'));
+      (chrome.storage.session.get as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Session error'));
 
       const result = await storage.getSession('key');
 
@@ -159,7 +159,7 @@ describe('ChromeApi', () => {
   describe('tabs.query', () => {
     it('calls chrome.tabs.query', async () => {
       const mockTabs = [{ id: 1, url: 'https://example.com' }];
-      chrome.tabs.query.mockResolvedValue(mockTabs);
+      (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue(mockTabs);
 
       const result = await tabs.query({ active: true });
 
@@ -168,7 +168,7 @@ describe('ChromeApi', () => {
     });
 
     it('throws error on failure', async () => {
-      chrome.tabs.query.mockRejectedValue(new Error('Query error'));
+      (chrome.tabs.query as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Query error'));
 
       await expect(tabs.query({})).rejects.toThrow('Failed to query tabs');
     });
@@ -177,7 +177,7 @@ describe('ChromeApi', () => {
   describe('tabs.create', () => {
     it('calls chrome.tabs.create', async () => {
       const mockTab = { id: 1, url: 'https://example.com' };
-      chrome.tabs.create.mockResolvedValue(mockTab);
+      (chrome.tabs.create as ReturnType<typeof vi.fn>).mockResolvedValue(mockTab);
 
       const result = await tabs.create({ url: 'https://example.com' });
 
@@ -186,7 +186,7 @@ describe('ChromeApi', () => {
     });
 
     it('throws error on failure', async () => {
-      chrome.tabs.create.mockRejectedValue(new Error('Create error'));
+      (chrome.tabs.create as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Create error'));
 
       await expect(tabs.create({ url: 'invalid' })).rejects.toThrow('Failed to create tab');
     });
@@ -194,7 +194,7 @@ describe('ChromeApi', () => {
 
   describe('tabs.remove', () => {
     it('calls chrome.tabs.remove', async () => {
-      chrome.tabs.remove.mockResolvedValue(undefined);
+      (chrome.tabs.remove as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
       await tabs.remove(123);
 
@@ -202,7 +202,7 @@ describe('ChromeApi', () => {
     });
 
     it('throws error on failure', async () => {
-      chrome.tabs.remove.mockRejectedValue(new Error('Remove error'));
+      (chrome.tabs.remove as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Remove error'));
 
       await expect(tabs.remove(123)).rejects.toThrow('Failed to remove tabs');
     });
@@ -211,7 +211,7 @@ describe('ChromeApi', () => {
   describe('windows.create', () => {
     it('calls chrome.windows.create', async () => {
       const mockWindow = { id: 1 };
-      chrome.windows.create.mockResolvedValue(mockWindow);
+      (chrome.windows.create as ReturnType<typeof vi.fn>).mockResolvedValue(mockWindow);
 
       const result = await windows.create({ url: 'https://example.com' });
 
@@ -220,7 +220,7 @@ describe('ChromeApi', () => {
     });
 
     it('throws error on failure', async () => {
-      chrome.windows.create.mockRejectedValue(new Error('Create error'));
+      (chrome.windows.create as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Create error'));
 
       await expect(windows.create({})).rejects.toThrow('Failed to create window');
     });
@@ -229,7 +229,7 @@ describe('ChromeApi', () => {
   describe('windows.getLastFocused', () => {
     it('calls chrome.windows.getLastFocused and returns window', async () => {
       const mockWindow = { id: 1, focused: true };
-      chrome.windows.getLastFocused.mockResolvedValue(mockWindow);
+      (chrome.windows.getLastFocused as ReturnType<typeof vi.fn>).mockResolvedValue(mockWindow);
 
       const result = await windows.getLastFocused({ populate: true });
 
@@ -238,7 +238,7 @@ describe('ChromeApi', () => {
     });
 
     it('throws error on failure', async () => {
-      chrome.windows.getLastFocused.mockRejectedValue(new Error('Window error'));
+      (chrome.windows.getLastFocused as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Window error'));
 
       await expect(windows.getLastFocused()).rejects.toThrow('Failed to get last focused window');
     });
@@ -246,7 +246,7 @@ describe('ChromeApi', () => {
 
   describe('windows.remove', () => {
     it('calls chrome.windows.remove with windowId', async () => {
-      chrome.windows.remove.mockResolvedValue(undefined);
+      (chrome.windows.remove as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
       await windows.remove(123);
 
@@ -254,7 +254,7 @@ describe('ChromeApi', () => {
     });
 
     it('throws error on failure', async () => {
-      chrome.windows.remove.mockRejectedValue(new Error('Remove error'));
+      (chrome.windows.remove as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Remove error'));
 
       await expect(windows.remove(123)).rejects.toThrow('Failed to remove window');
     });
@@ -262,7 +262,7 @@ describe('ChromeApi', () => {
 
   describe('notifications.create', () => {
     it('calls chrome.notifications.create', async () => {
-      chrome.notifications.create.mockResolvedValue('notification-id');
+      (chrome.notifications.create as ReturnType<typeof vi.fn>).mockResolvedValue('notification-id');
 
       const result = await notifications.create('test-notification', {
         type: 'basic',
@@ -281,15 +281,15 @@ describe('ChromeApi', () => {
     });
 
     it('throws error on failure', async () => {
-      chrome.notifications.create.mockRejectedValue(new Error('Notification error'));
+      (chrome.notifications.create as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Notification error'));
 
-      await expect(notifications.create('id', {})).rejects.toThrow('Failed to create notification');
+      await expect(notifications.create('id', { type: 'basic', title: '', message: '', iconUrl: '' })).rejects.toThrow('Failed to create notification');
     });
   });
 
   describe('notifications.clear', () => {
     it('calls chrome.notifications.clear', async () => {
-      chrome.notifications.clear.mockResolvedValue(true);
+      (chrome.notifications.clear as ReturnType<typeof vi.fn>).mockResolvedValue(true);
 
       const result = await notifications.clear('notification-id');
 
@@ -298,7 +298,7 @@ describe('ChromeApi', () => {
     });
 
     it('returns false on error', async () => {
-      chrome.notifications.clear.mockRejectedValue(new Error('Clear error'));
+      (chrome.notifications.clear as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Clear error'));
 
       const result = await notifications.clear('id');
 
@@ -308,7 +308,7 @@ describe('ChromeApi', () => {
 
   describe('alarms.create', () => {
     it('calls chrome.alarms.create', async () => {
-      chrome.alarms.create.mockResolvedValue(undefined);
+      (chrome.alarms.create as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
       await alarms.create('alarm-name', { periodInMinutes: 1 });
 
@@ -316,7 +316,7 @@ describe('ChromeApi', () => {
     });
 
     it('throws error on failure', async () => {
-      chrome.alarms.create.mockRejectedValue(new Error('Alarm error'));
+      (chrome.alarms.create as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Alarm error'));
 
       await expect(alarms.create('name', {})).rejects.toThrow('Failed to create alarm');
     });
@@ -325,7 +325,7 @@ describe('ChromeApi', () => {
   describe('runtime.sendMessage', () => {
     it('calls chrome.runtime.sendMessage and resolves', async () => {
       const mockResponse = { success: true };
-      chrome.runtime.sendMessage.mockImplementation((msg, callback) => {
+      (chrome.runtime.sendMessage as ReturnType<typeof vi.fn>).mockImplementation((msg: unknown, callback: (response: unknown) => void) => {
         callback(mockResponse);
       });
 
@@ -339,20 +339,20 @@ describe('ChromeApi', () => {
     });
 
     it('rejects on chrome.runtime.lastError', async () => {
-      chrome.runtime.lastError = { message: 'Connection error' };
-      chrome.runtime.sendMessage.mockImplementation((msg, callback) => {
+      (chrome.runtime as { lastError: { message: string } | null }).lastError = { message: 'Connection error' };
+      (chrome.runtime.sendMessage as ReturnType<typeof vi.fn>).mockImplementation((msg: unknown, callback: (response: unknown) => void) => {
         callback(null);
       });
 
       await expect(runtime.sendMessage({ action: 'test' })).rejects.toThrow('Connection error');
 
-      chrome.runtime.lastError = null;
+      (chrome.runtime as { lastError: { message: string } | null }).lastError = null;
     });
   });
 
   describe('runtime.getURL', () => {
     it('calls chrome.runtime.getURL', () => {
-      chrome.runtime.getURL.mockReturnValue('chrome-extension://abc123/path');
+      (chrome.runtime.getURL as ReturnType<typeof vi.fn>).mockReturnValue('chrome-extension://abc123/path');
 
       const result = runtime.getURL('path');
 
@@ -361,7 +361,7 @@ describe('ChromeApi', () => {
     });
 
     it('returns empty string on error', () => {
-      chrome.runtime.getURL.mockImplementation(() => {
+      (chrome.runtime.getURL as ReturnType<typeof vi.fn>).mockImplementation(() => {
         throw new Error('API error');
       });
 
@@ -373,7 +373,7 @@ describe('ChromeApi', () => {
 
   describe('runtime.openOptionsPage', () => {
     it('promisifies chrome.runtime.openOptionsPage', async () => {
-      chrome.runtime.openOptionsPage.mockImplementation((callback) => {
+      (chrome.runtime.openOptionsPage as ReturnType<typeof vi.fn>).mockImplementation((callback: () => void) => {
         callback();
       });
 
@@ -383,14 +383,14 @@ describe('ChromeApi', () => {
     });
 
     it('rejects on chrome.runtime.lastError', async () => {
-      chrome.runtime.lastError = { message: 'Options page error' };
-      chrome.runtime.openOptionsPage.mockImplementation((callback) => {
+      (chrome.runtime as { lastError: { message: string } | null }).lastError = { message: 'Options page error' };
+      (chrome.runtime.openOptionsPage as ReturnType<typeof vi.fn>).mockImplementation((callback: () => void) => {
         callback();
       });
 
       await expect(runtime.openOptionsPage()).rejects.toThrow('Options page error');
 
-      chrome.runtime.lastError = null;
+      (chrome.runtime as { lastError: { message: string } | null }).lastError = null;
     });
   });
 
@@ -398,7 +398,7 @@ describe('ChromeApi', () => {
     describe('getAll', () => {
       it('promisifies chrome.commands.getAll and returns commands', async () => {
         const mockCommands = [{ name: '_execute_action', shortcut: 'Alt+Shift+S' }];
-        chrome.commands.getAll.mockImplementation((callback) => {
+        (chrome.commands.getAll as ReturnType<typeof vi.fn>).mockImplementation((callback: (commands: unknown[]) => void) => {
           callback(mockCommands);
         });
 
@@ -409,14 +409,14 @@ describe('ChromeApi', () => {
       });
 
       it('rejects on chrome.runtime.lastError', async () => {
-        chrome.runtime.lastError = { message: 'Commands error' };
-        chrome.commands.getAll.mockImplementation((callback) => {
+        (chrome.runtime as { lastError: { message: string } | null }).lastError = { message: 'Commands error' };
+        (chrome.commands.getAll as ReturnType<typeof vi.fn>).mockImplementation((callback: (commands: unknown[]) => void) => {
           callback([]);
         });
 
         await expect(commands.getAll()).rejects.toThrow('Commands error');
 
-        chrome.runtime.lastError = null;
+        (chrome.runtime as { lastError: { message: string } | null }).lastError = null;
       });
     });
   });

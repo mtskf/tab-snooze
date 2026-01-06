@@ -9,7 +9,7 @@ export const DEFAULT_SHORTCUTS = {
   "pick-date": ["P"],
   "snoozed-items": ["I"],
   settings: [","],
-};
+} as const;
 
 // Centralized default settings (used by snoozeLogic.js and timeUtils.js)
 export const DEFAULT_SETTINGS = {
@@ -17,8 +17,7 @@ export const DEFAULT_SETTINGS = {
   "end-day": "5:00 PM",
   "week-begin": 1,
   "weekend-begin": 6,
-
-};
+} as const;
 
 export const SNOOZE_ACTIONS = [
   { id: "later-today", label: "Later today" },
@@ -29,12 +28,12 @@ export const SNOOZE_ACTIONS = [
   { id: "in-a-week", label: "In a week" },
   { id: "in-a-month", label: "In a month" },
   { id: "pick-date", label: "Pick Date" },
-];
+] as const;
 
 export const OTHER_SHORTCUTS = [
   { id: "snoozed-items", label: "Snoozed Items" },
   { id: "settings", label: "Settings" },
-];
+] as const;
 
 // Default (monochromatic gradient)
 export const DEFAULT_COLORS = {
@@ -46,7 +45,7 @@ export const DEFAULT_COLORS = {
   "in-a-week": "text-indigo-500",
   "in-a-month": "text-indigo-600",
   "pick-date": "text-[#6540E9]",
-};
+} as const;
 
 // Vivid (semantic colors)
 export const VIVID_COLORS = {
@@ -59,7 +58,7 @@ export const VIVID_COLORS = {
   "in-a-month": "text-[#A78BFA]",     // Purple
   "pick-date": "text-[#22D3EE]",      // Cyan
   "delete": "text-[#F43F5E]",         // Rose
-};
+} as const;
 
 // Warm Heatmap (activity-based warmth)
 export const HEATMAP_COLORS = {
@@ -72,7 +71,7 @@ export const HEATMAP_COLORS = {
   "in-a-month": "text-[#FFB703]/75",  // Warm Start (Dim)
   "pick-date": "text-[#FF8C1A]/60",   // Neutral (Escape)
   "delete": "text-[#FF2F6D]",         // Critical
-};
+} as const;
 
 export const RESTRICTED_PROTOCOLS = [
   'chrome:',
@@ -81,7 +80,7 @@ export const RESTRICTED_PROTOCOLS = [
   'about:',
   'chrome-extension:',
   'file:'
-];
+] as const;
 
 // Backup configuration
 export const BACKUP_COUNT = 3;

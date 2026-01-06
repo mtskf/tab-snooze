@@ -1,13 +1,13 @@
 import { storage } from './ChromeApi';
 import { DEFAULT_SETTINGS } from './constants';
+import type { Settings } from '../types';
 
 /**
  * Gets settings from storage merged with defaults.
  * Falls back to defaults if storage access fails.
- * @returns {Promise<Object>} Settings with defaults applied
  */
-export async function getSettingsWithDefaults() {
-  const defaults = {
+export async function getSettingsWithDefaults(): Promise<Settings> {
+  const defaults: Settings = {
     ...DEFAULT_SETTINGS,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   };
@@ -17,7 +17,7 @@ export async function getSettingsWithDefaults() {
     if (!res.settings) {
       return defaults;
     }
-    return { ...defaults, ...res.settings };
+    return { ...defaults, ...(res.settings as Partial<Settings>) };
   } catch (error) {
     console.warn('Failed to fetch settings, using defaults:', error);
     return defaults;

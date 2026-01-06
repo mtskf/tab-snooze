@@ -4,14 +4,11 @@
  * Centralizes all chrome.* API calls with:
  * - Consistent error handling
  * - Testable interface (easy to mock)
- * - Type safety with JSDoc
+ * - Type safety with TypeScript
  * - Graceful fallbacks for unsupported APIs (e.g., Firefox)
  */
 
-/**
- * @typedef {import('../types').ChromeTab} ChromeTab
- * @typedef {import('../types').NotificationOptions} NotificationOptions
- */
+import type { NotificationOptions } from '../types';
 
 /**
  * Storage API wrapper
@@ -19,52 +16,44 @@
 export const storage = {
   /**
    * Gets data from chrome.storage.local
-   * @param {string|string[]|null} keys - Keys to retrieve (null for all)
-   * @returns {Promise<Object>} Storage data
    */
-  async getLocal(keys) {
+  async getLocal(keys: string | string[] | null): Promise<Record<string, unknown>> {
     try {
       return await chrome.storage.local.get(keys);
     } catch (error) {
       console.error('Storage.getLocal failed:', error);
-      throw new Error(`Failed to read from storage: ${error.message}`);
+      throw new Error(`Failed to read from storage: ${(error as Error).message}`);
     }
   },
 
   /**
    * Sets data in chrome.storage.local
-   * @param {Object} items - Key-value pairs to store
-   * @returns {Promise<void>}
    */
-  async setLocal(items) {
+  async setLocal(items: Record<string, unknown>): Promise<void> {
     try {
       await chrome.storage.local.set(items);
     } catch (error) {
       console.error('Storage.setLocal failed:', error);
-      throw new Error(`Failed to write to storage: ${error.message}`);
+      throw new Error(`Failed to write to storage: ${(error as Error).message}`);
     }
   },
 
   /**
    * Removes keys from chrome.storage.local
-   * @param {string|string[]} keys - Keys to remove
-   * @returns {Promise<void>}
    */
-  async removeLocal(keys) {
+  async removeLocal(keys: string | string[]): Promise<void> {
     try {
       await chrome.storage.local.remove(keys);
     } catch (error) {
       console.error('Storage.removeLocal failed:', error);
-      throw new Error(`Failed to remove from storage: ${error.message}`);
+      throw new Error(`Failed to remove from storage: ${(error as Error).message}`);
     }
   },
 
   /**
    * Gets storage size in bytes (returns 0 if unsupported)
-   * @param {string[]|null} keys - Keys to check size for
-   * @returns {Promise<number>} Bytes used
    */
-  async getBytesInUse(keys) {
+  async getBytesInUse(keys: string[] | null): Promise<number> {
     try {
       if (typeof chrome.storage.local.getBytesInUse !== 'function') {
         return 0; // Unsupported (e.g., Firefox)
@@ -78,10 +67,8 @@ export const storage = {
 
   /**
    * Gets data from chrome.storage.session (fallback to empty object if unsupported)
-   * @param {string|string[]|null} keys - Keys to retrieve
-   * @returns {Promise<Object>} Session storage data
    */
-  async getSession(keys) {
+  async getSession(keys: string | string[] | null): Promise<Record<string, unknown>> {
     try {
       if (!chrome.storage.session) {
         return {}; // Firefox doesn't support session storage
@@ -95,10 +82,8 @@ export const storage = {
 
   /**
    * Sets data in chrome.storage.session (no-op if unsupported)
-   * @param {Object} items - Key-value pairs to store
-   * @returns {Promise<void>}
    */
-  async setSession(items) {
+  async setSession(items: Record<string, unknown>): Promise<void> {
     try {
       if (!chrome.storage.session) {
         return; // Firefox doesn't support session storage
@@ -111,10 +96,8 @@ export const storage = {
 
   /**
    * Removes keys from chrome.storage.session (no-op if unsupported)
-   * @param {string|string[]} keys - Keys to remove
-   * @returns {Promise<void>}
    */
-  async removeSession(keys) {
+  async removeSession(keys: string | string[]): Promise<void> {
     try {
       if (!chrome.storage.session) {
         return;
@@ -132,58 +115,49 @@ export const storage = {
 export const tabs = {
   /**
    * Queries for tabs matching criteria
-   * @param {Object} queryInfo - Query criteria
-   * @returns {Promise<ChromeTab[]>} Matching tabs
    */
-  async query(queryInfo) {
+  async query(queryInfo: chrome.tabs.QueryInfo): Promise<chrome.tabs.Tab[]> {
     try {
       return await chrome.tabs.query(queryInfo);
     } catch (error) {
       console.error('Tabs.query failed:', error);
-      throw new Error(`Failed to query tabs: ${error.message}`);
+      throw new Error(`Failed to query tabs: ${(error as Error).message}`);
     }
   },
 
   /**
    * Creates a new tab
-   * @param {Object} createProperties - Tab properties
-   * @returns {Promise<ChromeTab>} Created tab
    */
-  async create(createProperties) {
+  async create(createProperties: chrome.tabs.CreateProperties): Promise<chrome.tabs.Tab> {
     try {
       return await chrome.tabs.create(createProperties);
     } catch (error) {
       console.error('Tabs.create failed:', error);
-      throw new Error(`Failed to create tab: ${error.message}`);
+      throw new Error(`Failed to create tab: ${(error as Error).message}`);
     }
   },
 
   /**
    * Removes (closes) tabs
-   * @param {number|number[]} tabIds - Tab ID(s) to remove
-   * @returns {Promise<void>}
    */
-  async remove(tabIds) {
+  async remove(tabIds: number | number[]): Promise<void> {
     try {
       await chrome.tabs.remove(tabIds);
     } catch (error) {
       console.error('Tabs.remove failed:', error);
-      throw new Error(`Failed to remove tabs: ${error.message}`);
+      throw new Error(`Failed to remove tabs: ${(error as Error).message}`);
     }
   },
 
   /**
    * Updates tab properties
-   * @param {number} tabId - Tab ID
-   * @param {Object} updateProperties - Properties to update
-   * @returns {Promise<ChromeTab>} Updated tab
    */
-  async update(tabId, updateProperties) {
+  async update(tabId: number, updateProperties: chrome.tabs.UpdateProperties): Promise<chrome.tabs.Tab> {
     try {
       return await chrome.tabs.update(tabId, updateProperties);
     } catch (error) {
       console.error('Tabs.update failed:', error);
-      throw new Error(`Failed to update tab: ${error.message}`);
+      throw new Error(`Failed to update tab: ${(error as Error).message}`);
     }
   },
 };
@@ -194,58 +168,49 @@ export const tabs = {
 export const windows = {
   /**
    * Creates a new window
-   * @param {Object} createData - Window properties
-   * @returns {Promise<Object>} Created window
    */
-  async create(createData) {
+  async create(createData?: chrome.windows.CreateData): Promise<chrome.windows.Window | undefined> {
     try {
       return await chrome.windows.create(createData);
     } catch (error) {
       console.error('Windows.create failed:', error);
-      throw new Error(`Failed to create window: ${error.message}`);
+      throw new Error(`Failed to create window: ${(error as Error).message}`);
     }
   },
 
   /**
    * Gets information about a window
-   * @param {number} windowId - Window ID
-   * @param {Object} [getInfo] - Optional query info
-   * @returns {Promise<Object>} Window info
    */
-  async get(windowId, getInfo) {
+  async get(windowId: number, getInfo?: chrome.windows.GetInfo): Promise<chrome.windows.Window> {
     try {
       return await chrome.windows.get(windowId, getInfo);
     } catch (error) {
       console.error('Windows.get failed:', error);
-      throw new Error(`Failed to get window: ${error.message}`);
+      throw new Error(`Failed to get window: ${(error as Error).message}`);
     }
   },
 
   /**
    * Gets the last focused window
-   * @param {Object} [getInfo] - Optional query info
-   * @returns {Promise<Object>} Window info
    */
-  async getLastFocused(getInfo) {
+  async getLastFocused(getInfo?: chrome.windows.GetInfo): Promise<chrome.windows.Window> {
     try {
       return await chrome.windows.getLastFocused(getInfo);
     } catch (error) {
       console.error('Windows.getLastFocused failed:', error);
-      throw new Error(`Failed to get last focused window: ${error.message}`);
+      throw new Error(`Failed to get last focused window: ${(error as Error).message}`);
     }
   },
 
   /**
    * Removes (closes) a window
-   * @param {number} windowId - Window ID to close
-   * @returns {Promise<void>}
    */
-  async remove(windowId) {
+  async remove(windowId: number): Promise<void> {
     try {
-      return await chrome.windows.remove(windowId);
+      await chrome.windows.remove(windowId);
     } catch (error) {
       console.error('Windows.remove failed:', error);
-      throw new Error(`Failed to remove window: ${error.message}`);
+      throw new Error(`Failed to remove window: ${(error as Error).message}`);
     }
   },
 };
@@ -256,25 +221,20 @@ export const windows = {
 export const notifications = {
   /**
    * Creates a notification
-   * @param {string} notificationId - Notification ID
-   * @param {NotificationOptions} options - Notification options
-   * @returns {Promise<string>} Notification ID
    */
-  async create(notificationId, options) {
+  async create(notificationId: string, options: NotificationOptions): Promise<string> {
     try {
-      return await chrome.notifications.create(notificationId, options);
+      return await chrome.notifications.create(notificationId, options as chrome.notifications.NotificationOptions);
     } catch (error) {
       console.error('Notifications.create failed:', error);
-      throw new Error(`Failed to create notification: ${error.message}`);
+      throw new Error(`Failed to create notification: ${(error as Error).message}`);
     }
   },
 
   /**
    * Clears a notification
-   * @param {string} notificationId - Notification ID
-   * @returns {Promise<boolean>} Whether notification was cleared
    */
-  async clear(notificationId) {
+  async clear(notificationId: string): Promise<boolean> {
     try {
       return await chrome.notifications.clear(notificationId);
     } catch (error) {
@@ -290,25 +250,20 @@ export const notifications = {
 export const alarms = {
   /**
    * Creates an alarm
-   * @param {string} name - Alarm name
-   * @param {Object} alarmInfo - Alarm configuration
-   * @returns {Promise<void>}
    */
-  async create(name, alarmInfo) {
+  async create(name: string, alarmInfo: chrome.alarms.AlarmCreateInfo): Promise<void> {
     try {
       await chrome.alarms.create(name, alarmInfo);
     } catch (error) {
       console.error('Alarms.create failed:', error);
-      throw new Error(`Failed to create alarm: ${error.message}`);
+      throw new Error(`Failed to create alarm: ${(error as Error).message}`);
     }
   },
 
   /**
    * Clears an alarm
-   * @param {string} [name] - Alarm name (clears all if omitted)
-   * @returns {Promise<boolean>} Whether alarm was cleared
    */
-  async clear(name) {
+  async clear(name?: string): Promise<boolean> {
     try {
       return await chrome.alarms.clear(name);
     } catch (error) {
@@ -319,10 +274,8 @@ export const alarms = {
 
   /**
    * Gets an alarm
-   * @param {string} [name] - Alarm name
-   * @returns {Promise<Object|undefined>} Alarm or undefined
    */
-  async get(name) {
+  async get(name?: string): Promise<chrome.alarms.Alarm | undefined> {
     try {
       return await chrome.alarms.get(name);
     } catch (error) {
@@ -338,12 +291,10 @@ export const alarms = {
 export const runtime = {
   /**
    * Sends a message to the background script
-   * @param {Object} message - Message to send
-   * @returns {Promise<any>} Response from background
    */
-  async sendMessage(message) {
+  async sendMessage<T = unknown>(message: unknown): Promise<T> {
     return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage(message, (response) => {
+      chrome.runtime.sendMessage(message, (response: T) => {
         if (chrome.runtime.lastError) {
           reject(new Error(chrome.runtime.lastError.message));
           return;
@@ -355,10 +306,8 @@ export const runtime = {
 
   /**
    * Gets the URL for a resource
-   * @param {string} path - Resource path
-   * @returns {string} Full URL
    */
-  getURL(path) {
+  getURL(path: string): string {
     try {
       return chrome.runtime.getURL(path);
     } catch (error) {
@@ -369,9 +318,8 @@ export const runtime = {
 
   /**
    * Opens the extension's options page
-   * @returns {Promise<void>}
    */
-  async openOptionsPage() {
+  async openOptionsPage(): Promise<void> {
     return new Promise((resolve, reject) => {
       chrome.runtime.openOptionsPage(() => {
         if (chrome.runtime.lastError) {
@@ -390,16 +338,15 @@ export const runtime = {
 export const commands = {
   /**
    * Gets all extension commands with shortcuts
-   * @returns {Promise<Object[]>} Array of command objects
    */
-  async getAll() {
+  async getAll(): Promise<chrome.commands.Command[]> {
     return new Promise((resolve, reject) => {
-      chrome.commands.getAll((commands) => {
+      chrome.commands.getAll((cmds) => {
         if (chrome.runtime.lastError) {
           reject(new Error(chrome.runtime.lastError.message));
           return;
         }
-        resolve(commands);
+        resolve(cmds);
       });
     });
   },

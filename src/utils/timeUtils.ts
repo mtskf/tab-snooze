@@ -3,7 +3,17 @@ import { addMonths } from "date-fns";
 import { DEFAULT_SETTINGS } from "./constants";
 import { getSettingsWithDefaults } from "./settingsHelper";
 
-export async function getTime(timeName) {
+export type TimeName =
+  | "later-today"
+  | "this-evening"
+  | "tomorrow"
+  | "this-weekend"
+  | "next-monday"
+  | "in-a-week"
+  | "in-a-month"
+  | "pick-date";
+
+export async function getTime(timeName: TimeName | string): Promise<Date | undefined> {
   const settings = await getSettingsWithDefaults();
   const timezone =
     settings.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -14,7 +24,7 @@ export async function getTime(timeName) {
   // Convert to "Zoned Time" (a Date object where getHours() returns wall-clock time in target zone)
   // In date-fns-tz v3: toZonedTime(date, timeZone)
   const zonedNow = toZonedTime(now, timezone);
-  var result = new Date(zonedNow); // Copy for manipulation
+  let result: Date | undefined = new Date(zonedNow); // Copy for manipulation
 
   setSettingsTime(result, settings["start-day"]); // Default "8:00 AM" or similar
 
@@ -25,7 +35,7 @@ export async function getTime(timeName) {
       // Add hours (this is naive add, but works on "zoned" object for simple offsets)
       // Better: use result.setHours(result.getHours() + X)
       // User requested fixed 1 hour logic for "Later today"
-      var hour = 1;
+      const hour = 1;
       result.setHours(result.getHours() + hour, 0, 0, 0);
       // Let's assume user wants exactly +3 hours from now, maybe rounded to nearest hour?
       // Looking at original code: it rounded seconds to 0.
@@ -48,19 +58,21 @@ export async function getTime(timeName) {
         result.setDate(result.getDate() + 1);
       }
       break;
-    case "this-weekend":
+    case "this-weekend": {
       // daysToNextDay works on getDay() (0-6). Zoned object returns correct local day.
-      var daysToWeekend = daysToNextDay(
+      const daysToWeekend = daysToNextDay(
         result.getDay(),
         settings["weekend-begin"],
       );
       result.setDate(result.getDate() + daysToWeekend);
       // Use start-day for consistency (no separate weekend start time)
       break;
-    case "next-monday":
-      var daysToMonday = daysToNextDay(result.getDay(), 1); // 1 is Monday
+    }
+    case "next-monday": {
+      const daysToMonday = daysToNextDay(result.getDay(), 1); // 1 is Monday
       result.setDate(result.getDate() + daysToMonday);
       break;
+    }
     case "in-a-week":
       result.setDate(result.getDate() + 7);
       break;
@@ -87,7 +99,7 @@ export async function getTime(timeName) {
   return result;
 }
 
-function daysToNextDay(currentDay, nextDay) {
+function daysToNextDay(currentDay: number, nextDay: number): number {
   if (currentDay > 6 || currentDay < 0 || nextDay > 6 || nextDay < 0) {
     return 0;
   }
@@ -102,10 +114,8 @@ function daysToNextDay(currentDay, nextDay) {
 /**
  * Parses a time string (e.g., "8:00 AM") and returns the hour (0-23).
  * Falls back to DEFAULT_SETTINGS['start-day'] hour if input is falsy.
- * @param {string|null|undefined} timeStr - Time string in "H:MM AM/PM" format
- * @returns {number} Hour in 24-hour format (0-23)
  */
-export function parseTimeString(timeStr) {
+export function parseTimeString(timeStr: string | null | undefined): number {
   // Fallback to DEFAULT_SETTINGS['start-day'] if input is falsy
   // Use DEFAULT_START_HOUR which is computed at module load to avoid recursion
   if (!timeStr) return DEFAULT_START_HOUR;
@@ -126,7 +136,7 @@ export function parseTimeString(timeStr) {
 }
 
 // Compute default start hour once at module load (avoids recursion in parseTimeString)
-const DEFAULT_START_HOUR = (() => {
+const DEFAULT_START_HOUR = ((): number => {
   const timeStr = DEFAULT_SETTINGS['start-day'];
   if (!timeStr) return 8; // Ultimate fallback if DEFAULT_SETTINGS is misconfigured
   const timeParts = timeStr.split(/[\s:]+/);
@@ -138,15 +148,15 @@ const DEFAULT_START_HOUR = (() => {
 })();
 
 // Internal alias for backward compatibility
-function getSettingsTime(settingsTime) {
+function getSettingsTime(settingsTime: string | undefined): number {
   return parseTimeString(settingsTime);
 }
 
-function setSettingsTime(result, settingsTime) {
+function setSettingsTime(result: Date, settingsTime: string | undefined): Date {
   if (!settingsTime) return result;
-  var hour = getSettingsTime(settingsTime);
-  var timeParts = settingsTime.split(/[\s:]+/);
-  var minute = parseInt(timeParts[1]);
+  const hour = getSettingsTime(settingsTime);
+  const timeParts = settingsTime.split(/[\s:]+/);
+  const minute = parseInt(timeParts[1]);
   result.setHours(hour, minute, 0, 0);
 
   return result;

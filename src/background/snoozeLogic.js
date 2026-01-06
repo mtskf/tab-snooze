@@ -6,13 +6,13 @@
  * @typedef {import('../types').ChromeTab} ChromeTab
  */
 
-import { generateUUID } from '../utils/uuid.js';
-import { storage, tabs, windows, notifications } from '../utils/ChromeApi.js';
+import { generateUUID } from '../utils/uuid';
+import { storage, tabs, windows, notifications } from '../utils/ChromeApi';
 
-import { validateSnoozedTabsV2, sanitizeSnoozedTabsV2 } from '../utils/validation.js';
-import { DEFAULT_SETTINGS, RESTRICTED_PROTOCOLS, BACKUP_COUNT, BACKUP_DEBOUNCE_MS, BACKUP_PREFIX, WARNING_THRESHOLD, CLEAR_THRESHOLD, THROTTLE_MS } from '../utils/constants.js';
-import { getSettingsWithDefaults } from '../utils/settingsHelper.js';
-import { ensureValidStorage } from './schemaVersioning.js';
+import { validateSnoozedTabsV2, sanitizeSnoozedTabsV2 } from '../utils/validation';
+import { DEFAULT_SETTINGS, RESTRICTED_PROTOCOLS, BACKUP_COUNT, BACKUP_DEBOUNCE_MS, BACKUP_PREFIX, WARNING_THRESHOLD, CLEAR_THRESHOLD, THROTTLE_MS } from '../utils/constants';
+import { getSettingsWithDefaults } from '../utils/settingsHelper';
+import { ensureValidStorage } from './schemaVersioning';
 
 
 

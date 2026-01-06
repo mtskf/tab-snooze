@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from "vitest";
 import { StorageService } from "./StorageService";
 
 // V2 format helper
@@ -23,10 +23,10 @@ function makeValidV2Data() {
 
 describe("StorageService", () => {
   describe("downloadAsJson", () => {
-    let createObjectURLSpy;
-    let revokeObjectURLSpy;
-    let createElementSpy;
-    let anchor;
+    let createObjectURLSpy: MockInstance;
+    let revokeObjectURLSpy: MockInstance;
+    let createElementSpy: MockInstance;
+    let anchor: HTMLAnchorElement;
 
     beforeEach(() => {
       createObjectURLSpy = vi
@@ -39,9 +39,9 @@ describe("StorageService", () => {
       const originalCreate = document.createElement.bind(document);
       createElementSpy = vi
         .spyOn(document, "createElement")
-        .mockImplementation((tag) => {
+        .mockImplementation((tag: string) => {
           if (tag === "a") {
-            anchor = originalCreate("a");
+            anchor = originalCreate("a") as HTMLAnchorElement;
             anchor.click = vi.fn();
             return anchor;
           }
@@ -100,7 +100,7 @@ describe("StorageService", () => {
         type: "application/json",
       });
 
-      const result = await StorageService.readJsonFile(file);
+      const result = await StorageService.readJsonFile(file) as typeof v2Data;
       expect(result.version).toBe(2);
       expect(result.items["tab-1"]).toBeDefined();
     });
@@ -126,7 +126,7 @@ describe("StorageService", () => {
         type: "application/json",
       });
 
-      const result = await StorageService.readJsonFile(file);
+      const result = await StorageService.readJsonFile(file) as typeof invalidData;
       expect(result.version).toBe(2);
       expect(result.items).toBe("should be object");
     });

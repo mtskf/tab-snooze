@@ -3,7 +3,8 @@ import {
   filterByQuery,
   selectSnoozedItemsByDay,
   selectTabCount,
-} from "./selectors.js";
+} from "./selectors";
+import type { SnoozedItemV2, StorageV2 } from "../types";
 
 describe("selectors", () => {
   // Fixed time for consistent testing
@@ -21,17 +22,20 @@ describe("selectors", () => {
   });
 
   // Helper to create V2 data
-  const createV2Data = (items = {}, schedule = {}) => ({
+  const createV2Data = (
+    items: Record<string, SnoozedItemV2> = {},
+    schedule: Record<string, string[]> = {}
+  ): StorageV2 => ({
     version: 2,
     items,
     schedule,
   });
 
   const createItem = (
-    id,
-    popTime,
-    { url = `https://example.com/${id}`, title = `Tab ${id}`, groupId } = {}
-  ) => ({
+    id: string,
+    popTime: number,
+    { url = `https://example.com/${id}`, title = `Tab ${id}`, groupId }: { url?: string; title?: string; groupId?: string } = {}
+  ): SnoozedItemV2 => ({
     id,
     url,
     title,
@@ -244,7 +248,7 @@ describe("selectors", () => {
       expect(result[0].key).toBe(TODAY.toDateString());
       expect(result[0].displayItems.length).toBe(1);
       expect(result[0].displayItems[0].type).toBe("tab");
-      expect(result[0].displayItems[0].data.title).toBe("Today Tab");
+      expect((result[0].displayItems[0] as { type: 'tab'; data: SnoozedItemV2 }).data.title).toBe("Today Tab");
 
       // Second day should be tomorrow
       expect(result[1].key).toBe(TOMORROW.toDateString());
@@ -268,9 +272,9 @@ describe("selectors", () => {
 
       expect(result.length).toBe(1);
       expect(result[0].displayItems.length).toBe(3);
-      expect(result[0].displayItems[0].data.title).toBe("First");
-      expect(result[0].displayItems[1].data.title).toBe("Middle");
-      expect(result[0].displayItems[2].data.title).toBe("Last");
+      expect((result[0].displayItems[0] as { type: 'tab'; data: SnoozedItemV2 }).data.title).toBe("First");
+      expect((result[0].displayItems[1] as { type: 'tab'; data: SnoozedItemV2 }).data.title).toBe("Middle");
+      expect((result[0].displayItems[2] as { type: 'tab'; data: SnoozedItemV2 }).data.title).toBe("Last");
     });
 
     it("groups tabs with same groupId into window groups", () => {
@@ -300,13 +304,13 @@ describe("selectors", () => {
       // Find the group item
       const groupItem = result[0].displayItems.find((i) => i.type === "group");
       expect(groupItem).toBeDefined();
-      expect(groupItem.groupId).toBe(groupId);
-      expect(groupItem.groupItems.length).toBe(2);
+      expect((groupItem as { type: 'group'; groupId: string }).groupId).toBe(groupId);
+      expect((groupItem as { type: 'group'; groupItems: SnoozedItemV2[] }).groupItems.length).toBe(2);
 
       // Find the solo tab
       const soloTab = result[0].displayItems.find((i) => i.type === "tab");
       expect(soloTab).toBeDefined();
-      expect(soloTab.data.title).toBe("Solo Tab");
+      expect((soloTab as { type: 'tab'; data: SnoozedItemV2 }).data.title).toBe("Solo Tab");
     });
 
     it("uses earliest popTime for group sorting", () => {
@@ -330,9 +334,9 @@ describe("selectors", () => {
 
       // Group should come first (time1), then solo tab (time3)
       expect(result[0].displayItems[0].type).toBe("group");
-      expect(result[0].displayItems[0].popTime).toBe(time1);
+      expect((result[0].displayItems[0] as { type: 'group'; popTime: number }).popTime).toBe(time1);
       expect(result[0].displayItems[1].type).toBe("tab");
-      expect(result[0].displayItems[1].data.popTime).toBe(time3);
+      expect((result[0].displayItems[1] as { type: 'tab'; data: SnoozedItemV2 }).data.popTime).toBe(time3);
     });
 
     it("includes popTime in tab data", () => {
@@ -345,7 +349,7 @@ describe("selectors", () => {
 
       const result = selectSnoozedItemsByDay(v2Data);
 
-      expect(result[0].displayItems[0].data.popTime).toBe(time1);
+      expect((result[0].displayItems[0] as { type: 'tab'; data: SnoozedItemV2 }).data.popTime).toBe(time1);
     });
   });
 
@@ -375,7 +379,7 @@ describe("selectors", () => {
     it("handles undefined/null gracefully", () => {
       expect(selectTabCount(null)).toBe(0);
       expect(selectTabCount(undefined)).toBe(0);
-      expect(selectTabCount({})).toBe(0);
+      expect(selectTabCount({} as StorageV2)).toBe(0);
     });
   });
 });

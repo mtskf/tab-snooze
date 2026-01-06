@@ -7,10 +7,8 @@
 export const StorageService = {
   /**
    * Triggers a browser download of the given data as a JSON file.
-   * @param {Object} data - The data to download
-   * @param {string} [filename] - Optional filename (defaults to timestamped name)
    */
-  downloadAsJson: (data, filename) => {
+  downloadAsJson: (data: unknown, filename?: string): void => {
     if (!data || typeof data !== 'object') {
       throw new Error("No data to export.");
     }
@@ -30,17 +28,15 @@ export const StorageService = {
   /**
    * Reads a JSON file and returns the parsed content.
    * Does NOT validate the data - validation is done by the background.
-   * @param {File} file - The file object from input[type="file"]
-   * @returns {Promise<Object>} - The parsed JSON object
    */
-  readJsonFile: (file) => {
+  readJsonFile: (file: File): Promise<unknown> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const data = JSON.parse(e.target.result);
+          const data = JSON.parse(e.target?.result as string);
           resolve(data);
-        } catch (error) {
+        } catch {
           reject(new Error("Invalid JSON file"));
         }
       };
