@@ -6,7 +6,8 @@ import {
   MESSAGE_HANDLERS,
   dispatchMessage,
   sendMessage,
-} from './messages.js';
+  type MessageAction,
+} from './messages';
 
 describe('messages', () => {
   describe('MESSAGE_ACTIONS', () => {
@@ -119,8 +120,8 @@ describe('messages', () => {
         popTime: 123456789,
       });
       expect(message.action).toBe(MESSAGE_ACTIONS.SNOOZE);
-      expect(message.tab).toEqual({ url: 'https://example.com' });
-      expect(message.popTime).toBe(123456789);
+      expect((message as unknown as { tab: unknown }).tab).toEqual({ url: 'https://example.com' });
+      expect((message as unknown as { popTime: number }).popTime).toBe(123456789);
     });
 
     it('throws error for invalid message', () => {
@@ -135,14 +136,14 @@ describe('messages', () => {
       const actions = Object.values(MESSAGE_ACTIONS);
       actions.forEach(action => {
         expect(MESSAGE_HANDLERS).toHaveProperty(action);
-        expect(typeof MESSAGE_HANDLERS[action]).toBe('function');
+        expect(typeof MESSAGE_HANDLERS[action as MessageAction]).toBe('function');
       });
     });
 
     it('getSnoozedTabsV2 handler calls getSnoozedTabsV2', async () => {
       const mockV2Data = {
-        version: 2,
-        items: { 'tab-1': { url: 'https://example.com' } },
+        version: 2 as const,
+        items: { 'tab-1': { id: 'tab-1', url: 'https://example.com', creationTime: 0, popTime: 0 } },
         schedule: { '1234567890': ['tab-1'] },
       };
       const mockService = {
@@ -150,7 +151,7 @@ describe('messages', () => {
       };
 
       const request = { action: MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2 };
-      const result = await MESSAGE_HANDLERS[MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2](request, mockService);
+      const result = await MESSAGE_HANDLERS[MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2](request, mockService as never);
 
       expect(mockService.getSnoozedTabsV2).toHaveBeenCalled();
       expect(result).toEqual(mockV2Data);
@@ -168,7 +169,7 @@ describe('messages', () => {
         groupId: 'group-1',
       };
 
-      const result = await MESSAGE_HANDLERS[MESSAGE_ACTIONS.SNOOZE](request, mockService);
+      const result = await MESSAGE_HANDLERS[MESSAGE_ACTIONS.SNOOZE](request as never, mockService as never);
 
       expect(mockService.snooze).toHaveBeenCalledWith(
         { url: 'https://example.com' },
@@ -190,7 +191,7 @@ describe('messages', () => {
         data: importData,
       };
 
-      const result = await MESSAGE_HANDLERS[MESSAGE_ACTIONS.IMPORT_TABS](request, mockService);
+      const result = await MESSAGE_HANDLERS[MESSAGE_ACTIONS.IMPORT_TABS](request as never, mockService as never);
 
       expect(mockService.importTabs).toHaveBeenCalledWith(importData);
       expect(result).toEqual(mockResult);
@@ -198,8 +199,8 @@ describe('messages', () => {
 
     it('exportTabs handler calls getExportData', async () => {
       const mockV2Data = {
-        version: 2,
-        items: { 'tab-1': { url: 'https://example.com' } },
+        version: 2 as const,
+        items: { 'tab-1': { id: 'tab-1', url: 'https://example.com', creationTime: 0, popTime: 0 } },
         schedule: { '1234567890': ['tab-1'] },
       };
       const mockService = {
@@ -207,7 +208,7 @@ describe('messages', () => {
       };
 
       const request = { action: MESSAGE_ACTIONS.EXPORT_TABS };
-      const result = await MESSAGE_HANDLERS[MESSAGE_ACTIONS.EXPORT_TABS](request, mockService);
+      const result = await MESSAGE_HANDLERS[MESSAGE_ACTIONS.EXPORT_TABS](request, mockService as never);
 
       expect(mockService.getExportData).toHaveBeenCalled();
       expect(result).toEqual(mockV2Data);
@@ -217,8 +218,8 @@ describe('messages', () => {
   describe('dispatchMessage', () => {
     it('dispatches message to correct handler', async () => {
       const mockV2Data = {
-        version: 2,
-        items: { 'tab-1': { url: 'https://example.com' } },
+        version: 2 as const,
+        items: { 'tab-1': { id: 'tab-1', url: 'https://example.com', creationTime: 0, popTime: 0 } },
         schedule: { '1234567890': ['tab-1'] },
       };
       const mockService = {
@@ -226,7 +227,7 @@ describe('messages', () => {
       };
 
       const request = { action: MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2 };
-      const result = await dispatchMessage(request, mockService);
+      const result = await dispatchMessage(request, mockService as never);
 
       expect(result).toEqual(mockV2Data);
       expect(mockService.getSnoozedTabsV2).toHaveBeenCalled();
@@ -240,7 +241,7 @@ describe('messages', () => {
       const payload = { 'start-day': '9:00 AM', timezone: 'UTC' };
       const request = { action: MESSAGE_ACTIONS.SET_SETTINGS, data: payload };
 
-      const result = await dispatchMessage(request, mockService);
+      const result = await dispatchMessage(request as never, mockService as never);
 
       expect(mockService.setSettings).toHaveBeenCalledWith(payload);
       expect(result).toEqual({ success: true });
@@ -254,7 +255,7 @@ describe('messages', () => {
       const payload = { tabCount: 0 };
       const request = { action: MESSAGE_ACTIONS.SET_SNOOZED_TABS, data: payload };
 
-      const result = await dispatchMessage(request, mockService);
+      const result = await dispatchMessage(request as never, mockService as never);
 
       expect(mockService.setSnoozedTabs).toHaveBeenCalledWith(payload);
       expect(result).toEqual({ success: true });
@@ -262,17 +263,17 @@ describe('messages', () => {
 
     it('throws error for invalid request', async () => {
       await expect(
-        dispatchMessage({ action: 'invalid' }, {})
+        dispatchMessage({ action: 'invalid' } as never, {} as never)
       ).rejects.toThrow('Unknown action');
     });
 
     it('throws error for missing handler', async () => {
       // Temporarily remove a handler
       const originalHandler = MESSAGE_HANDLERS[MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2];
-      delete MESSAGE_HANDLERS[MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2];
+      delete (MESSAGE_HANDLERS as Record<string, unknown>)[MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2];
 
       await expect(
-        dispatchMessage({ action: MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2 }, {})
+        dispatchMessage({ action: MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2 } as never, {} as never)
       ).rejects.toThrow('No handler registered');
 
       // Restore handler
@@ -283,17 +284,17 @@ describe('messages', () => {
   describe('sendMessage', () => {
     beforeEach(() => {
       vi.clearAllMocks();
-      global.chrome = {
+      globalThis.chrome = {
         runtime: {
           sendMessage: vi.fn(),
           lastError: null,
         },
-      };
+      } as unknown as typeof chrome;
     });
 
     it('sends message and resolves with response', async () => {
       const mockResponse = { version: 2, items: {}, schedule: {} };
-      chrome.runtime.sendMessage.mockImplementation((msg, callback) => {
+      (chrome.runtime.sendMessage as ReturnType<typeof vi.fn>).mockImplementation((msg: unknown, callback: (response: unknown) => void) => {
         callback(mockResponse);
       });
 
@@ -307,8 +308,8 @@ describe('messages', () => {
     });
 
     it('rejects on chrome.runtime.lastError', async () => {
-      chrome.runtime.lastError = { message: 'Connection error' };
-      chrome.runtime.sendMessage.mockImplementation((msg, callback) => {
+      (chrome.runtime as unknown as { lastError: { message: string } | null }).lastError = { message: 'Connection error' };
+      (chrome.runtime.sendMessage as ReturnType<typeof vi.fn>).mockImplementation((msg: unknown, callback: (response: unknown) => void) => {
         callback(null);
       });
 
@@ -316,11 +317,11 @@ describe('messages', () => {
         sendMessage(MESSAGE_ACTIONS.GET_SNOOZED_TABS_V2)
       ).rejects.toThrow('Connection error');
 
-      chrome.runtime.lastError = null;
+      (chrome.runtime as unknown as { lastError: { message: string } | null }).lastError = null;
     });
 
     it('rejects on error response', async () => {
-      chrome.runtime.sendMessage.mockImplementation((msg, callback) => {
+      (chrome.runtime.sendMessage as ReturnType<typeof vi.fn>).mockImplementation((msg: unknown, callback: (response: unknown) => void) => {
         callback({ error: 'Unknown action' });
       });
 
@@ -330,7 +331,7 @@ describe('messages', () => {
     });
 
     it('sends message with payload', async () => {
-      chrome.runtime.sendMessage.mockImplementation((msg, callback) => {
+      (chrome.runtime.sendMessage as ReturnType<typeof vi.fn>).mockImplementation((msg: unknown, callback: (response: unknown) => void) => {
         callback({ success: true });
       });
 
