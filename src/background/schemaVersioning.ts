@@ -9,6 +9,26 @@ import type { StorageV2, SnoozedItemV2 } from '../types';
 import { generateUUID } from '../utils/uuid';
 import { validateSnoozedTabsV2, sanitizeSnoozedTabsV2 } from '../utils/validation';
 import { storage } from '../utils/ChromeApi';
+import { RESTRICTED_PROTOCOLS } from '../utils/constants';
+
+/**
+ * Validates if a URL is restorable (valid format, not restricted protocol)
+ * Mirrors the validation in snooze() function
+ */
+function isRestorableUrl(url: unknown): url is string {
+  if (typeof url !== 'string' || url.trim() === '') {
+    return false;
+  }
+  try {
+    const parsed = new URL(url);
+    if (RESTRICTED_PROTOCOLS.some(p => parsed.protocol === p)) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Current schema version
 export const CURRENT_SCHEMA_VERSION = 2;
@@ -88,8 +108,8 @@ function migrateV1toV2(v1Data: V1LegacyData): StorageV2 {
     if (!schedule[time]) schedule[time] = [];
 
     for (const tab of tabs as V1TabEntry[]) {
-      // Skip entries without URL - they cannot be restored
-      if (!tab.url) {
+      // Skip entries with invalid/restricted URLs - they cannot be restored
+      if (!isRestorableUrl(tab.url)) {
         continue;
       }
 
