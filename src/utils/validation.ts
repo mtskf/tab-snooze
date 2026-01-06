@@ -26,7 +26,15 @@ export function isRestorableUrl(url: unknown): url is string {
 const REQUIRED_TAB_FIELDS = ['url', 'creationTime', 'popTime'] as const;
 
 /**
- * Validates a single tab entry
+ * Validates a single tab entry for structural correctness.
+ *
+ * Note: This function validates data structure only, NOT URL restorability.
+ * URL restorability (empty URLs, restricted protocols) is checked at:
+ * - Snooze time: snoozeLogic.ts snooze()
+ * - V1->V2 migration: schemaVersioning.ts migrateV1ToV2()
+ *
+ * If invalid URLs in V2 data become an issue (e.g., from direct V2 imports),
+ * consider adding isRestorableUrl() check here or in sanitizeSnoozedTabsV2().
  */
 export function validateTabEntry(tab: unknown): ValidationResult {
   const errors: string[] = [];

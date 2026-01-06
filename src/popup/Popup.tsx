@@ -1,0 +1,452 @@
+import React, { useState, useEffect } from "react";
+import logo from "../assets/logo.svg";
+import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
+
+import { Calendar } from "@/components/ui/calendar";
+import { getTime, parseTimeString } from "@/utils/timeUtils";
+import {
+  Clock,
+  Moon,
+  Sun,
+  Armchair,
+  Briefcase,
+  CalendarDays,
+  CalendarRange,
+  Settings as SettingsIcon,
+  Inbox,
+  Archive,
+  Loader2,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { Settings } from "@/types";
+
+import {
+  DEFAULT_SHORTCUTS,
+  DEFAULT_COLORS,
+  VIVID_COLORS,
+  HEATMAP_COLORS,
+  DEFAULT_SETTINGS,
+} from "@/utils/constants";
+
+type ColorScheme = Record<string, string>;
+import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation";
+import { sendMessage, MESSAGE_ACTIONS } from "@/messages";
+import { ScopeSelector, type Scope } from "./components/ScopeSelector";
+import { SnoozeItem } from "./components/SnoozeItem";
+import { tabs, runtime } from "@/utils/ChromeApi";
+
+type Appearance = "default" | "vivid" | "heatmap";
+
+interface SnoozeItemData {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  shortcuts: string[];
+  color: string;
+}
+
+interface TabToSend {
+  id: number | undefined;
+  url: string | undefined;
+  title: string | undefined;
+  favIconUrl: string | undefined;
+  index: number;
+}
+
+export default function Popup() {
+  const [date, setDate] = useState<Date | undefined>();
+  const [items, setItems] = useState<SnoozeItemData[]>([
+    {
+      id: "later-today",
+      label: "Later today",
+      icon: Clock,
+      shortcuts: [],
+      color: "text-sky-300",
+    },
+    {
+      id: "this-evening",
+      label: "This evening",
+      icon: Moon,
+      shortcuts: [],
+      color: "text-sky-400",
+    },
+    {
+      id: "tomorrow",
+      label: "Tomorrow",
+      icon: Sun,
+      shortcuts: [],
+      color: "text-blue-400",
+    },
+    {
+      id: "this-weekend",
+      label: "This weekend",
+      icon: Armchair,
+      shortcuts: [],
+      color: "text-blue-500",
+    },
+    {
+      id: "next-monday",
+      label: "Next Monday",
+      icon: Briefcase,
+      shortcuts: [],
+      color: "text-blue-600",
+    },
+    {
+      id: "in-a-week",
+      label: "In a week",
+      icon: CalendarRange,
+      shortcuts: [],
+      color: "text-indigo-500",
+    },
+    {
+      id: "in-a-month",
+      label: "In a month",
+      icon: Archive,
+      shortcuts: [],
+      color: "text-indigo-600",
+    },
+  ]);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarScope, setCalendarScope] = useState<Scope>("selected"); // Scope to use when snoozing via calendar
+  const [scope, setScope] = useState<Scope>("selected"); // 'selected' | 'window'
+  const [pickDateShortcut, setPickDateShortcut] = useState("P");
+  const [snoozedItemsShortcut, setSnoozedItemsShortcut] = useState("I");
+  const [settingsShortcut, setSettingsShortcut] = useState(",");
+  const [focusedIndex, setFocusedIndex] = useState(-1); // -1 = no focus, 0-6 = items, 7 = pick date
+  const [appearance, setAppearance] = useState<Appearance>("default");
+  const [isSnoozing, setIsSnoozing] = useState(false);
+  /* Default to 8/17 to match DEFAULT_SETTINGS */
+  const [startDayHour, setStartDayHour] = useState(parseTimeString(DEFAULT_SETTINGS["start-day"]));
+  const [endDayHour, setEndDayHour] = useState(parseTimeString(DEFAULT_SETTINGS["end-day"]));
+  const [currentHour, setCurrentHour] = useState(new Date().getHours());
+
+  useEffect(() => {
+    // Fetch settings and apply shortcuts/colors
+    const loadSettings = async () => {
+      try {
+        const result = await sendMessage(MESSAGE_ACTIONS.GET_SETTINGS) as Settings | null;
+        // Background now handles defaults merging
+        const settings: Settings = result || DEFAULT_SETTINGS;
+
+        // Merge shortcuts (spread to convert readonly arrays to mutable)
+        const userShortcuts = settings.shortcuts || {};
+        const mergedShortcuts = { ...DEFAULT_SHORTCUTS, ...userShortcuts };
+        const finalShortcuts: Record<string, string[]> = Object.fromEntries(
+          Object.entries(mergedShortcuts).map(([k, v]) => [k, [...v]])
+        );
+
+        setItems((prevItems) =>
+          prevItems.map((item) => {
+            let colorScheme: ColorScheme = DEFAULT_COLORS;
+            const appSetting = settings.appearance;
+            if (appSetting === "vivid") colorScheme = VIVID_COLORS;
+            if (appSetting === "heatmap") colorScheme = HEATMAP_COLORS;
+            return {
+              ...item,
+              shortcuts: finalShortcuts[item.id] || [],
+              color: colorScheme[item.id] || item.color,
+            };
+          }),
+        );
+
+        // Set appearance
+        setAppearance(settings.appearance || "default");
+
+        // Set pick-date shortcut (empty string if not set)
+        const pdShortcut = finalShortcuts["pick-date"]?.[0] || "";
+        setPickDateShortcut(pdShortcut);
+
+        // Set snoozed-items and settings shortcuts
+        setSnoozedItemsShortcut(finalShortcuts["snoozed-items"]?.[0] || "I");
+        setSettingsShortcut(finalShortcuts["settings"]?.[0] || ",");
+
+        // Parse start-day and end-day hours for visibility logic
+        setStartDayHour(parseTimeString(settings["start-day"]));
+        setEndDayHour(parseTimeString(settings["end-day"]));
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+        // Use defaults on error
+        setAppearance("default");
+        setPickDateShortcut("");
+        setSnoozedItemsShortcut("I");
+        setSettingsShortcut(",");
+      }
+    };
+
+    loadSettings();
+  }, []);
+
+
+  // Compute display items with visibility and dynamic labels
+  const isEarlyMorning = currentHour < startDayHour;
+  const isPastEndDay = currentHour >= endDayHour;
+  const currentDay = new Date().getDay();
+  const isWeekend = currentDay === 0 || currentDay === 6; // Sunday (0) or Saturday (6)
+
+  const displayItems = items
+    .filter((item) => {
+      // Hide This Evening when past end-day
+      if (item.id === "this-evening" && isPastEndDay) return false;
+      return true;
+    })
+    .map((item) => {
+      // Change Tomorrow to This morning when early morning
+      if (item.id === "tomorrow" && isEarlyMorning) {
+        return { ...item, label: "This morning" };
+      }
+      // Change This weekend to Next weekend when it's already weekend
+      if (item.id === "this-weekend" && isWeekend) {
+        return { ...item, label: "Next weekend" };
+      }
+      return item;
+    })
+    .sort((a, b) => {
+      // Reorder: This morning should come before This evening
+      if (a.id === "tomorrow" && isEarlyMorning && b.id === "this-evening") return -1;
+      if (b.id === "tomorrow" && isEarlyMorning && a.id === "this-evening") return 1;
+      return 0;
+    });
+
+  const handleSnooze = async (key: string) => {
+    const time = await getTime(key);
+    snoozeTabs(time);
+  };
+
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    if (selectedDate) {
+      // Set to start-day time on the selected date
+      const targetDate = new Date(selectedDate);
+      targetDate.setHours(startDayHour, 0, 0, 0);
+
+      setDate(targetDate);
+      snoozeTabsWithScope(targetDate, calendarScope);
+      setIsCalendarOpen(false);
+    }
+  };
+
+  // Handle snooze with explicit scope (for keyboard shortcuts with Shift)
+  const handleSnoozeWithScope = async (key: string, explicitScope: Scope) => {
+    const time = await getTime(key);
+    snoozeTabsWithScope(time, explicitScope);
+  };
+
+  const snoozeTabs = (time: Date | null | undefined) => {
+    snoozeTabsWithScope(time, scope);
+  };
+
+  const snoozeTabsWithScope = async (time: Date | null | undefined, targetScope: Scope) => {
+    if (!time) return; // Safety check
+    setIsSnoozing(true); // Show loading state
+
+    const query =
+      targetScope === "selected"
+        ? { currentWindow: true, highlighted: true }
+        : { currentWindow: true };
+
+    try {
+      const tabsResult = await tabs.query(query);
+
+      // Generate groupId if multiple tabs or window scope
+      // We use a simple timestamp + random suffix for unique ID
+      const groupId =
+        targetScope === "window"
+          ? `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          : null;
+
+      const promises = tabsResult.map((tab) => {
+        return performSnooze(tab, time, groupId);
+      });
+
+      // Use allSettled to handle partial failures gracefully
+      const results = await Promise.allSettled(promises);
+
+      // Check for failures
+      const failures = results.filter(r => r.status === 'rejected');
+
+      if (failures.length > 0) {
+        console.error(`Failed to snooze ${failures.length} of ${tabsResult.length} tabs:`, failures);
+        // Note: Successfully snoozed tabs are already closed by the background script
+        // Failed tabs remain open for user to retry
+      }
+
+      // Always close popup, even if some tabs failed
+      // (successfully snoozed tabs are already handled)
+      window.close();
+    } catch (error) {
+      console.error('Unexpected error during snooze:', error);
+      setIsSnoozing(false); // Reset loading state
+      // Keep popup open so user can retry
+    }
+  };
+
+  const performSnooze = async (tab: chrome.tabs.Tab, time: Date, groupId: string | null = null) => {
+    const tabToSend: TabToSend = {
+      id: tab.id,
+      url: tab.url,
+      title: tab.title,
+      favIconUrl: tab.favIconUrl,
+      index: tab.index,
+    };
+
+    await sendMessage(MESSAGE_ACTIONS.SNOOZE, {
+      tab: tabToSend,
+      popTime: time.getTime(),
+      groupId,
+    });
+  };
+
+  // Hidden debug command: 1-minute snooze (jjj) - DEV mode only
+  const handleOneMinuteSnooze = (targetScope: Scope) => {
+    const time = new Date();
+    time.setMinutes(time.getMinutes() + 1);
+    time.setSeconds(0, 0);
+    snoozeTabsWithScope(time, targetScope);
+  };
+
+  // Use the extracted hook
+  useKeyboardNavigation({
+    items: displayItems,
+    focusedIndex,
+    setFocusedIndex,
+    setScope,
+    scope,
+    handleSnooze,
+    handleSnoozeWithScope,
+    handleOneMinuteSnooze,
+    setIsCalendarOpen,
+    setCalendarScope,
+    isCalendarOpen,
+    pickDateShortcut,
+    snoozedItemsShortcut,
+    settingsShortcut,
+  });
+
+  return (
+    <div className="w-[350px] bg-background text-foreground min-h-[500px] flex flex-col relative">
+      {/* Loading Overlay */}
+      {isSnoozing && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="mt-2 text-sm text-muted-foreground">Snoozing...</span>
+        </div>
+      )}
+      <div className="p-6 space-y-4">
+        <div className="flex justify-between items-center">
+          <img src={logo} alt="Snooze" className="h-6" />
+          <div className="flex gap-1 items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground h-8 w-8"
+              onClick={() => runtime.openOptionsPage().catch((error) => {
+                console.error('Failed to open options page:', error);
+              })}
+            >
+              <Inbox className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground h-8 w-8"
+              onClick={() =>
+                tabs.create({
+                  url: runtime.getURL("options/index.html#settings"),
+                }).catch((error) => {
+                  console.error('Failed to open settings:', error);
+                })
+              }
+            >
+              <SettingsIcon className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Scope Selection */}
+        <ScopeSelector scope={scope} setScope={setScope} />
+
+        {/* Sub info */}
+
+        <div className="space-y-1">
+          {displayItems.map((item, index) => (
+            <SnoozeItem
+              key={item.id}
+              item={item}
+              isFocused={focusedIndex === index}
+              onClick={() => handleSnooze(item.id)}
+            />
+          ))}
+
+          {/* Pick Date */}
+          <button
+            onClick={() => {
+              setCalendarScope(scope); // Capture current scope when opening via mouse
+              setIsCalendarOpen(true);
+            }}
+            className={cn(
+              "w-full flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors group text-left",
+              focusedIndex === displayItems.length &&
+                "bg-secondary/70 ring-1 ring-primary",
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <CalendarDays
+                className={cn(
+                  `h-5 w-5 ${
+                    appearance === "vivid"
+                      ? VIVID_COLORS["pick-date"]
+                      : appearance === "heatmap"
+                      ? HEATMAP_COLORS["pick-date"]
+                      : DEFAULT_COLORS["pick-date"]
+                  }`
+                )}
+              />
+              <span className="font-medium">Pick Date</span>
+            </div>
+            <div className="flex gap-1">
+              <Kbd>{pickDateShortcut}</Kbd>
+            </div>
+          </button>
+
+          {/* Calendar Modal Overlay */}
+          {isCalendarOpen && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+              onClick={() => setIsCalendarOpen(false)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsCalendarOpen(false);
+                }
+              }}
+              tabIndex={-1}
+            >
+              <div
+                className="bg-popover rounded-lg border border-border shadow-lg"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={handleDateSelect}
+                  initialFocus
+                  weekStartsOn={1}
+                  captionLayout="dropdown-buttons"
+                  fromYear={new Date().getFullYear()}
+                  toYear={new Date().getFullYear() + 5}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+        {/* Navigation hint */}
+        <div className="text-center text-[9px] text-muted-foreground flex items-center justify-center gap-1">
+          <Kbd>▲</Kbd>
+          <Kbd>▼</Kbd> to navigate
+        </div>
+      </div>
+    </div>
+  );
+}
