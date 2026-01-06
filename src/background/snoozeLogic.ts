@@ -10,7 +10,7 @@ import { storage, tabs, windows, notifications } from '../utils/ChromeApi';
 import { validateSnoozedTabsV2, sanitizeSnoozedTabsV2, isRestorableUrl } from '../utils/validation';
 import { DEFAULT_SETTINGS, BACKUP_COUNT, BACKUP_DEBOUNCE_MS, BACKUP_PREFIX, WARNING_THRESHOLD, CLEAR_THRESHOLD, THROTTLE_MS } from '../utils/constants';
 import { getSettingsWithDefaults } from '../utils/settingsHelper';
-import { ensureValidStorage } from './schemaVersioning';
+import { ensureValidStorage, detectSchemaVersion, runMigrations, CURRENT_SCHEMA_VERSION } from './schemaVersioning';
 
 // Backup configuration
 let backupTimer: ReturnType<typeof setTimeout> | null = null;
@@ -104,7 +104,7 @@ async function saveStorageV2(v2Data: StorageV2): Promise<void> {
  * Used if legacy code calls setSnoozedTabs. Converts structure and saves V2.
  */
 export async function setSnoozedTabs(legacyData: unknown): Promise<void> {
-  const { detectSchemaVersion, runMigrations, CURRENT_SCHEMA_VERSION } = await import('./schemaVersioning');
+
 
   // Detect source version and migrate to current version
   const sourceVersion = detectSchemaVersion(legacyData);
@@ -222,7 +222,7 @@ interface ImportResult {
  * Imports tabs from raw data (V1 or V2 format)
  */
 export async function importTabs(rawData: unknown): Promise<ImportResult> {
-  const { detectSchemaVersion, runMigrations, CURRENT_SCHEMA_VERSION } = await import('./schemaVersioning');
+
 
   try {
     // Validate input is an object
