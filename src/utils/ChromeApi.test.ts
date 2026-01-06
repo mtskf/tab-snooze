@@ -346,34 +346,6 @@ describe('ChromeApi', () => {
     });
   });
 
-  describe('runtime.sendMessage', () => {
-    it('calls chrome.runtime.sendMessage and resolves', async () => {
-      const mockResponse = { success: true };
-      (chrome.runtime.sendMessage as ReturnType<typeof vi.fn>).mockImplementation((msg: unknown, callback: (response: unknown) => void) => {
-        callback(mockResponse);
-      });
-
-      const result = await runtime.sendMessage({ action: 'test' });
-
-      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
-        { action: 'test' },
-        expect.any(Function)
-      );
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('rejects on chrome.runtime.lastError', async () => {
-      (chrome.runtime as { lastError: { message: string } | null }).lastError = { message: 'Connection error' };
-      (chrome.runtime.sendMessage as ReturnType<typeof vi.fn>).mockImplementation((msg: unknown, callback: (response: unknown) => void) => {
-        callback(null);
-      });
-
-      await expect(runtime.sendMessage({ action: 'test' })).rejects.toThrow('Connection error');
-
-      (chrome.runtime as { lastError: { message: string } | null }).lastError = null;
-    });
-  });
-
   describe('runtime.getURL', () => {
     it('calls chrome.runtime.getURL', () => {
       (chrome.runtime.getURL as ReturnType<typeof vi.fn>).mockReturnValue('chrome-extension://abc123/path');

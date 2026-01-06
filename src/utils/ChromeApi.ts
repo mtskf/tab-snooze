@@ -294,21 +294,6 @@ export const alarms = {
  */
 export const runtime = {
   /**
-   * Sends a message to the background script
-   */
-  async sendMessage<T = unknown>(message: unknown): Promise<T> {
-    return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage(message, (response: T) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
-          return;
-        }
-        resolve(response);
-      });
-    });
-  },
-
-  /**
    * Gets the URL for a resource
    */
   getURL(path: string): string {

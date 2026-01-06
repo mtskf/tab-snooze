@@ -13,7 +13,7 @@
 
 ## Refactoring & Maintenance
 
-- [ ] 💡 🔧 [S] **デッドコード削除** - `ChromeApi.runtime.sendMessage` が未使用
+- [x] 💡 🔧 [S] **デッドコード削除** - `ChromeApi.runtime.sendMessage` が未使用
 - [ ] 💡 🧪 [S] **テストカバレッジ確認** - `vitest --coverage` で穴を探す
 - [ ] 💡 🧪 [S] **React テスト警告の修正** - `aria-describedby` / `act()` 警告対応
 
