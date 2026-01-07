@@ -30,15 +30,21 @@ export function useUndoDelete({
   const [pendingTabIds, setPendingTabIds] = useState<Set<string>>(new Set());
   const pendingDeletionsRef = useRef<Map<string, PendingDeletion>>(new Map());
 
-  // Cleanup on unmount
+  // Execute pending deletions on unmount (user left without clicking Undo)
   useEffect(() => {
     return () => {
       pendingDeletionsRef.current.forEach((pending) => {
         clearTimeout(pending.timeoutId);
+        // Execute deletion immediately - user confirmed by leaving the page
+        if (pending.type === 'tab' && pending.tab) {
+          onDeleteTab(pending.tab);
+        } else if (pending.type === 'group' && pending.groupId) {
+          onDeleteGroup(pending.groupId);
+        }
       });
       pendingDeletionsRef.current.clear();
     };
-  }, []);
+  }, [onDeleteTab, onDeleteGroup]);
 
   const removePendingTabIds = useCallback((tabIds: string[]) => {
     setPendingTabIds((prev) => {

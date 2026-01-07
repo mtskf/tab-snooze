@@ -320,7 +320,7 @@ describe('useUndoDelete', () => {
     expect(onDeleteTab).toHaveBeenCalledTimes(1);
   });
 
-  it('cleans up timers on unmount', () => {
+  it('executes pending deletions on unmount', () => {
     const onDeleteTab = vi.fn();
     const onDeleteGroup = vi.fn();
 
@@ -332,13 +332,33 @@ describe('useUndoDelete', () => {
       result.current.scheduleTabDelete(mockTab);
     });
 
+    expect(onDeleteTab).not.toHaveBeenCalled();
+
     unmount();
 
+    // Deletion should be executed immediately on unmount
+    expect(onDeleteTab).toHaveBeenCalledWith(mockTab);
+    expect(onDeleteTab).toHaveBeenCalledTimes(1);
+  });
+
+  it('executes pending group deletions on unmount', () => {
+    const onDeleteTab = vi.fn();
+    const onDeleteGroup = vi.fn();
+
+    const { result, unmount } = renderHook(() =>
+      useUndoDelete({ onDeleteTab, onDeleteGroup })
+    );
+
     act(() => {
-      vi.advanceTimersByTime(5000);
+      result.current.scheduleGroupDelete('group-1', mockGroupTabs);
     });
 
-    // Should not have been called after unmount
-    expect(onDeleteTab).not.toHaveBeenCalled();
+    expect(onDeleteGroup).not.toHaveBeenCalled();
+
+    unmount();
+
+    // Group deletion should be executed immediately on unmount
+    expect(onDeleteGroup).toHaveBeenCalledWith('group-1');
+    expect(onDeleteGroup).toHaveBeenCalledTimes(1);
   });
 });
