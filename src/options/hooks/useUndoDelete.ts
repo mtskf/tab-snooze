@@ -30,21 +30,34 @@ export function useUndoDelete({
   const [pendingTabIds, setPendingTabIds] = useState<Set<string>>(new Set());
   const pendingDeletionsRef = useRef<Map<string, PendingDeletion>>(new Map());
 
+  // Store callbacks in refs to avoid dependency issues
+  // This prevents cleanup from running when callbacks change (e.g., due to re-renders)
+  const onDeleteTabRef = useRef(onDeleteTab);
+  const onDeleteGroupRef = useRef(onDeleteGroup);
+
+  // Keep refs in sync with latest callbacks
+  useEffect(() => {
+    onDeleteTabRef.current = onDeleteTab;
+    onDeleteGroupRef.current = onDeleteGroup;
+  });
+
   // Execute pending deletions on unmount (user left without clicking Undo)
+  // Empty dependency array ensures this only runs on actual component unmount,
+  // not when callbacks change (which would cause unexpected deletions)
   useEffect(() => {
     return () => {
       pendingDeletionsRef.current.forEach((pending) => {
         clearTimeout(pending.timeoutId);
         // Execute deletion immediately - user confirmed by leaving the page
         if (pending.type === 'tab' && pending.tab) {
-          onDeleteTab(pending.tab);
+          onDeleteTabRef.current(pending.tab);
         } else if (pending.type === 'group' && pending.groupId) {
-          onDeleteGroup(pending.groupId);
+          onDeleteGroupRef.current(pending.groupId);
         }
       });
       pendingDeletionsRef.current.clear();
     };
-  }, [onDeleteTab, onDeleteGroup]);
+  }, []);
 
   const removePendingTabIds = useCallback((tabIds: string[]) => {
     setPendingTabIds((prev) => {
