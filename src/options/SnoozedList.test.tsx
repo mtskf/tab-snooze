@@ -244,4 +244,50 @@ describe('SnoozedList', () => {
     expect(globeIcon).toBeInTheDocument();
     expect(container.querySelector('img')).not.toBeInTheDocument();
   });
+
+  it('resets error state when favicon src changes', () => {
+    const createDayGroups = (favicon: string) => [
+      {
+        key: mockDate.toDateString(),
+        date: new Date(mockDate.getFullYear(), mockDate.getMonth(), mockDate.getDate()),
+        displayItems: [
+          {
+            type: 'tab' as const,
+            data: {
+              id: 'tab-1',
+              url: 'https://example.com',
+              title: 'Tab With Favicon',
+              favicon,
+              creationTime: 123,
+              popTime: mockPopTime,
+            },
+          },
+        ],
+      },
+    ];
+
+    const { container, rerender } = render(
+      <SnoozedList dayGroups={createDayGroups('https://example.com/broken.ico')} />
+    );
+
+    // Initial img renders
+    const img = container.querySelector('img');
+    expect(img).toBeInTheDocument();
+
+    // Trigger error
+    fireEvent.error(img!);
+
+    // Should show fallback
+    expect(container.querySelector('svg.lucide-globe')).toBeInTheDocument();
+    expect(container.querySelector('img')).not.toBeInTheDocument();
+
+    // Rerender with new favicon src
+    rerender(<SnoozedList dayGroups={createDayGroups('https://example.com/new-favicon.ico')} />);
+
+    // Error state should be reset, img should render again
+    const newImg = container.querySelector('img');
+    expect(newImg).toBeInTheDocument();
+    expect(newImg).toHaveAttribute('src', 'https://example.com/new-favicon.ico');
+    expect(container.querySelector('svg.lucide-globe')).not.toBeInTheDocument();
+  });
 });

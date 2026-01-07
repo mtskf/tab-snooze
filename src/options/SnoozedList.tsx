@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trash2, AppWindow, Globe } from "lucide-react";
@@ -25,6 +25,11 @@ interface FaviconImageProps {
 
 function FaviconImage({ src, className, fallbackClassName }: FaviconImageProps) {
   const [hasError, setHasError] = useState(false);
+
+  // Reset error state when src changes
+  useEffect(() => {
+    setHasError(false);
+  }, [src]);
 
   if (!src || hasError) {
     return <Globe className={fallbackClassName || className} />;
