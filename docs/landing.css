@@ -53,6 +53,7 @@ h1 {
   margin-bottom: 1rem;
   background: linear-gradient(to bottom right, #ffffff, #a1a1aa);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -176,6 +177,10 @@ p {
   gap: 1rem;
   flex-wrap: wrap; /* Allow wrapping on very small screens */
   justify-content: center;
+}
+
+.footer-badge {
+  margin-bottom: 2rem;
 }
 
 /* How to Use Section */
