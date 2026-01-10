@@ -25,3 +25,4 @@ Chrome拡張機能（Manifest V3）- タブをスヌーズして後で復元
 | ARCHITECTURE.md | アーキテクチャ・データモデル |
 | DECISIONS.md | 設計判断の記録 |
 | LESSONS.md | 学んだ教訓 |
+| TODO.md | 未完了タスク |
