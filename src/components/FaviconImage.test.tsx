@@ -131,4 +131,82 @@ describe("FaviconImage", () => {
       expect(newImg).toHaveAttribute("src", "https://example.com/new-favicon.ico");
     });
   });
+
+  describe("security - XSS prevention", () => {
+    it("blocks javascript: protocol URLs", () => {
+      const { container } = render(
+        <FaviconImage src="javascript:alert(document.cookie)" />
+      );
+      // Should show fallback icon, not img element
+      const globeIcon = container.querySelector("svg.lucide-globe");
+      expect(globeIcon).toBeInTheDocument();
+      expect(container.querySelector("img")).not.toBeInTheDocument();
+    });
+
+    it("blocks data: protocol URLs", () => {
+      const { container } = render(
+        <FaviconImage src="data:text/html,<script>alert(1)</script>" />
+      );
+      const globeIcon = container.querySelector("svg.lucide-globe");
+      expect(globeIcon).toBeInTheDocument();
+      expect(container.querySelector("img")).not.toBeInTheDocument();
+    });
+
+    it("blocks data: URLs with SVG XSS payload", () => {
+      const { container } = render(
+        <FaviconImage src="data:image/svg+xml,<svg onload='alert(1)'>" />
+      );
+      const globeIcon = container.querySelector("svg.lucide-globe");
+      expect(globeIcon).toBeInTheDocument();
+      expect(container.querySelector("img")).not.toBeInTheDocument();
+    });
+
+    it("allows http: protocol URLs", () => {
+      const { container } = render(
+        <FaviconImage src="http://example.com/favicon.ico" />
+      );
+      const img = container.querySelector("img");
+      expect(img).toBeInTheDocument();
+      expect(img).toHaveAttribute("src", "http://example.com/favicon.ico");
+    });
+
+    it("allows https: protocol URLs", () => {
+      const { container } = render(
+        <FaviconImage src="https://example.com/favicon.ico" />
+      );
+      const img = container.querySelector("img");
+      expect(img).toBeInTheDocument();
+      expect(img).toHaveAttribute("src", "https://example.com/favicon.ico");
+    });
+
+    it("allows chrome-extension: protocol URLs", () => {
+      const { container } = render(
+        <FaviconImage src="chrome-extension://abcdef123456/icon.png" />
+      );
+      const img = container.querySelector("img");
+      expect(img).toBeInTheDocument();
+      expect(img).toHaveAttribute(
+        "src",
+        "chrome-extension://abcdef123456/icon.png"
+      );
+    });
+
+    it("blocks file: protocol URLs", () => {
+      const { container } = render(
+        <FaviconImage src="file:///etc/passwd" />
+      );
+      const globeIcon = container.querySelector("svg.lucide-globe");
+      expect(globeIcon).toBeInTheDocument();
+      expect(container.querySelector("img")).not.toBeInTheDocument();
+    });
+
+    it("blocks ftp: protocol URLs", () => {
+      const { container } = render(
+        <FaviconImage src="ftp://example.com/file.ico" />
+      );
+      const globeIcon = container.querySelector("svg.lucide-globe");
+      expect(globeIcon).toBeInTheDocument();
+      expect(container.querySelector("img")).not.toBeInTheDocument();
+    });
+  });
 });

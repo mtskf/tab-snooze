@@ -5,7 +5,7 @@
 /**
  * Format a date as relative day label or localized full date.
  *
- * Returns "Today" or "Tomorrow" for dates within the next 2 days,
+ * Returns "Today" or "Tomorrow" for the current day or next day,
  * otherwise returns full date in format like "Monday, January 15".
  *
  * Timezone behavior:
@@ -76,11 +76,14 @@ export function formatTime(timestamp: number): string {
  *
  * Error handling:
  * - undefined/null/empty string → "Unknown"
+ * - URL exceeding 2048 characters (RFC 2616 limit) → "Unknown"
  * - Malformed URL (invalid protocol, etc.) → "Unknown"
  * - Valid URL → hostname only (without protocol/path)
  *
  * @param url - URL string to parse (can be undefined)
  * @returns Hostname extracted from URL, or "Unknown" on error
+ *
+ * @security URL length is limited to 2048 characters to prevent ReDoS attacks
  *
  * @example
  * ```ts
@@ -88,10 +91,12 @@ export function formatTime(timestamp: number): string {
  * getHostname("chrome://extensions") // "extensions"
  * getHostname("invalid-url") // "Unknown"
  * getHostname(undefined) // "Unknown"
+ * getHostname("http://example.com/" + "a".repeat(3000)) // "Unknown"
  * ```
  */
 export function getHostname(url: string | undefined): string {
-  if (!url) return "Unknown";
+  // Prevent ReDoS attacks by limiting URL length (RFC 2616 recommended limit)
+  if (!url || url.length > 2048) return "Unknown";
   try {
     return new URL(url).hostname;
   } catch {

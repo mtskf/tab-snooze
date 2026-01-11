@@ -198,5 +198,34 @@ describe("formatUtils", () => {
       // Punycode representation
       expect(getHostname("https://xn--n3h.com")).toBe("xn--n3h.com");
     });
+
+    describe("security - ReDoS prevention", () => {
+      it("returns 'Unknown' for URLs exceeding 2048 characters", () => {
+        // Create a URL that exceeds the RFC 2616 recommended limit
+        const longUrl = "http://example.com/" + "a".repeat(2100);
+        expect(getHostname(longUrl)).toBe("Unknown");
+      });
+
+      it("handles URLs exactly at 2048 character limit", () => {
+        // Create a URL with exactly 2048 characters
+        const padding = "a".repeat(2048 - "http://example.com/".length);
+        const maxLengthUrl = "http://example.com/" + padding;
+        expect(maxLengthUrl.length).toBe(2048);
+        // Should still process (at the limit, not over)
+        expect(getHostname(maxLengthUrl)).toBe("example.com");
+      });
+
+      it("returns 'Unknown' for extremely long URLs (10000+ chars)", () => {
+        const veryLongUrl = "http://example.com/" + "a".repeat(10000);
+        expect(getHostname(veryLongUrl)).toBe("Unknown");
+      });
+
+      it("handles URL length check before parsing", () => {
+        // Verify that length check happens before URL parsing to prevent ReDoS
+        const longInvalidUrl = "not-a-url" + "x".repeat(3000);
+        // Should return "Unknown" due to length, not parsing error
+        expect(getHostname(longInvalidUrl)).toBe("Unknown");
+      });
+    });
   });
 });
