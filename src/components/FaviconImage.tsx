@@ -32,7 +32,8 @@ export function FaviconImage({
     <img
       src={src}
       className={className}
-      alt=""
+     
+      role="presentation"
       onError={() => setHasError(true)}
     />
   );
