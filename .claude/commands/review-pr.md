@@ -1,0 +1,39 @@
+# Review PR
+
+Review this pull request comprehensively using parallel sub-agents.
+
+## Instructions
+
+You are reviewing a pull request. Follow these steps:
+
+1. **Understand the context**: Read the PR description and changes
+2. **Launch parallel reviews**: Start 5 specialized sub-agents to review different aspects simultaneously
+3. **Use inline comments**: Always use `mcp__github_inline_comment__create_inline_comment` to comment directly on specific code lines
+4. **Summarize findings**: After all sub-agents complete, provide a brief summary
+
+## Sub-agents to launch in parallel
+
+Launch these 5 sub-agents using the Task tool with `run_in_background: false` to run them in parallel:
+
+1. **Code Quality Reviewer** (`.claude/sub-agents/code-quality-reviewer.md`)
+   - Focus on code readability, maintainability, and best practices
+
+2. **Performance Reviewer** (`.claude/sub-agents/performance-reviewer.md`)
+   - Analyze performance implications and optimization opportunities
+
+3. **Security Code Reviewer** (`.claude/sub-agents/security-code-reviewer.md`)
+   - Check for security vulnerabilities and potential exploits
+
+4. **Test Coverage Reviewer** (`.claude/sub-agents/test-coverage-reviewer.md`)
+   - Evaluate test coverage and test quality
+
+5. **Documentation Accuracy Reviewer** (`.claude/sub-agents/documentation-accuracy-reviewer.md`)
+   - Verify documentation accuracy and completeness
+
+## Important Notes
+
+- **Always use inline comments** via `mcp__github_inline_comment__create_inline_comment`
+- Each sub-agent operates independently with its own context
+- Do NOT write long comments at the PR level - use inline comments for specific issues
+- Provide suggestions using GitHub's suggestion feature when possible
+- Be constructive and specific in feedback
