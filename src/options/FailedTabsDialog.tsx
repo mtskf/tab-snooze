@@ -7,6 +7,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AlertTriangle, ExternalLink } from "lucide-react";
+import { getHostname } from "@/utils/formatUtils";
+import { FaviconImage } from "@/components/FaviconImage";
 
 interface FailedTab {
   id: string;
@@ -23,15 +25,6 @@ interface FailedTabsDialogProps {
 
 export default function FailedTabsDialog({ open, onOpenChange, failedTabs }: FailedTabsDialogProps) {
   const tabCount = failedTabs?.length || 0;
-
-  // Extract hostname from URL for display
-  const getHostname = (url: string): string => {
-    try {
-      return new URL(url).hostname;
-    } catch {
-      return url;
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -55,18 +48,12 @@ export default function FailedTabsDialog({ open, onOpenChange, failedTabs }: Fai
                 key={tab.id}
                 className="flex items-center gap-3 p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors"
               >
-                {tab.favicon ? (
-                  <img
-                    src={tab.favicon}
-                    alt=""
-                    className="h-4 w-4 flex-shrink-0"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <ExternalLink className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                )}
+                <FaviconImage
+                  src={tab.favicon}
+                  className="h-4 w-4 flex-shrink-0"
+                  fallbackClassName="h-4 w-4 flex-shrink-0 text-muted-foreground"
+                  FallbackIcon={ExternalLink}
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">
                     {tab.title || "Untitled"}

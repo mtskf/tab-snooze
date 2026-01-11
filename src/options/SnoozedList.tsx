@@ -1,9 +1,11 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, AppWindow, Globe } from "lucide-react";
+import { Trash2, AppWindow } from "lucide-react";
 import { VIVID_COLORS, HEATMAP_COLORS } from "@/utils/constants";
 import { getHexFromClass } from "@/utils/colorUtils";
+import { formatDay, formatTime, getHostname } from "@/utils/formatUtils";
+import { FaviconImage } from "@/components/FaviconImage";
 import { cn } from "@/lib/utils";
 import type { SnoozedItemV2 } from "@/types";
 import type { DayGroup, DisplayItem } from "@/utils/selectors";
@@ -15,34 +17,6 @@ interface SnoozedListProps {
   onRestoreGroup?: (groupId: string) => void;
   appearance?: "default" | "vivid" | "heatmap";
   pendingTabIds?: Set<string>;
-}
-
-interface FaviconImageProps {
-  src?: string | null;
-  className?: string;
-  fallbackClassName?: string;
-}
-
-function FaviconImage({ src, className, fallbackClassName }: FaviconImageProps) {
-  const [hasError, setHasError] = useState(false);
-
-  // Reset error state when src changes
-  useEffect(() => {
-    setHasError(false);
-  }, [src]);
-
-  if (!src || hasError) {
-    return <Globe className={fallbackClassName || className} />;
-  }
-
-  return (
-    <img
-      src={src}
-      className={className}
-      alt=""
-      onError={() => setHasError(true)}
-    />
-  );
 }
 
 const SnoozedList = React.memo(
@@ -258,44 +232,5 @@ const SnoozedList = React.memo(
     return <div>{renderList()}</div>;
   },
 );
-
-function formatDay(date: Date): string {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-  if (target.getTime() === today.getTime()) {
-    return "Today";
-  }
-  if (target.getTime() === tomorrow.getTime()) {
-    return "Tomorrow";
-  }
-
-  return date.toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-function formatTime(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
-
-function getHostname(url: string | undefined): string {
-  if (!url) return "Unknown";
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return "Unknown";
-  }
-}
 
 export default SnoozedList;
