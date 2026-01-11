@@ -17,7 +17,12 @@ Chrome拡張機能（Manifest V3）- タブをスヌーズして指定時刻に�
 | `npm test -- --watch` | Watch mode |
 | `npm run typecheck` | Type check |
 
-Load extension: chrome://extensions/ → Developer mode → Load unpacked → select `dist/`
+
+**Load extension for development:**
+- Navigate to `chrome://extensions/`
+- Enable "Developer mode" (toggle in top right)
+- Click "Load unpacked"
+- Select the `dist/` directory
 
 ## Architecture
 
