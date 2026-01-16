@@ -18,19 +18,19 @@ You are reviewing a pull request. Follow these steps:
 
 **CRITICAL**: Launch all 5 sub-agents in parallel by making 5 Task tool calls in a single message. This allows them to execute simultaneously.
 
-1. **Code Quality Reviewer** (`.claude/sub-agents/code-quality-reviewer.md`)
+1. **Code Quality Reviewer** (`.claude/agents/code-quality-reviewer.md`)
    - Focus on code readability, maintainability, and best practices
 
-2. **Performance Reviewer** (`.claude/sub-agents/performance-reviewer.md`)
+2. **Performance Reviewer** (`.claude/agents/performance-reviewer.md`)
    - Analyze performance implications and optimization opportunities
 
-3. **Security Code Reviewer** (`.claude/sub-agents/security-code-reviewer.md`)
+3. **Security Code Reviewer** (`.claude/agents/security-code-reviewer.md`)
    - Check for security vulnerabilities and potential exploits
 
-4. **Test Coverage Reviewer** (`.claude/sub-agents/test-coverage-reviewer.md`)
+4. **Test Coverage Reviewer** (`.claude/agents/test-coverage-reviewer.md`)
    - Evaluate test coverage and test quality
 
-5. **Documentation Accuracy Reviewer** (`.claude/sub-agents/documentation-accuracy-reviewer.md`)
+5. **Documentation Accuracy Reviewer** (`.claude/agents/documentation-accuracy-reviewer.md`)
    - Verify documentation accuracy and completeness
 
 Example of launching sub-agents in parallel:
