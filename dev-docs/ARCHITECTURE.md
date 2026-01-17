@@ -96,17 +96,19 @@ interface Settings {
 **Trigger**: On startup if V2 validation fails
 
 - Queue `pendingRecoveryNotification` with tab count
-- 5-min cooldown on repeated notifications
+- Recovery notification: 5-min cooldown
+- Storage warning notification: 24-hour cooldown (separate)
 
 ### Migration & Import
 
 **V1→V2**: `ensureValidStorage` sanitizes, preserves valid entries
 
 **Import**:
-- Reject future schemas
+
+- Reject future schema versions (> current version)
 - Regenerate UUIDs on collision
 - Validation + repair mode
-- Merge (no overwrite)
+- Merge with existing data (no overwrite)
 
 ## Concurrency Control
 
@@ -159,7 +161,7 @@ src/
 ## Critical Constraints
 
 - **No DOM API** in Service Worker
-- **Storage quota**: 10MB limit, warn at 8MB (Firefox: disabled, `getBytesInUse` unsupported)
+- **Storage quota**: 10MB limit, warn at 8MB (80% threshold); Firefox: disabled (`getBytesInUse` unsupported)
 - **URL validation**: Must exclude RESTRICTED_PROTOCOLS
 - **Tab close safety**: Always save first
 - **Restore retry**: 3x before reschedule

@@ -28,7 +28,7 @@ Chrome Extension (Manifest V3) - Snooze tabs and automatically restore them at a
 - **Storage**: chrome.storage.local (main) + chrome.storage.session (failed tabs)
 - **Flow**: Snooze (validate→save→close) → Restore (alarm→retry 3x→reschedule if failed)
 - **Concurrency**: Promise-chain mutex + 2s backup debounce + restore flag
-- **Backup/Recovery**: 3-tier (valid→sanitized→empty), 5min notify cooldown
+- **Backup/Recovery**: 3-tier (valid→sanitized→empty), recovery notify: 5min, storage warning: 24h
 
 ## Testing
 

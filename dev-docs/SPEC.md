@@ -74,7 +74,7 @@ Defined in `constants.ts`:
 - On startup: Validate `snoooze_v2`
 - If invalid → `recoverFromBackup` (valid → sanitized with most items → empty reset)
 - `ensureValidStorage` sanitizes invalid entries
-- Notify user with recovered item count (5-min cooldown)
+- Notify user with recovered item count (5-min cooldown for recovery notifications)
 
 **Import:**
 
@@ -89,7 +89,7 @@ Defined in `constants.ts`:
 **Storage Warning:**
 
 - Warning: 8MB (80%), Clear: 7MB (70%) - hysteresis pattern
-- Notify once per 24h
+- Notify once per 24h (separate cooldown from recovery notifications)
 - In-app banner in Options
 - Firefox: Disabled (`getBytesInUse` unsupported)
 
