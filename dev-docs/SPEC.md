@@ -20,7 +20,9 @@
 
 **Timing:**
 
-All times use user's timezone (settings → system fallback). Day-of-week: `Date.getDay()` (0=Sunday, 6=Saturday)
+All times use user's timezone (settings → system fallback).
+
+**Day-of-week reference**: Uses JavaScript `Date.getDay()` convention (0=Sunday, 6=Saturday)
 
 | Option | Logic | Default |
 |--------|-------|---------|
