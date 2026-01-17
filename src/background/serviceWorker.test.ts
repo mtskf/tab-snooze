@@ -267,6 +267,126 @@ describe('serviceWorker onInstalled event', () => {
     // Should clear pending flag
     expect(sessionRemoveMock).toHaveBeenCalledWith('pendingRecoveryNotification');
   });
+
+  it('suppresses notification when within 5-minute cooldown', async () => {
+    const now = Date.now();
+    const recentNotification = now - (3 * 60 * 1000); // 3 minutes ago (within cooldown)
+
+    const sessionGetMock = vi.fn().mockResolvedValue({
+      pendingRecoveryNotification: 5,
+      lastRecoveryNotifiedAt: recentNotification,
+    });
+    const sessionSetMock = vi.fn().mockResolvedValue(undefined);
+    const sessionRemoveMock = vi.fn().mockResolvedValue(undefined);
+    const notificationsCreateMock = vi.fn().mockResolvedValue(undefined);
+
+    (globalThis.chrome.storage.session.get as ReturnType<typeof vi.fn>) = sessionGetMock;
+    (globalThis.chrome.storage.session.set as ReturnType<typeof vi.fn>) = sessionSetMock;
+    (globalThis.chrome.storage.session.remove as ReturnType<typeof vi.fn>) = sessionRemoveMock;
+    (globalThis.chrome.notifications.create as ReturnType<typeof vi.fn>) = notificationsCreateMock;
+
+    await importServiceWorker();
+
+    expect(installedHandler).not.toBeNull();
+
+    // Trigger onInstalled event
+    await installedHandler!();
+
+    // Should check for pending recovery notification
+    expect(sessionGetMock).toHaveBeenCalledWith(['pendingRecoveryNotification', 'lastRecoveryNotifiedAt']);
+
+    // Should NOT create notification (within cooldown)
+    expect(notificationsCreateMock).not.toHaveBeenCalled();
+
+    // Should NOT update timestamp (notification suppressed)
+    expect(sessionSetMock).not.toHaveBeenCalled();
+
+    // Should still clear pending flag
+    expect(sessionRemoveMock).toHaveBeenCalledWith('pendingRecoveryNotification');
+  });
+
+  it('shows notification when cooldown has expired', async () => {
+    const now = Date.now();
+    const oldNotification = now - (6 * 60 * 1000); // 6 minutes ago (cooldown expired)
+
+    const sessionGetMock = vi.fn().mockResolvedValue({
+      pendingRecoveryNotification: 3,
+      lastRecoveryNotifiedAt: oldNotification,
+    });
+    const sessionSetMock = vi.fn().mockResolvedValue(undefined);
+    const sessionRemoveMock = vi.fn().mockResolvedValue(undefined);
+    const notificationsCreateMock = vi.fn().mockResolvedValue(undefined);
+
+    (globalThis.chrome.storage.session.get as ReturnType<typeof vi.fn>) = sessionGetMock;
+    (globalThis.chrome.storage.session.set as ReturnType<typeof vi.fn>) = sessionSetMock;
+    (globalThis.chrome.storage.session.remove as ReturnType<typeof vi.fn>) = sessionRemoveMock;
+    (globalThis.chrome.notifications.create as ReturnType<typeof vi.fn>) = notificationsCreateMock;
+
+    await importServiceWorker();
+
+    expect(installedHandler).not.toBeNull();
+
+    // Trigger onInstalled event
+    await installedHandler!();
+
+    // Should check for pending recovery notification
+    expect(sessionGetMock).toHaveBeenCalledWith(['pendingRecoveryNotification', 'lastRecoveryNotifiedAt']);
+
+    // Should create notification (cooldown expired)
+    expect(notificationsCreateMock).toHaveBeenCalledWith('recovery-notification', {
+      type: 'basic',
+      iconUrl: 'assets/icon128.png',
+      title: 'Snooooze Data Recovered',
+      message: 'Recovered 3 snoozed tabs from backup.',
+      priority: 1
+    });
+
+    // Should update timestamp
+    expect(sessionSetMock).toHaveBeenCalledWith({ lastRecoveryNotifiedAt: expect.any(Number) });
+
+    // Should clear pending flag
+    expect(sessionRemoveMock).toHaveBeenCalledWith('pendingRecoveryNotification');
+  });
+
+  it('shows notification when lastRecoveryNotifiedAt is undefined (first time)', async () => {
+    const sessionGetMock = vi.fn().mockResolvedValue({
+      pendingRecoveryNotification: 2,
+      // lastRecoveryNotifiedAt is undefined (first time)
+    });
+    const sessionSetMock = vi.fn().mockResolvedValue(undefined);
+    const sessionRemoveMock = vi.fn().mockResolvedValue(undefined);
+    const notificationsCreateMock = vi.fn().mockResolvedValue(undefined);
+
+    (globalThis.chrome.storage.session.get as ReturnType<typeof vi.fn>) = sessionGetMock;
+    (globalThis.chrome.storage.session.set as ReturnType<typeof vi.fn>) = sessionSetMock;
+    (globalThis.chrome.storage.session.remove as ReturnType<typeof vi.fn>) = sessionRemoveMock;
+    (globalThis.chrome.notifications.create as ReturnType<typeof vi.fn>) = notificationsCreateMock;
+
+    await importServiceWorker();
+
+    expect(installedHandler).not.toBeNull();
+
+    // Trigger onInstalled event
+    await installedHandler!();
+
+    // Should check for pending recovery notification
+    expect(sessionGetMock).toHaveBeenCalledWith(['pendingRecoveryNotification', 'lastRecoveryNotifiedAt']);
+
+    // Should create notification (first time, no previous notification)
+    expect(notificationsCreateMock).toHaveBeenCalledWith('recovery-notification', {
+      type: 'basic',
+      iconUrl: 'assets/icon128.png',
+      title: 'Snooooze Data Recovered',
+      message: 'Recovered 2 snoozed tabs from backup.',
+      priority: 1
+    });
+
+    // Should update timestamp
+    expect(sessionSetMock).toHaveBeenCalledWith({ lastRecoveryNotifiedAt: expect.any(Number) });
+
+    // Should clear pending flag
+    expect(sessionRemoveMock).toHaveBeenCalledWith('pendingRecoveryNotification');
+  });
 });
 
 describe('serviceWorker onStartup event', () => {
