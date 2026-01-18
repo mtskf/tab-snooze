@@ -1,16 +1,7 @@
 name: Claude Code Review
 
-on:
-  pull_request:
-    types: [opened, ready_for_review, reopened]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
-  issue_comment:
-    types: [created]
+# Temporarily disabled: no triggers.
+on: []
 
 jobs:
   claude-review:
@@ -44,4 +35,3 @@ jobs:
             --allowed-tools "Read,Grep,Glob,Bash,Task,mcp__github_inline_comment__create_inline_comment"
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # for available options
-
