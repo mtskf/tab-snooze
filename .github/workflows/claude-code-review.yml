@@ -1,10 +1,15 @@
 name: Claude Code Review
 
-# Temporarily disabled: no triggers.
-on: []
+# Triggered only by PR comments that mention @claude.
+on:
+  issue_comment:
+    types: [created]
 
 jobs:
   claude-review:
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '@claude')
     # Optional: Filter by PR author
     # if: |
     #   github.event.pull_request.user.login == 'external-contributor' ||
