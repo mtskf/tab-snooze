@@ -1,6 +1,6 @@
 # Architecture
 
-> Implementation details (structure, algorithms, file organization)
+> Implementation details (structure, algorithms, data flow, invariants)
 
 Chrome Extension (Manifest V3) - Snooze tabs and restore at scheduled time
 

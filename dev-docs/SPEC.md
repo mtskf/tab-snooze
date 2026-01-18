@@ -1,6 +1,6 @@
 # Functional Specifications
 
-> User requirements (behavior, timing, constraints)
+> Feature requirements for product/QA (user behavior, timing, constraints)
 
 ## Terminology
 
@@ -40,10 +40,12 @@ All times use user's timezone (settings → system fallback).
 ## Scope & Shortcuts
 
 **Scope:**
+
 - **Selected Tabs**: Highlighted tabs, no `groupId` → restore in last-focused window
 - **Current Window**: All tabs, shared `groupId` → restore in new window
 
 **Keyboard:**
+
 - Single key (e.g., `T`) → Snooze selected tabs
 - `Shift` + key → Snooze entire window
 - `Shift + P` or window scope → DatePicker preserves scope
@@ -61,6 +63,7 @@ All times use user's timezone (settings → system fallback).
 ## UI Themes
 
 Defined in `constants.ts`:
+
 - **Default**: Blue/Indigo monochrome
 - **Vivid**: Semantic colors (Tomorrow=Blue, Weekend=Green)
 - **Heatmap**: Urgency colors (Later Today=Red, Tomorrow=Orange)
@@ -68,11 +71,13 @@ Defined in `constants.ts`:
 ## Data Integrity
 
 **Backup:**
+
 - 3 rotating backups: `snoozedTabs_backup_<ts>`
 - Debounced 2s
 - Validates before backup
 
 **Recovery:**
+
 - On startup: Validate `snoooze_v2`
 - If invalid → `recoverFromBackup` (valid → sanitized with most items → empty reset)
 - `ensureValidStorage` sanitizes invalid entries

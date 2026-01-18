@@ -28,6 +28,12 @@ Chrome Extension (Manifest V3) - Snooze tabs and automatically restore them at a
 | `npm test` | Run all tests |
 | `npm run typecheck` | Type check |
 
+## Code Style
+
+- TypeScript strict mode, no `any` types
+- Use named exports, not default exports
+- CSS: use Tailwind utility classes, no custom CSS files
+
 ## Testing
 
 - External APIs must be mocked
